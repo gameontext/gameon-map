@@ -1,0 +1,16 @@
+.*.swp
+.DS_Store
+/.apt_generated/
+/.settings/
+/.project
+/.gradle
+/.classpath
+/.project
+/.settings
+/.factorypath
+/bin
+/build
+/src/main/java/META-INF/
+/src/main/webapp/META-INF/
+
+/target

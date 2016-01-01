@@ -1,0 +1,29 @@
+<server description="Game On! Map Service">
+
+    <!-- Enable features -->
+    <featureManager>
+	    <feature>localConnector-1.0</feature>
+        <feature>jaxrs-2.0</feature>
+        <feature>cdi-1.2</feature>
+        <feature>ssl-1.0</feature>
+    </featureManager>
+
+    <httpEndpoint host="*" httpPort="9081" httpsPort="9444" id="defaultHttpEndpoint"/>
+
+    <keyStore id="defaultKeyStore" password="testOnlyKeystore"/>
+
+    <!-- This one will become db based per room provider -->
+    <jndiEntry jndiName="registrationSecret" value="${env.REGISTRATION_SECRET}"/>
+
+    <!-- This one is a fixed shared key between the map and it's consumers -->
+    <jndiEntry jndiName="querySecret" value="${env.QUERY_SECRET}"/>
+
+    <!-- This is required to prevent the web apps from being lazily loaded -->
+    <webContainer deferServletLoad="false"/>
+
+    <logging traceSpecification="*=info"/>
+
+    <applicationMonitor dropinsEnabled="false"/>
+
+    <webApplication contextRoot="/map" id="map-app" location="map-app.war"/>
+</server>

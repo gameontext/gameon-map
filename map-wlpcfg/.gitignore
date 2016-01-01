@@ -1,0 +1,11 @@
+/.settings/
+/.project
+.*.swp
+/servers/*/apps
+/servers/*/logs
+/servers/*/workarea
+/servers/.pid
+/servers/gameon-map/resources
+/build/
+/servers/.classCache
+/target

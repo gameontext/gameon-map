@@ -1,0 +1,4 @@
+rootProject.name = 'gameon-map'
+
+include 'map-app'
+include 'map-wlpcfg'
