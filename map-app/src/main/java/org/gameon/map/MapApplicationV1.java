@@ -18,7 +18,9 @@ package org.gameon.map;
 import javax.ws.rs.ApplicationPath;
 import javax.ws.rs.core.Application;
 
-@ApplicationPath("/")
-public class MapApplication extends Application {
-
+/**
+ * Declare a JAX-RS application for path /map/v1
+ */
+@ApplicationPath("/v1")
+public class MapApplicationV1 extends Application {
 }
