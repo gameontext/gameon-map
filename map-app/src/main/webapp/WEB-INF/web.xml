@@ -10,7 +10,7 @@
     
      <filter>
          <filter-name>CORS</filter-name>
-         <filter-class>org.gameon.filter.CORSFilter</filter-class>
+         <filter-class>org.gameon.map.filter.CORSFilter</filter-class>
      </filter>
      <filter-mapping>
          <filter-name>CORS</filter-name>

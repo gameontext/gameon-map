@@ -6,10 +6,12 @@
         <feature>jaxrs-2.0</feature>
         <feature>cdi-1.2</feature>
         <feature>ssl-1.0</feature>
+        <feature>apiDiscovery-1.0</feature>
     </featureManager>
 
-    <httpEndpoint host="*" httpPort="9081" httpsPort="9444" id="defaultHttpEndpoint"/>
+    <httpEndpoint host="*" httpPort="-1" httpsPort="9447" id="defaultHttpEndpoint"/>
 
+    <quickStartSecurity userPassword="adminPassword" userName="admin"/>
     <keyStore id="defaultKeyStore" password="testOnlyKeystore"/>
 
     <!-- This one will become db based per room provider -->
@@ -23,7 +25,9 @@
 
     <logging traceSpecification="*=info"/>
 
-    <applicationMonitor dropinsEnabled="false"/>
+    <applicationMonitor dropinsEnabled="false" updateTrigger="mbean"/>
 
-    <webApplication contextRoot="/map" id="map-app" location="map-app.war"/>
+    <webApplication contextRoot="/map" id="map-app" location="map-app.war">
+      <classloader apiTypeVisibility="spec,ibm-api,api,third-party"></classloader>
+    </webApplication>
 </server>

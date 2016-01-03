@@ -11,6 +11,7 @@ dependencies {
     providedCompile 'javax.annotation:javax.annotation-api:1.2'
     providedCompile 'javax.inject:javax.inject:1'
     providedCompile 'javax.enterprise:cdi-api:1.2'
+    providedCompile 'io.swagger:swagger-annotations:1.5.0'
 
     testCompile 'junit:junit:4.12'
 }
@@ -37,3 +38,15 @@ task publishWar(dependsOn: 'jar', type: Copy) {
 }
 
 assemble.dependsOn('publishWar')
+
+
+// Add additional code conventions
+eclipse.jdt.file {
+    withProperties {
+      it['org.eclipse.jdt.core.formatter.indentation.size'] = '4'
+      it['org.eclipse.jdt.core.formatter.tabulation.size'] = '4'
+      it['org.eclipse.jdt.core.formatter.tabulation.char'] = 'space'
+      it['org.eclipse.jdt.core.formatter.indent_switchstatements_compare_to_cases'] = 'true'
+      it['org.eclipse.jdt.core.formatter.indent_switchstatements_compare_to_switch'] = 'true'
+    }
+}
