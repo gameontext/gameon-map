@@ -13,33 +13,38 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *******************************************************************************/
-package org.gameon.map.v1;
+package org.gameon.map;
 
-@io.swagger.annotations.ApiModel
-public class RoomAttributes {
+@io.swagger.annotations.ApiModel(
+        description = "Mutable information about a room: descriptive elements, service URL, etc.")
+public class RoomInfo {
 
+    /** name of room (short / url-friendly) */
     @io.swagger.annotations.ApiModelProperty(
-            value = "URL-friendly room name",
-            example = "FirstRoom",
+            value = "Short name of the target room (small title bars)",
+            example = "First Room",
             required = true)
     String name;
     
+    /** full name */
     @io.swagger.annotations.ApiModelProperty(
             value = "Human-friendly room name",
             example = "The First Room",
             required = false)
-    String longName;
+    String fullName;
     
+    /** Room door */
     @io.swagger.annotations.ApiModelProperty(
-            value = "Player-friendly description that fits in a tweet (140 characters)",
+            value = "Player-friendly room description (140 characters)",
             example = "A helpful room with doors in every possible direction.",
             required = false)
     String description;
     
+    /** Optional door descriptions */
     @io.swagger.annotations.ApiModelProperty(
-            value = "Descriptions for the doors in the room. ",
+            value = "Descriptions for the doors used to enter the room. ",
             required = false)
-    RoomDoors doors;
+    Doors doors;
         
     public String getName() {
         return name;
@@ -48,11 +53,11 @@ public class RoomAttributes {
         this.name = name;
     }
     
-    public String getLongName() {
-        return longName;
+    public String getFullName() {
+        return fullName;
     }
-    public void setLongName(String longName) {
-        this.longName = longName;
+    public void setFullName(String fullName) {
+        this.fullName = fullName;
     }
 
     public String getDescription() {
@@ -62,10 +67,22 @@ public class RoomAttributes {
         this.description = description;
     }
     
-    public RoomDoors getDoors() {
+    public Doors getDoors() {
         return doors;
     }
-    public void setDoors(RoomDoors doors) {
+    public void setDoors(Doors doors) {
         this.doors = doors;
+    }
+    
+    @Override
+    public String toString()  {
+      StringBuilder sb = new StringBuilder();
+      sb.append("class RoomInfo {\n");
+      sb.append("  name: ").append(name).append("\n");
+      sb.append("  fullName: ").append(fullName).append("\n");
+      sb.append("  door: ").append(description).append("\n");
+      sb.append("  doors: ").append(doors).append("\n");
+      sb.append("}\n");
+      return sb.toString();
     }
 }

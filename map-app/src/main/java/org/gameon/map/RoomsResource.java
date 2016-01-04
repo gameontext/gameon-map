@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *******************************************************************************/
-package org.gameon.map.v1;
+package org.gameon.map;
 
 import java.net.HttpURLConnection;
 import java.net.URI;
@@ -34,7 +34,7 @@ import javax.ws.rs.core.Response;
  * Root of CRUD operations on or with rooms
  */
 @Path("/rooms")
-@io.swagger.annotations.Api(value = "rooms")
+@io.swagger.annotations.Api( value = "rooms")
 public class RoomsResource {
     
     /**
@@ -42,9 +42,9 @@ public class RoomsResource {
      */
     @GET
     @io.swagger.annotations.ApiOperation(value = "List rooms",
-        notes = " Use link headers for pagination.",
-        response = RoomInfo.class,
-        responseContainer = "List")    
+        notes = "Get a list of registered rooms. Use link headers for pagination.",
+        response = MappedRoom.class,
+        responseContainer = "List")
     @Produces(MediaType.APPLICATION_JSON)
     public Response listRooms() {
         // TODO: query/filter parameters, including specification of fields to include in list.
@@ -58,14 +58,14 @@ public class RoomsResource {
      */
     @POST
     @io.swagger.annotations.ApiOperation(value = "Create a room",
-        notes = "",
-        response = RoomInfo.class,
+        notes = "Define a room by providing descriptive attributes and the target service url",
+        response = MappedRoom.class,
         code = HttpURLConnection.HTTP_CREATED )
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response createRoom(
-            @io.swagger.annotations.ApiParam(value = "New room attributes", required = true) RoomAttributes newRoom) {
-        return Response.created(URI.create("/map/v1/rooms/1")).entity(new RoomInfo()).build();
+            @io.swagger.annotations.ApiParam(value = "New room attributes", required = true) RoomInfo newRoom) {
+        return Response.created(URI.create("/map/v1/rooms/1")).entity(new MappedRoom()).build();
     }
     
     /**
@@ -75,11 +75,11 @@ public class RoomsResource {
     @Path("{id}")
     @io.swagger.annotations.ApiOperation(value = "Get a specific room",
         notes = "",
-        response = RoomInfo.class )
+        response = MappedRoom.class )
     @Produces(MediaType.APPLICATION_JSON)
     public Response getRoom(
-            @io.swagger.annotations.ApiParam(value = "Id for target room", required = true) @PathParam("id") String roomId) {
-        return Response.ok(new RoomInfo()).build();
+            @io.swagger.annotations.ApiParam(value = "target room id", required = true) @PathParam("id") String roomId) {
+        return Response.ok(new MappedRoom()).build();
     }
     
     
@@ -90,13 +90,13 @@ public class RoomsResource {
     @Path("{id}")
     @io.swagger.annotations.ApiOperation(value = "Update a specific room",
         notes = "",
-        response = RoomInfo.class )
+        response = MappedRoom.class )
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response updateRoom(
-            @io.swagger.annotations.ApiParam(value = "Id for target room", required = true) @PathParam("id") String roomId, 
-            @io.swagger.annotations.ApiParam(value = "Updated room attributes", required = true) RoomAttributes newRoom) {
-        return Response.ok(new RoomInfo()).build();
+            @io.swagger.annotations.ApiParam(value = "target room id", required = true) @PathParam("id") String roomId, 
+            @io.swagger.annotations.ApiParam(value = "Updated room attributes", required = true) RoomInfo newRoom) {
+        return Response.ok(new MappedRoom()).build();
     }
     
     
@@ -112,7 +112,7 @@ public class RoomsResource {
         @io.swagger.annotations.ApiResponse(code = 204, message = "Delete successful")
     })
     public Response deleteRoom(
-            @io.swagger.annotations.ApiParam(value = "Id for target room", required = true) @PathParam("id") String roomId) {
+            @io.swagger.annotations.ApiParam(value = "target room id", required = true) @PathParam("id") String roomId) {
         return Response.noContent().build();
     }
 }

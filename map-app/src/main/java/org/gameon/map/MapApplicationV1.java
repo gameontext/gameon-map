@@ -13,12 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *******************************************************************************/
-package org.gameon.map.v1;
+package org.gameon.map;
 
 import javax.ws.rs.ApplicationPath;
 import javax.ws.rs.core.Application;
 
 @ApplicationPath("/v1")
+@io.swagger.annotations.SwaggerDefinition(
+        basePath = "/v1",
+        info = @io.swagger.annotations.Info(
+                    title = "Game On! Map API",
+                    version = "1.0"
+                ))
 public class MapApplicationV1 extends Application {
     /*
      * The context root for this application is /map

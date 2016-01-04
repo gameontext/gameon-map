@@ -1,4 +1,4 @@
-package org.gameon.map.v1;
+package org.gameon.map;
 
 /**
  * Descriptions for the doors in the room. These may be used by other rooms to describe the appearance of the door. 
@@ -14,7 +14,7 @@ package org.gameon.map.v1;
                 + "it should be the opposite direction:for the East door, the direction "
                 + "mentioned should be West. Descriptions are optional, and will be generated "
                 + "if absent.")
-public class RoomDoors {
+public class Doors {
     
     private String n = null;
     private String w = null;
@@ -24,7 +24,7 @@ public class RoomDoors {
     private String d = null;
 
     @io.swagger.annotations.ApiModelProperty(
-            value = "Player-friendly description of the north door that fits in a tweet (140 characters)",
+            value = "North door (140 characters)",
             example = "A knobbly wooden door with a rough carving or a friendly face",
             required = false)
     public String getN() {
@@ -36,7 +36,7 @@ public class RoomDoors {
     }
 
     @io.swagger.annotations.ApiModelProperty(
-            value = "Player-friendly description of the south door that fits in a tweet (140 characters)",
+            value = "South door (140 characters)",
             example = "A warped wooden door with a friendly face branded on the corner",
             required = false)
     public String getS() {
@@ -48,7 +48,7 @@ public class RoomDoors {
     }
 
     @io.swagger.annotations.ApiModelProperty(
-            value = "Player-friendly description of the east door that fits in a tweet (140 characters)",
+            value = "East door (140 characters)",
             example = "A polished wooden door with an inlaid friendly face",
             required = false)
     public String getE() {
@@ -60,7 +60,7 @@ public class RoomDoors {
     }
 
     @io.swagger.annotations.ApiModelProperty(
-            value = "Player-friendly description of the west door that fits in a tweet (140 characters)",
+            value = "West door (140 characters)",
             example = "A fake wooden door with stickers of friendly faces plastered all over it",
             required = false)
     public String getW() {
@@ -72,7 +72,7 @@ public class RoomDoors {
     }
 
     @io.swagger.annotations.ApiModelProperty(
-            value = "Player-friendly description of the door in the ceiling that fits in a tweet (140 characters)",
+            value = "Door in the ceiling (Up) (140 characters)",
             example = "A scuffed and scratched oaken trap door",
             required = false)
     public String getU() {
@@ -84,7 +84,7 @@ public class RoomDoors {
     }
 
     @io.swagger.annotations.ApiModelProperty(
-            value = "Player-friendly description of the door in the floor that fits in a tweet (140 characters)",
+            value = "Door in the floor (Down) (140 characters)",
             example = "A rough-cut particle board hatch",
             required = false)
     public String getD() {
@@ -99,7 +99,7 @@ public class RoomDoors {
     @Override
     public String toString()  {
       StringBuilder sb = new StringBuilder();
-      sb.append("class RoomDoors {\n");
+      sb.append("class Doors {\n");
       sb.append("  n: ").append(n).append("\n");
       sb.append("  w: ").append(w).append("\n");
       sb.append("  s: ").append(s).append("\n");

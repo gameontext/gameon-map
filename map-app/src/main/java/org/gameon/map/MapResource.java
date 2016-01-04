@@ -1,4 +1,4 @@
-package org.gameon.map.v1;
+package org.gameon.map;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
