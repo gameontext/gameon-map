@@ -82,7 +82,7 @@ task createNewEtcdContainer(type: DockerCreateContainer) {
 	targetImageId { "gameon-map" }
 	containerName = "gameon-map"
 	portBindings = ['9081:9081']
-	env = determinedEnvironment
+	env = etcdEnvironment
 	links = ["etcd:etcd"]
 }
 
