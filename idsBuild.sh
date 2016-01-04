@@ -22,7 +22,7 @@ cd map-wlpcfg
 ../gradlew buildDockerImage
 ../gradlew stopCurrentContainer
 ../gradlew removeCurrentContainer
-../gradlew startNewContainer
+../gradlew startNewEtcdContainer
 
 cd ..
 rm -rf dockercfg
