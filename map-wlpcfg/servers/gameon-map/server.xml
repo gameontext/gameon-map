@@ -7,6 +7,7 @@
         <feature>cdi-1.2</feature>
         <feature>ssl-1.0</feature>
         <feature>apiDiscovery-1.0</feature>
+        <feature>couchdb-1.0</feature>
     </featureManager>
 
     <httpEndpoint host="*" httpPort="-1" httpsPort="9447" id="defaultHttpEndpoint"/>
@@ -14,20 +15,23 @@
     <quickStartSecurity userPassword="adminPassword" userName="admin"/>
     <keyStore id="defaultKeyStore" password="testOnlyKeystore"/>
 
-    <!-- This one will become db based per room provider -->
-    <jndiEntry jndiName="registrationSecret" value="${env.REGISTRATION_SECRET}"/>
-
-    <!-- This one is a fixed shared key between the map and it's consumers -->
-    <jndiEntry jndiName="querySecret" value="${env.QUERY_SECRET}"/>
-
     <!-- This is required to prevent the web apps from being lazily loaded -->
     <webContainer deferServletLoad="false"/>
 
     <logging traceSpecification="*=info"/>
 
-    <applicationMonitor dropinsEnabled="false" updateTrigger="mbean"/>
+    <applicationMonitor dropinsEnabled="false" />
+
+    <couchdb id="couchdb" jndiName="couchdb/connector"
+      libraryRef="couchdb-lib"
+      url="${env.MAP_COUCHDB_URL}"
+      username="mapDB" password="${env.MAP_COUCHDB_PASSWORD}"/>
+ 
+    <library id="couchdb-lib" apiTypeVisibility="spec,ibm-api,api,third-party" >
+        <fileset dir='${server.config.dir}/lib' />
+    </library>
 
     <webApplication contextRoot="/map" id="map-app" location="map-app.war">
-      <classloader apiTypeVisibility="spec,ibm-api,api,third-party"></classloader>
+      <classloader apiTypeVisibility="spec,ibm-api,api,third-party" commonLibraryRef="couchdb-lib"></classloader>
     </webApplication>
 </server>

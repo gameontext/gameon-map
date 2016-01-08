@@ -30,6 +30,9 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
+import org.gameon.map.models.MappedRoom;
+import org.gameon.map.models.RoomInfo;
+
 /**
  * Root of CRUD operations on or with rooms
  */
@@ -58,7 +61,10 @@ public class RoomsResource {
      */
     @POST
     @io.swagger.annotations.ApiOperation(value = "Create a room",
-        notes = "Define a room by providing descriptive attributes and the target service url",
+        notes = "When a room is registered, the map will generate the appropriate paths to "
+                + "place the room into the map. The map wll only generate links using standard 2-d "
+                + "compass directions. The 'exits' attribute in the return value describes "
+                + "connected/adjacent rooms. ",
         response = MappedRoom.class,
         code = HttpURLConnection.HTTP_CREATED )
     @Consumes(MediaType.APPLICATION_JSON)

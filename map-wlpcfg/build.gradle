@@ -32,13 +32,20 @@ def localEnvironment = ["LICENSE=accept",
 
 def etcdEnvironment = ["LICENSE=accept", "ETCDCTL_ENDPOINT=http://etcd:4001"]
 
-task copyTask(type: Copy) {
+task copyApplication(type: Copy) {
     from '../map-app/build/libs/map-app-1.0.war'
     into 'servers/gameon-map/apps/'
     rename("map-app-1.0.war", "map-app.war")
 }
 
-task build(dependsOn: ['copyTask']){
+task copyCouchdb(type: Sync) {
+    from '../map-app/build/libs/'
+    into 'servers/gameon-map/lib/'
+    include '*.jar'
+    exclude 'map-*'
+}
+
+task build(dependsOn: ['copyApplication', 'copyCouchdb']){
 }
 
 apply plugin: 'com.bmuschko.docker-remote-api'
@@ -51,7 +58,7 @@ docker {
     certPath = new File(dockerCertPath)
 }
 
-task buildDockerImage(type: DockerBuildImage, dependsOn: 'copyTask') {
+task buildDockerImage(type: DockerBuildImage, dependsOn: ['copyApplication', 'copyCouchdb']) {
 	inputDir = file('.')
     tag = 'gameon-map'
     quiet = false

@@ -2,6 +2,7 @@
 /.project
 .*.swp
 /servers/*/apps
+/servers/*/lib
 /servers/*/logs
 /servers/*/workarea
 /servers/.pid

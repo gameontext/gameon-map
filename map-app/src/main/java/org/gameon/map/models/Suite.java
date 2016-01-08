@@ -13,17 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *******************************************************************************/
-package org.gameon.map;
+package org.gameon.map.models;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.core.Response;
+public class Suite {
 
-@Path("/")
-public class MapResource {
-    
-    @GET
-    public Response basicGet() {
-        return Response.ok().build();
-    }
 }
