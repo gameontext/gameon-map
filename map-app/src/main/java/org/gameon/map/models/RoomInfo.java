@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *******************************************************************************/
-package org.gameon.map;
+package org.gameon.map.models;
 
 @io.swagger.annotations.ApiModel(
         description = "Mutable information about a room: descriptive elements, service URL, etc.")

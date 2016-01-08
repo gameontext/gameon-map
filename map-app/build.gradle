@@ -3,6 +3,12 @@ apply plugin: 'eclipse-wtp'
 
 sourceCompatibility = 1.8
 
+configurations {
+    couchdb
+    slf4j
+}
+
+
 dependencies {
     providedCompile group:'javax.websocket', name:'javax.websocket-api', version:'1.1'
     providedCompile group:'javax.ws.rs', name:'javax.ws.rs-api', version:'2.0'
@@ -13,8 +19,27 @@ dependencies {
     providedCompile 'javax.enterprise:cdi-api:1.2'
     providedCompile 'io.swagger:swagger-annotations:1.5.0'
 
+    // couchdb dependencies
+    couchdb('org.ektorp:org.ektorp:1.4.2') {
+        exclude group: 'org.slf4j'
+    }
+
+    // route ektorp slf4j logs to java.util.logging configured by Liberty in server.xml
+    slf4j 'org.slf4j:slf4j-jdk14:1.7.13'
+
+    providedCompile configurations.couchdb
+    providedCompile configurations.slf4j
+
     testCompile 'junit:junit:4.12'
 }
+
+task exportLibs(type: Sync) {
+  into "$buildDir/libs/"
+  from configurations.couchdb
+  from configurations.slf4j
+}
+
+build.dependsOn(exportLibs)
 
 // Set the Eclipse facets to use 3.1 of the Dynamic Web Module which requires Java 1.7 by default.
 // Also include the JAX-RS and javascript
@@ -29,16 +54,6 @@ eclipse.wtp.facet {
     facet name: 'wst.jsdt.web', type: 'fixed'
     facet name: 'wst.jsdt.web', version: '1.0'
 }
-
-
-// Copy WAR into local server folder.
-task publishWar(dependsOn: 'jar', type: Copy) {
-    from(war)
-    into('../map-wlpcfg/servers/gameon-map/apps')
-}
-
-assemble.dependsOn('publishWar')
-
 
 // Add additional code conventions
 eclipse.jdt.file {

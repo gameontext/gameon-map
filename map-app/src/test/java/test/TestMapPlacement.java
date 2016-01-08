@@ -15,6 +15,6 @@
  *******************************************************************************/ 
 package test;
 
-public class TestApplication {
+public class TestMapPlacement {
 
 }
