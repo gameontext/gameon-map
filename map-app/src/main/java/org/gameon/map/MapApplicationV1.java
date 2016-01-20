@@ -20,7 +20,6 @@ import javax.ws.rs.core.Application;
 
 @ApplicationPath("/v1")
 @io.swagger.annotations.SwaggerDefinition(
-        basePath = "/v1",
         info = @io.swagger.annotations.Info(
                     title = "Game On! Map API",
                     version = "1.0"

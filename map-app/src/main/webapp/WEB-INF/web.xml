@@ -7,13 +7,18 @@
     <welcome-file-list>
         <welcome-file>index.html</welcome-file>
     </welcome-file-list>
-    
-     <filter>
-         <filter-name>CORS</filter-name>
-         <filter-class>org.gameon.map.filter.CORSFilter</filter-class>
-     </filter>
-     <filter-mapping>
-         <filter-name>CORS</filter-name>
-         <url-pattern>/*</url-pattern>
-     </filter-mapping>
+
+    <filter>
+        <filter-name>CORS</filter-name>
+        <filter-class>org.gameon.map.filter.CORSFilter</filter-class>
+    </filter>
+    <filter-mapping>
+        <filter-name>CORS</filter-name>
+        <url-pattern>/*</url-pattern>
+    </filter-mapping>
+
+    <resource-env-ref>
+       <resource-env-ref-name>couchdb/connector</resource-env-ref-name>
+       <resource-env-ref-type>org.ektorp.CouchDbInstance</resource-env-ref-type>
+    </resource-env-ref>
 </web-app>

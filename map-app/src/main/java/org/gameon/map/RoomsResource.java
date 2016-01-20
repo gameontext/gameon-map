@@ -19,6 +19,7 @@ import java.net.HttpURLConnection;
 import java.net.URI;
 import java.util.Collections;
 
+import javax.inject.Inject;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
@@ -30,7 +31,8 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
-import org.gameon.map.models.MappedRoom;
+import org.gameon.map.couchdb.MapRepository;
+import org.gameon.map.models.Node;
 import org.gameon.map.models.RoomInfo;
 
 /**
@@ -40,13 +42,16 @@ import org.gameon.map.models.RoomInfo;
 @io.swagger.annotations.Api( value = "rooms")
 public class RoomsResource {
     
+    @Inject
+    protected MapRepository mapRepository;
+
     /**
      * GET /map/v1/rooms
      */
     @GET
     @io.swagger.annotations.ApiOperation(value = "List rooms",
         notes = "Get a list of registered rooms. Use link headers for pagination.",
-        response = MappedRoom.class,
+        response = Node.class,
         responseContainer = "List")
     @Produces(MediaType.APPLICATION_JSON)
     public Response listRooms() {
@@ -65,13 +70,16 @@ public class RoomsResource {
                 + "place the room into the map. The map wll only generate links using standard 2-d "
                 + "compass directions. The 'exits' attribute in the return value describes "
                 + "connected/adjacent rooms. ",
-        response = MappedRoom.class,
+        response = Node.class,
         code = HttpURLConnection.HTTP_CREATED )
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response createRoom(
             @io.swagger.annotations.ApiParam(value = "New room attributes", required = true) RoomInfo newRoom) {
-        return Response.created(URI.create("/map/v1/rooms/1")).entity(new MappedRoom()).build();
+        
+        Node mappedRoom = mapRepository.connectRoom(newRoom);
+        
+        return Response.created(URI.create("/map/v1/rooms/" + mappedRoom.getId())).entity(mappedRoom).build();
     }
     
     /**
@@ -81,11 +89,11 @@ public class RoomsResource {
     @Path("{id}")
     @io.swagger.annotations.ApiOperation(value = "Get a specific room",
         notes = "",
-        response = MappedRoom.class )
+        response = Node.class )
     @Produces(MediaType.APPLICATION_JSON)
     public Response getRoom(
             @io.swagger.annotations.ApiParam(value = "target room id", required = true) @PathParam("id") String roomId) {
-        return Response.ok(new MappedRoom()).build();
+        return Response.ok(new Node()).build();
     }
     
     
@@ -96,13 +104,16 @@ public class RoomsResource {
     @Path("{id}")
     @io.swagger.annotations.ApiOperation(value = "Update a specific room",
         notes = "",
-        response = MappedRoom.class )
+        response = Node.class )
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response updateRoom(
             @io.swagger.annotations.ApiParam(value = "target room id", required = true) @PathParam("id") String roomId, 
             @io.swagger.annotations.ApiParam(value = "Updated room attributes", required = true) RoomInfo newRoom) {
-        return Response.ok(new MappedRoom()).build();
+
+        System.out.println("PUT ROOM: " + newRoom);
+
+        return Response.ok(new Node()).build();
     }
     
     

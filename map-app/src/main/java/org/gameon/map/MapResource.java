@@ -21,9 +21,10 @@ import javax.ws.rs.core.Response;
 
 @Path("/")
 public class MapResource {
-    
+        
     @GET
     public Response basicGet() {
         return Response.ok().build();
     }
+
 }
