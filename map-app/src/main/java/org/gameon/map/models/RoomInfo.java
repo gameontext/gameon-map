@@ -16,7 +16,7 @@
 package org.gameon.map.models;
 
 @io.swagger.annotations.ApiModel(
-        description = "Mutable information about a room: descriptive elements, service URL, etc.")
+        description = "Mutable information: descriptive elements, service URL, etc.")
 public class RoomInfo {
 
     /** name of room (short / url-friendly) */
@@ -45,7 +45,13 @@ public class RoomInfo {
             value = "Descriptions for the doors used to enter the room. ",
             required = false)
     Doors doors;
-        
+
+    @io.swagger.annotations.ApiModelProperty(
+            value = "WebSocket URL used by the mediator to connect to the room on the player's behalf",
+            example = "wss://secondroom:9008/barn/ws",
+            required = true)
+    String wss_url = null;
+    
     public String getName() {
         return name;
     }
@@ -74,6 +80,14 @@ public class RoomInfo {
         this.doors = doors;
     }
     
+    public String getWss_url() {
+        return wss_url;
+    }
+
+    public void setWss_url(String wss_url) {
+        this.wss_url = wss_url;
+    }
+
     @Override
     public String toString()  {
       StringBuilder sb = new StringBuilder();

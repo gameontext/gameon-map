@@ -15,35 +15,60 @@
  *******************************************************************************/
 package org.gameon.map.models;
 
-@io.swagger.annotations.ApiModel(
-        description = "A room is anchored into the map when it is registered. "
-                + "Assigned paths between rooms will persist until something "
-                + "like the deletion of a room requires them to change.")
-public class MappedRoom {
+import org.ektorp.support.TypeDiscriminator;
 
-    /** Room id */
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+@io.swagger.annotations.ApiModel(
+        description = "A room (or suite) is anchored into the map when it is registered. "
+                + "Assigned paths between rooms/suites will persist until something "
+                + "like the deletion of a room requires them to change.")
+public class Node {
+
+    /** Node id */
+    @JsonProperty("_id")
     @io.swagger.annotations.ApiModelProperty(
             value = "Mapped room id",
-            readOnly = true, 
+            readOnly = true,
+            name = "_id",
             example = "1",
             required = true)
-    private int id;
+    private String id;
+
+    /** Document revision */
+    @JsonProperty("_rev")
+    private String rev;
 
     /** Descriptive room info */
     @io.swagger.annotations.ApiModelProperty(
-            value = "Information about the room: descriptive elements, service URL, etc.")
+            value = "Information about the room or suite: descriptive elements, service URL, etc.")
     private RoomInfo info;
-    
-    /** Exit bindings: where the room is in the map */
+
+    /** Exit bindings: the other rooms' doors */
+
     @io.swagger.annotations.ApiModelProperty(
-            value = "Information about the room: descriptive elements, service URL, etc.")
+            value = "Exits: Doors to other rooms")
     private Exits exits;
-    
-    public int getId() {
+
+    @TypeDiscriminator
+    @io.swagger.annotations.ApiModelProperty(hidden = true)
+    private Coordinates coord;
+
+    @io.swagger.annotations.ApiModelProperty(hidden = true)
+    private String type;
+
+    public String getId() {
         return id;
     }
-    public void setId(int id) {
+    public void setId(String id) {
         this.id = id;
+    }
+
+    public String getRev() {
+        return rev;
+    }
+    public void setRev(String rev) {
+        this.rev = rev;
     }
 
     public RoomInfo getInfo() {
@@ -52,23 +77,39 @@ public class MappedRoom {
     public void setInfo(RoomInfo info) {
         this.info = info;
     }
-    
+
     public Exits getExits() {
         return exits;
     }
     public void setExits(Exits exits) {
         this.exits = exits;
     }
+
+    public Coordinates getCoord() {
+        return coord;
+    }
+    public void setCoord(Coordinates coord) {
+        this.coord = coord;
+    }
+    public String getType() {
+        return type;
+    }
+    public void setType(String type) {
+        this.type = type;
+    }
     @Override
     public String toString()  {
       StringBuilder sb = new StringBuilder();
-      sb.append("class MappedRoom {\n");
-      
+      sb.append("class Node {\n");
+
       sb.append("  id: ").append(id).append("\n");
+      sb.append("  rev: ").append(rev).append("\n");
+      sb.append("  type: ").append(type).append("\n");
+      sb.append("  coord: ").append(coord).append("\n");
       sb.append("  info: ").append(info).append("\n");
       sb.append("  exits: ").append(exits).append("\n");
       sb.append("}\n");
       return sb.toString();
     }
-   
+
 }

@@ -1,32 +1,36 @@
 <server description="Game On! Map Service">
 
+	<!-- Enable API discovery -->
+    <include location="${server.config.dir}/apiDiscovery.xml"/>
+
     <!-- Enable features -->
     <featureManager>
-	    <feature>localConnector-1.0</feature>
+        <feature>localConnector-1.0</feature>
         <feature>jaxrs-2.0</feature>
         <feature>cdi-1.2</feature>
         <feature>ssl-1.0</feature>
-        <feature>apiDiscovery-1.0</feature>
         <feature>couchdb-1.0</feature>
     </featureManager>
 
-    <httpEndpoint host="*" httpPort="-1" httpsPort="9447" id="defaultHttpEndpoint"/>
+    <httpEndpoint host="*" httpPort="-1" httpsPort="9443" id="defaultHttpEndpoint"/>
 
-    <quickStartSecurity userPassword="adminPassword" userName="admin"/>
     <keyStore id="defaultKeyStore" password="testOnlyKeystore"/>
+    <keyStore id="defaultTrustStore" location="truststore.jks" password="truststore"/>
 
     <!-- This is required to prevent the web apps from being lazily loaded -->
     <webContainer deferServletLoad="false"/>
 
-    <logging traceSpecification="*=info"/>
+    <logging traceSpecification="*=info:net.wasdev.gameon.*=all" copySystemStreams="false"/>
 
     <applicationMonitor dropinsEnabled="false" />
 
-    <couchdb id="couchdb" jndiName="couchdb/connector"
+    <couchdb id="couchdb" 
+      jndiName="couchdb/connector"
       libraryRef="couchdb-lib"
-      url="${env.MAP_COUCHDB_URL}"
-      username="mapDB" password="${env.MAP_COUCHDB_PASSWORD}"/>
- 
+      url="${env.COUCHDB_MAP_URL}"
+      username="${env.COUCHDB_MAP_USER}" 
+      password="${env.COUCHDB_MAP_PASSWORD}"/>
+
     <library id="couchdb-lib" apiTypeVisibility="spec,ibm-api,api,third-party" >
         <fileset dir='${server.config.dir}/lib' />
     </library>
@@ -34,4 +38,5 @@
     <webApplication contextRoot="/map" id="map-app" location="map-app.war">
       <classloader apiTypeVisibility="spec,ibm-api,api,third-party" commonLibraryRef="couchdb-lib"></classloader>
     </webApplication>
+
 </server>

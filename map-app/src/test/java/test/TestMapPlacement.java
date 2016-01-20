@@ -15,6 +15,12 @@
  *******************************************************************************/ 
 package test;
 
+import org.junit.Test;
+
 public class TestMapPlacement {
 
+    @Test
+    public void testAddRooms() {
+        
+    }
 }

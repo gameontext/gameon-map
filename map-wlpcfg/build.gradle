@@ -1,34 +1,35 @@
 apply plugin: 'eclipse'
 
 buildscript {
-	repositories {
-	    mavenCentral()
-	}
+    repositories {
+        mavenCentral()
+    }
 
-	dependencies {
-		classpath 'com.bmuschko:gradle-docker-plugin:2.6'
-	}
+    dependencies {
+        classpath 'com.bmuschko:gradle-docker-plugin:2.6'
+    }
 }
 
 def dockerHost = "https://localhost:2376"
 if (null != System.getenv("DOCKER_HOST"))
 {
-	dockerHost = System.getenv('DOCKER_HOST')
+    dockerHost = System.getenv('DOCKER_HOST')
 
-	if (dockerHost.indexOf('tcp') == 0)
-	{
-		dockerHost = dockerHost.replace('tcp','https')
-	}
+    if (dockerHost.indexOf('tcp') == 0)
+    {
+        dockerHost = dockerHost.replace('tcp','https')
+    }
 }
 
 def dockerCertPath = ""
 if (null != System.getenv('DOCKER_CERT_PATH')){
-	dockerCertPath = System.getenv('DOCKER_CERT_PATH')
+    dockerCertPath = System.getenv('DOCKER_CERT_PATH')
 }
 
 def localEnvironment = ["LICENSE=accept",
-			"REGISTRATION_SECRET=" + System.getenv('REGISTRATION_SECRET'),
-			"QUERY_SECRET=" + System.getenv('QUERY_SECRET')]
+            "REGISTRATION_SECRET=" + System.getenv('REGISTRATION_SECRET'),
+            "QUERY_SECRET=" + System.getenv('QUERY_SECRET'),
+            "MAP_HTTPS_PORT=" + System.getenv('MAP_HTTPS_PORT')]
 
 def etcdEnvironment = ["LICENSE=accept", "ETCDCTL_ENDPOINT=http://etcd:4001"]
 
@@ -59,7 +60,7 @@ docker {
 }
 
 task buildDockerImage(type: DockerBuildImage, dependsOn: ['copyApplication', 'copyCouchdb']) {
-	inputDir = file('.')
+    inputDir = file('.')
     tag = 'gameon-map'
     quiet = false
 }
@@ -70,30 +71,31 @@ task stopCurrentContainer(type: DockerStopContainer) {
 }
 
 task removeCurrentContainer(type: DockerRemoveContainer) {
-	targetContainerId { "gameon-map" }
+    targetContainerId { "gameon-map" }
 }
 
 task createNewContainer(type: DockerCreateContainer) {
-	targetImageId { "gameon-map" }
-	containerName = "gameon-map"
-	portBindings = ['9081:9081']
-	env = localEnvironment
+    targetImageId { "gameon-map" }
+    containerName = "gameon-map"
+    portBindings = ['9447:9443']
+    links = ['map-couchdb:map-couchdb']
+    env = localEnvironment
 }
 
 task startNewContainer(type: DockerStartContainer) {
-	dependsOn createNewContainer
-	targetContainerId { "gameon-map" }
+    dependsOn createNewContainer
+    targetContainerId { "gameon-map" }
 }
 
 task createNewEtcdContainer(type: DockerCreateContainer) {
-	targetImageId { "gameon-map" }
-	containerName = "gameon-map"
-	portBindings = ['9081:9081']
-	env = etcdEnvironment
-	links = ["etcd:etcd"]
+    targetImageId { "gameon-map" }
+    containerName = "gameon-map"
+    portBindings = ['9447:9443']
+    env = etcdEnvironment
+    links = ['etcd:etcd', 'map-couchdb:map-couchdb']
 }
 
 task startNewEtcdContainer(type: DockerStartContainer) {
-	dependsOn createNewEtcdContainer
-	targetContainerId { "gameon-map" }
+    dependsOn createNewEtcdContainer
+    targetContainerId { "gameon-map" }
 }
