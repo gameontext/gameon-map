@@ -15,50 +15,55 @@
  *******************************************************************************/
 package org.gameon.map.models;
 
-@io.swagger.annotations.ApiModel(
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
+
+@ApiModel(
         description = "Mutable information: descriptive elements, service URL, etc.")
+@JsonInclude(Include.NON_EMPTY)
 public class RoomInfo {
 
     /** name of room (short / url-friendly) */
-    @io.swagger.annotations.ApiModelProperty(
+    String name;
+
+    /** Connection details */
+    ConnectionDetails connectionDetails = null;
+
+    /** full name */
+    String fullName;
+
+    /** Room door */
+    String description;
+
+    /** Optional door descriptions */
+    Doors doors;
+
+    @ApiModelProperty(
             value = "Short name of the target room (small title bars)",
             example = "First Room",
             required = true)
-    String name;
-    
-    /** full name */
-    @io.swagger.annotations.ApiModelProperty(
-            value = "Human-friendly room name",
-            example = "The First Room",
-            required = false)
-    String fullName;
-    
-    /** Room door */
-    @io.swagger.annotations.ApiModelProperty(
-            value = "Player-friendly room description (140 characters)",
-            example = "A helpful room with doors in every possible direction.",
-            required = false)
-    String description;
-    
-    /** Optional door descriptions */
-    @io.swagger.annotations.ApiModelProperty(
-            value = "Descriptions for the doors used to enter the room. ",
-            required = false)
-    Doors doors;
-
-    @io.swagger.annotations.ApiModelProperty(
-            value = "WebSocket URL used by the mediator to connect to the room on the player's behalf",
-            example = "wss://secondroom:9008/barn/ws",
-            required = true)
-    String wss_url = null;
-    
     public String getName() {
         return name;
     }
     public void setName(String name) {
         this.name = name;
     }
-    
+
+    @ApiModelProperty(required = true, value = "")
+    public ConnectionDetails getConnectionDetails() {
+        return connectionDetails;
+    }
+    public void setConnectionDetails(ConnectionDetails connectionDetails) {
+        this.connectionDetails = connectionDetails;
+    }
+
+    @ApiModelProperty(
+            value = "Human-friendly room name",
+            example = "The First Room",
+            required = false)
     public String getFullName() {
         return fullName;
     }
@@ -66,26 +71,25 @@ public class RoomInfo {
         this.fullName = fullName;
     }
 
+    @ApiModelProperty(
+            value = "Player-friendly room description (140 characters)",
+            example = "A helpful room with doors in every possible direction.",
+            required = false)
     public String getDescription() {
         return description;
     }
     public void setDescription(String description) {
         this.description = description;
     }
-    
+
+    @ApiModelProperty(
+            value = "Descriptions for the doors used to enter the room",
+            required = false)
     public Doors getDoors() {
         return doors;
     }
     public void setDoors(Doors doors) {
         this.doors = doors;
-    }
-    
-    public String getWss_url() {
-        return wss_url;
-    }
-
-    public void setWss_url(String wss_url) {
-        this.wss_url = wss_url;
     }
 
     @Override
@@ -94,8 +98,9 @@ public class RoomInfo {
       sb.append("class RoomInfo {\n");
       sb.append("  name: ").append(name).append("\n");
       sb.append("  fullName: ").append(fullName).append("\n");
-      sb.append("  door: ").append(description).append("\n");
+      sb.append("  description: ").append(description).append("\n");
       sb.append("  doors: ").append(doors).append("\n");
+      sb.append("  connectionDetails: ").append(connectionDetails).append("\n");
       sb.append("}\n");
       return sb.toString();
     }

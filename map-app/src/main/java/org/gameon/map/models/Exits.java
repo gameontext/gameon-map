@@ -15,15 +15,19 @@
  *******************************************************************************/
 package org.gameon.map.models;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+
 /**
- * Room-centric view of an established path. 
+ * Room-centric view of an established path.
  */
 @io.swagger.annotations.ApiModel(
         description = "When a room is placed in the map, paths are created between it and other rooms. "
                 + "Each exit provides the door and URL required for the player to traverse the path "
                 + "to the target room.")
+@JsonInclude(Include.NON_EMPTY)
 public class Exits {
-    
+
     private Exit n = null;
     private Exit w = null;
     private Exit s = null;
@@ -96,7 +100,7 @@ public class Exits {
     public void setD(Exit d) {
         this.d = d;
     }
-    
+
 
     @Override
     public String toString()  {

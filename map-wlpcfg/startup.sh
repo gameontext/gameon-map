@@ -27,7 +27,13 @@ else
   curl --fail -v -X GET ${AUTH_HOST}/_config/admins/${COUCHDB_MAP_USER}
   if [ $? -eq 22 ]; then
       curl -X PUT ${COUCHDB_MAP_URL}/_config/admins/${COUCHDB_MAP_USER} -d \"${COUCHDB_MAP_PASSWORD}\"
+  fi
+
+  curl --fail -v -X GET ${AUTH_HOST}/map_repository
+  if [ $? -eq 22 ]; then
+      # Create the repository, and the views that we need!
       curl -X PUT $AUTH_HOST/map_repository
+      curl -X POST -H "Content-Type: application/json" --data @site.json '' ${AUTH_HOST}/
   fi
 
   /opt/ibm/wlp/bin/server run defaultServer

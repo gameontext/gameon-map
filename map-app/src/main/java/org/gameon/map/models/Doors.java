@@ -15,13 +15,19 @@
  *******************************************************************************/
 package org.gameon.map.models;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
+
 /**
- * Descriptions for the doors in the room. These may be used by other rooms to describe the appearance of the door. 
- * Keys should be relative to this room (e, w, n, s, u, d). Values are simple string descriptions for the outside 
- * of the door. If the string value references a direction at all, it should be the opposite direction:for the 
- * East door, the direction mentioned should be West. Descriptions are optional, and will be generated if absent. 
+ * Descriptions for the doors in the room. These may be used by other rooms to describe the appearance of the door.
+ * Keys should be relative to this room (e, w, n, s, u, d). Values are simple string descriptions for the outside
+ * of the door. If the string value references a direction at all, it should be the opposite direction:for the
+ * East door, the direction mentioned should be West. Descriptions are optional, and will be generated if absent.
  */
-@io.swagger.annotations.ApiModel(
+@ApiModel(
         description = "Descriptions for the doors in the room. These may be used by other rooms "
                 + "to describe the appearance of the door. Keys should be relative to this "
                 + "room (e, w, n, s, u, d). Values are simple string descriptions for the "
@@ -29,8 +35,9 @@ package org.gameon.map.models;
                 + "it should be the opposite direction:for the East door, the direction "
                 + "mentioned should be West. Descriptions are optional, and will be generated "
                 + "if absent.")
+@JsonInclude(Include.NON_EMPTY)
 public class Doors {
-    
+
     private String n = null;
     private String w = null;
     private String s = null;
@@ -38,7 +45,18 @@ public class Doors {
     private String u = null;
     private String d = null;
 
-    @io.swagger.annotations.ApiModelProperty(
+    public Doors() {};
+
+    public Doors(String prefix) {
+        n = prefix + " North door";
+        s = prefix + " South door";
+        e = prefix + " East door";
+        w = prefix + " West door";
+        u = prefix + " Hatch door";
+        d = prefix + " Trap door";
+    }
+
+    @ApiModelProperty(
             value = "North door (140 characters)",
             example = "A knobbly wooden door with a rough carving or a friendly face",
             required = false)
@@ -50,7 +68,7 @@ public class Doors {
         this.n = n;
     }
 
-    @io.swagger.annotations.ApiModelProperty(
+    @ApiModelProperty(
             value = "South door (140 characters)",
             example = "A warped wooden door with a friendly face branded on the corner",
             required = false)
@@ -62,7 +80,7 @@ public class Doors {
         this.s = s;
     }
 
-    @io.swagger.annotations.ApiModelProperty(
+    @ApiModelProperty(
             value = "East door (140 characters)",
             example = "A polished wooden door with an inlaid friendly face",
             required = false)
@@ -74,7 +92,7 @@ public class Doors {
         this.e = e;
     }
 
-    @io.swagger.annotations.ApiModelProperty(
+    @ApiModelProperty(
             value = "West door (140 characters)",
             example = "A fake wooden door with stickers of friendly faces plastered all over it",
             required = false)
@@ -86,7 +104,7 @@ public class Doors {
         this.w = w;
     }
 
-    @io.swagger.annotations.ApiModelProperty(
+    @ApiModelProperty(
             value = "Door in the ceiling (Up) (140 characters)",
             example = "A scuffed and scratched oaken trap door",
             required = false)
@@ -98,7 +116,7 @@ public class Doors {
         this.u = u;
     }
 
-    @io.swagger.annotations.ApiModelProperty(
+    @ApiModelProperty(
             value = "Door in the floor (Down) (140 characters)",
             example = "A rough-cut particle board hatch",
             required = false)
@@ -109,7 +127,6 @@ public class Doors {
     public void setD(String d) {
         this.d = d;
     }
-    
 
     @Override
     public String toString()  {
