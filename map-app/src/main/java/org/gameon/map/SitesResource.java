@@ -17,7 +17,7 @@ package org.gameon.map;
 
 import java.net.HttpURLConnection;
 import java.net.URI;
-import java.util.Collections;
+import java.util.List;
 
 import javax.inject.Inject;
 import javax.ws.rs.Consumes;
@@ -32,93 +32,104 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import org.gameon.map.couchdb.MapRepository;
-import org.gameon.map.models.Node;
 import org.gameon.map.models.RoomInfo;
+import org.gameon.map.models.Site;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 
 /**
- * Root of CRUD operations on or with rooms
+ * Root of CRUD operations on or with sites
  */
-@Path("/rooms")
-@io.swagger.annotations.Api( value = "rooms")
-public class RoomsResource {
-    
+@Path("/sites")
+@io.swagger.annotations.Api( value = "sites")
+public class SitesResource {
+
     @Inject
     protected MapRepository mapRepository;
 
     /**
-     * GET /map/v1/rooms
+     * GET /map/v1/sites
      */
     @GET
-    @io.swagger.annotations.ApiOperation(value = "List rooms",
-        notes = "Get a list of registered rooms. Use link headers for pagination.",
-        response = Node.class,
+    @io.swagger.annotations.ApiOperation(value = "List sites",
+        notes = "Get a list of registered sites. Use link headers for pagination.",
+        response = Site.class,
         responseContainer = "List")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response listRooms() {
-        // TODO: query/filter parameters, including specification of fields to include in list.
-        
-        return Response.ok(Collections.emptyList()).build();
+    public Response listAll() {
+        // TODO: query/filter parameters:
+        // owner
+        // fields to include in list (i.e. just Exits).
+
+        List<JsonNode> sites = mapRepository.listSites();
+
+        return Response.ok(sites).build();
     }
 
-    
+
     /**
-     * POST /map/v1/rooms
+     * POST /map/v1/sites
+     * @throws JsonProcessingException
      */
     @POST
     @io.swagger.annotations.ApiOperation(value = "Create a room",
         notes = "When a room is registered, the map will generate the appropriate paths to "
                 + "place the room into the map. The map wll only generate links using standard 2-d "
                 + "compass directions. The 'exits' attribute in the return value describes "
-                + "connected/adjacent rooms. ",
-        response = Node.class,
+                + "connected/adjacent sites. ",
+        response = Site.class,
         code = HttpURLConnection.HTTP_CREATED )
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response createRoom(
-            @io.swagger.annotations.ApiParam(value = "New room attributes", required = true) RoomInfo newRoom) {
-        
-        Node mappedRoom = mapRepository.connectRoom(newRoom);
-        
-        return Response.created(URI.create("/map/v1/rooms/" + mappedRoom.getId())).entity(mappedRoom).build();
+            @io.swagger.annotations.ApiParam(value = "New room attributes", required = true) RoomInfo newRoom) throws JsonProcessingException {
+
+        // NOTE: Thrown MapExceptions are mapped (see MapModificationException)
+        Site mappedRoom = mapRepository.connectRoom(newRoom);
+        return Response.created(URI.create("/map/v1/sites/" + mappedRoom.getId())).entity(mappedRoom).build();
     }
-    
+
     /**
-     * GET /map/v1/rooms/:id
+     * GET /map/v1/sites/:id
+     * @throws JsonProcessingException
      */
     @GET
     @Path("{id}")
     @io.swagger.annotations.ApiOperation(value = "Get a specific room",
         notes = "",
-        response = Node.class )
+        response = Site.class )
     @Produces(MediaType.APPLICATION_JSON)
     public Response getRoom(
-            @io.swagger.annotations.ApiParam(value = "target room id", required = true) @PathParam("id") String roomId) {
-        return Response.ok(new Node()).build();
+            @io.swagger.annotations.ApiParam(value = "target room id", required = true) @PathParam("id") String roomId) throws JsonProcessingException {
+
+        Site mappedRoom = mapRepository.getRoom(roomId);
+        return Response.ok(mappedRoom).build();
     }
-    
-    
+
+
     /**
-     * PUT /map/v1/rooms/:id
+     * PUT /map/v1/sites/:id
+     * @throws JsonProcessingException
      */
     @PUT
     @Path("{id}")
     @io.swagger.annotations.ApiOperation(value = "Update a specific room",
         notes = "",
-        response = Node.class )
+        response = Site.class )
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response updateRoom(
-            @io.swagger.annotations.ApiParam(value = "target room id", required = true) @PathParam("id") String roomId, 
-            @io.swagger.annotations.ApiParam(value = "Updated room attributes", required = true) RoomInfo newRoom) {
+            @io.swagger.annotations.ApiParam(value = "target room id", required = true) @PathParam("id") String roomId,
+            @io.swagger.annotations.ApiParam(value = "Updated room attributes", required = true) RoomInfo roomInfo) throws JsonProcessingException {
 
-        System.out.println("PUT ROOM: " + newRoom);
-
-        return Response.ok(new Node()).build();
+        Site mappedRoom = mapRepository.updateRoom(roomId, roomInfo);
+        return Response.ok(mappedRoom).build();
     }
-    
-    
+
+
     /**
-     * DELETE /map/v1/rooms/:id
+     * DELETE /map/v1/sites/:id
      */
     @DELETE
     @Path("{id}")
@@ -130,6 +141,8 @@ public class RoomsResource {
     })
     public Response deleteRoom(
             @io.swagger.annotations.ApiParam(value = "target room id", required = true) @PathParam("id") String roomId) {
+
+        mapRepository.deleteSite(roomId);
         return Response.noContent().build();
     }
 }
