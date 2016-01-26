@@ -55,6 +55,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  */
 public class SiteDocuments {
 
+    static final String DESIGN_DOC = "_design/site";
+
     final CouchDbConnector db;
     final ViewQuery allEmptySites;
     final ViewQuery all;
@@ -63,8 +65,8 @@ public class SiteDocuments {
 
     protected SiteDocuments(CouchDbConnector db) {
         this.db = db;
-        all = new ViewQuery().designDocId("_design/Site").viewName("all");
-        allEmptySites = new ViewQuery().designDocId("_design/Site").viewName("empty_sites");
+        all = new ViewQuery().designDocId(DESIGN_DOC).viewName("all");
+        allEmptySites = new ViewQuery().designDocId(DESIGN_DOC).viewName("empty_sites");
 
         mapper = new ObjectMapper();
     }
@@ -101,9 +103,10 @@ public class SiteDocuments {
         // Now we need to prep the response (with exits)..
         Exits exits = getExits(candidateSite.getCoord());
 
-        // Make sure we have new empty sites
+        // Make sure we have new empty sites (and add those to exits)
         createEmptyNeighbors(candidateSite.getCoord(), exits);
 
+        // Set and return the response!
         candidateSite.setExits(exits);
         return candidateSite;
     }
@@ -152,9 +155,13 @@ public class SiteDocuments {
      * @throws JsonProcessingException
      */
     public String deleteSite(String id) throws DocumentNotFoundException {
+        System.out.println("HERE!!");
         // Get the site first (need the coordinates)
-        Site site = getSite(id);
+        Site site = db.get(Site.class, id);
         Coordinates coord = site.getCoord();
+
+        System.out.println(site);
+        System.out.println(coord);
 
         String revision = db.delete(site);
 
@@ -173,7 +180,7 @@ public class SiteDocuments {
      */
     protected List<Site> getByCoordinate(int x, int y) {
         ViewQuery getByCoordinate = new ViewQuery()
-                .designDocId("_design/Site")
+                .designDocId(DESIGN_DOC)
                 .viewName("uniqueSite")
                 .reduce(false)
                 .includeDocs(true)
@@ -193,7 +200,7 @@ public class SiteDocuments {
         // directional index (N/S/E/W/U/D), but skip this node (" "), as we have
         // that already.
         ViewQuery getNeighbors = new ViewQuery()
-                .designDocId("_design/Site")
+                .designDocId(DESIGN_DOC)
                 .viewName("neighbors")
                 .reduce(false) // do not reduce the result
                 .includeDocs(true) // include referenced documents
@@ -288,7 +295,7 @@ public class SiteDocuments {
      */
     protected Site getEmptySite() {
         ViewQuery oneEmptySite = new ViewQuery()
-                .designDocId("_design/Site")
+                .designDocId(DESIGN_DOC)
                 .viewName("empty_sites")
                 .limit(1);
 

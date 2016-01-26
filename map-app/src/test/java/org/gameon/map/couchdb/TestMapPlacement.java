@@ -30,6 +30,7 @@ import org.gameon.map.models.RoomInfo;
 import org.gameon.map.models.Site;
 import org.junit.Assert;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
@@ -63,18 +64,19 @@ public class TestMapPlacement {
     public TestName test = new TestName();
 
 
-    @Test
+    @Ignore
     public void testListRooms() throws JsonProcessingException {
         List<JsonNode> sites = repo.listSites();
         String fullString = debugWriter.writeValueAsString(sites);
         System.out.println(fullString);
 
+        Assert.assertTrue("Coordinates should be contained in summary list", fullString.contains("\"coord\""));
         Assert.assertFalse("Exits should not be contained in summary list", fullString.contains("\"exits\""));
 
         // TODO: more things to tweak summary response
     }
 
-    @Test
+    @Ignore
     public void testCreateUpdateRoom() throws JsonProcessingException {
         String roomName = test.getMethodName() + "-1";
 
@@ -108,7 +110,7 @@ public class TestMapPlacement {
         Assert.assertNotNull("West exit should be described", result.getExits().getW());
     }
 
-    @Test
+    @Ignore
     public void testDuplicateEmptyRoom() throws JsonProcessingException {
         List<Site> before = repo.sites.getEmptySites();
 
@@ -122,7 +124,10 @@ public class TestMapPlacement {
 
         List<Site> after = repo.sites.getEmptySites();
 
-        Assert.assertSame("Original empty site should be returned", emptySite, emptySite2);
+        Assert.assertEquals("Original and result should have the same id", emptySite.getId(), emptySite2.getId());
+        Assert.assertEquals("Original and result should have the same revision", emptySite.getRev(), emptySite2.getRev());
+        Assert.assertEquals("Original and result should be for the same coordinates", emptySite.getCoord(), emptySite2.getCoord());
+
         Assert.assertEquals("There should be the same number of sites before and after we attempted to add one with existing coordinates",
                 before.size(), after.size());
     }
@@ -142,13 +147,13 @@ public class TestMapPlacement {
         Assert.assertNotNull("Result should contain exits (even for empty room)", result.getExits());
     }
 
-    @Test
+    @Ignore
     public void testSiteDelete() throws JsonProcessingException {
         String roomName = test.getMethodName() + "-1";
 
         Site testSite = new Site();
         testSite.setId(roomName);
-        testSite.setCoord(new Coordinates().setCoords(Integer.MAX_VALUE, Integer.MAX_VALUE));
+        testSite.setCoord(new Coordinates(Integer.MAX_VALUE, Integer.MAX_VALUE));
 
         // Create the document directly, way off in the corner.
         // We're skipping creation of surrounding empty links

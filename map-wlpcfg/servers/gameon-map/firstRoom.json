@@ -1,0 +1,23 @@
+{
+    "_id": "firstroom",
+    "owner": "game-on.org",
+    "info": {
+      "name": "First Room",
+      "connectionDetails": null,
+      "fullName": "The First Room",
+      "description": "A helpful room with doors in every possible direction.",
+      "doors": {
+        "n": "A knobbly wooden door with a rough carving or a friendly face",
+        "w": "A fake wooden door with stickers of friendly faces plastered all over it",
+        "s": "A warped wooden door with a friendly face branded on the corner",
+        "e": "A polished wooden door with an inlaid friendly face",
+        "u": "A scuffed and scratched oaken trap door",
+        "d": "A rough-cut particle board hatch"
+      }
+  },
+  "coord": {
+      "x": 0,
+      "y": 0
+  },
+  "type": "room"
+}

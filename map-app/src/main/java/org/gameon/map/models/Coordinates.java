@@ -6,11 +6,14 @@ public class Coordinates {
     int x;
     int y;
 
+    public Coordinates() {}
+
+
+
     @JsonIgnore
-    public Coordinates setCoords(int x, int y) {
+    public Coordinates(int x, int y) {
         this.x = x;
         this.y = y;
-        return this;
     }
 
     public int getX() {

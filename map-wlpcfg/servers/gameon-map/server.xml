@@ -27,9 +27,9 @@
     <couchdb id="couchdb" 
       jndiName="couchdb/connector"
       libraryRef="couchdb-lib"
-      url="${env.COUCHDB_MAP_URL}"
-      username="${env.COUCHDB_MAP_USER}" 
-      password="${env.COUCHDB_MAP_PASSWORD}"/>
+      url="${env.COUCHDB_URL}"
+      username="${env.COUCHDB_USER}"
+      password="${env.COUCHDB_PASSWORD}"/>
 
     <library id="couchdb-lib" apiTypeVisibility="spec,ibm-api,api,third-party" >
         <fileset dir='${server.config.dir}/lib' />

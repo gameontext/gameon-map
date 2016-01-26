@@ -20,6 +20,7 @@ import java.net.URI;
 import java.util.List;
 
 import javax.inject.Inject;
+import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
@@ -28,6 +29,7 @@ import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
@@ -43,10 +45,14 @@ import com.fasterxml.jackson.databind.JsonNode;
  */
 @Path("/sites")
 @io.swagger.annotations.Api( value = "sites")
+@Produces(MediaType.APPLICATION_JSON)
 public class SitesResource {
 
     @Inject
     protected MapRepository mapRepository;
+
+    @Context
+    HttpServletRequest httpRequest;
 
     /**
      * GET /map/v1/sites
@@ -56,7 +62,6 @@ public class SitesResource {
         notes = "Get a list of registered sites. Use link headers for pagination.",
         response = Site.class,
         responseContainer = "List")
-    @Produces(MediaType.APPLICATION_JSON)
     public Response listAll() {
         // TODO: query/filter parameters:
         // owner
@@ -64,7 +69,8 @@ public class SitesResource {
 
         List<JsonNode> sites = mapRepository.listSites();
 
-        return Response.ok(sites).build();
+        // TODO -- this should be done better. Stream, something.
+        return Response.ok().entity(sites.toString()).build();
     }
 
 
@@ -87,6 +93,10 @@ public class SitesResource {
 
         // NOTE: Thrown MapExceptions are mapped (see MapModificationException)
         Site mappedRoom = mapRepository.connectRoom(newRoom);
+
+        // This attribute should always be set, see the AuthFilter
+        mappedRoom.setOwner((String) httpRequest.getAttribute("player.id"));
+
         return Response.created(URI.create("/map/v1/sites/" + mappedRoom.getId())).entity(mappedRoom).build();
     }
 
@@ -104,6 +114,7 @@ public class SitesResource {
             @io.swagger.annotations.ApiParam(value = "target room id", required = true) @PathParam("id") String roomId) throws JsonProcessingException {
 
         Site mappedRoom = mapRepository.getRoom(roomId);
+        System.out.println(mappedRoom);
         return Response.ok(mappedRoom).build();
     }
 
