@@ -5,6 +5,7 @@ import java.util.logging.Level;
 
 import org.ektorp.ComplexKey;
 import org.ektorp.CouchDbConnector;
+import org.ektorp.DocumentNotFoundException;
 import org.ektorp.UpdateConflictException;
 import org.ektorp.ViewQuery;
 import org.ektorp.ViewResult;
@@ -115,7 +116,7 @@ public class SiteDocuments {
      * @return Complete information for the specified room/site
      * @throws JsonProcessingException
      */
-    public Site getSite(String id) {
+    public Site getSite(String id) throws DocumentNotFoundException {
         // get the document from the DB
         Site site = db.get(Site.class, id);
         if ( site != null ) {
@@ -147,14 +148,20 @@ public class SiteDocuments {
      * DELETE
      *
      * @param id of site to delete
+     * @return the revision of the deleted document
      * @throws JsonProcessingException
      */
-    public void deleteSite(String id) {
-        // Get the site (includes reconstructing the exits)
+    public String deleteSite(String id) throws DocumentNotFoundException {
+        // Get the site first (need the coordinates)
         Site site = getSite(id);
-        db.delete(site);
+        Coordinates coord = site.getCoord();
 
+        String revision = db.delete(site);
 
+        // Replace this site with an empty placeholder
+        createEmptySite(coord);
+
+        return revision;
     }
 
     /**
@@ -331,19 +338,21 @@ public class SiteDocuments {
      * @param exits List of exits to be completed
      */
     protected void createEmptyNeighbors(Coordinates newRoom, Exits exits) {
-        if ( exits.getN() == null ) {
+        // Protect against MAX/MIN values so we can use the corners for testing.
+
+        if ( exits.getN() == null && newRoom.getY() < Integer.MAX_VALUE ) {
             Site newSite = createEmptySite(newRoom.getX(), newRoom.getY()+1);
             assignExit(exits, "N", newSite);
         }
-        if ( exits.getS() == null ) {
+        if ( exits.getS() == null && newRoom.getY() > Integer.MIN_VALUE  ) {
             Site newSite = createEmptySite(newRoom.getX(), newRoom.getY()-1);
             assignExit(exits, "S", newSite);
         }
-        if ( exits.getE() == null) {
+        if ( exits.getE() == null  && newRoom.getX() < Integer.MAX_VALUE ) {
             Site newSite = createEmptySite(newRoom.getX()+1, newRoom.getY());
             assignExit(exits, "E", newSite);
         }
-        if ( exits.getW() == null) {
+        if ( exits.getW() == null  && newRoom.getX() > Integer.MIN_VALUE ) {
             Site newSite = createEmptySite(newRoom.getX()-1, newRoom.getY());
             assignExit(exits, "W", newSite);
         }
