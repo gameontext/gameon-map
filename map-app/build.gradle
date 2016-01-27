@@ -20,6 +20,7 @@ dependencies {
 
     // couchdb dependencies
     couchdb 'org.ektorp:org.ektorp:1.4.2'
+    couchdb 'com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider:2.2.2'
     couchdb 'org.slf4j:slf4j-jdk14:1.6.4'
 
     providedCompile configurations.couchdb

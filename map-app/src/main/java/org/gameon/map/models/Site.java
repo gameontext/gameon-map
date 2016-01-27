@@ -77,8 +77,7 @@ public class Site {
 
     public Site(int x, int y) {
         type = "placeholder";
-        coord = new Coordinates();
-        coord.setCoords(x, y);
+        coord = new Coordinates(x, y);
     }
 
     public String getId() {

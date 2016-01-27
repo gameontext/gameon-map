@@ -19,18 +19,18 @@ import java.net.MalformedURLException;
 import java.util.List;
 
 import org.ektorp.CouchDbInstance;
+import org.ektorp.DocumentNotFoundException;
 import org.ektorp.http.HttpClient;
 import org.ektorp.http.StdHttpClient;
 import org.ektorp.impl.StdCouchDbInstance;
 import org.gameon.map.models.ConnectionDetails;
+import org.gameon.map.models.Coordinates;
 import org.gameon.map.models.Doors;
 import org.gameon.map.models.RoomInfo;
 import org.gameon.map.models.Site;
-import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
@@ -60,54 +60,24 @@ public class TestMapPlacement {
         debugWriter = repo.sites.mapper.writerWithDefaultPrettyPrinter();
     }
 
-    @AfterClass
-    public static void afterClass() {
-    }
-
-    @Before
-    public void before() throws MalformedURLException {
-    }
-
-    @After
-    public void after() {
-    }
-
     @Rule
     public TestName test = new TestName();
 
 
-    @Test
-    public void testDuplicateEmptyRoom() throws JsonProcessingException {
-        List<Site> before = repo.sites.getEmptySites();
-
-        // Grab an empty room
-        Site emptySite = repo.sites.getEmptySite();
-        System.out.println(debugWriter.writeValueAsString(emptySite));
-
-        // Try adding another room with the same coordinates
-        Site emptySite2 = repo.sites.createEmptySite(emptySite.getCoord());
-        System.out.println(debugWriter.writeValueAsString(emptySite2));
-
-        List<Site> after = repo.sites.getEmptySites();
-
-        Assert.assertSame("Original empty site should be returned", emptySite, emptySite2);
-        Assert.assertEquals("There should be the same number of sites before and after we attempted to add one with existing coordinates",
-                before.size(), after.size());
-    }
-
-    @Test
+    @Ignore
     public void testListRooms() throws JsonProcessingException {
         List<JsonNode> sites = repo.listSites();
         String fullString = debugWriter.writeValueAsString(sites);
         System.out.println(fullString);
 
+        Assert.assertTrue("Coordinates should be contained in summary list", fullString.contains("\"coord\""));
         Assert.assertFalse("Exits should not be contained in summary list", fullString.contains("\"exits\""));
 
         // TODO: more things to tweak summary response
     }
 
-    @Test
-    public void testCreateRoom() throws JsonProcessingException {
+    @Ignore
+    public void testCreateUpdateRoom() throws JsonProcessingException {
         String roomName = test.getMethodName() + "-1";
 
         List<JsonNode> before = repo.sites.listSites();
@@ -140,13 +110,77 @@ public class TestMapPlacement {
         Assert.assertNotNull("West exit should be described", result.getExits().getW());
     }
 
+    @Ignore
+    public void testDuplicateEmptyRoom() throws JsonProcessingException {
+        List<Site> before = repo.sites.getEmptySites();
+
+        // Grab an empty room
+        Site emptySite = repo.sites.getEmptySite();
+        System.out.println(debugWriter.writeValueAsString(emptySite));
+
+        // Try adding another room with the same coordinates
+        Site emptySite2 = repo.sites.createEmptySite(emptySite.getCoord());
+        System.out.println(debugWriter.writeValueAsString(emptySite2));
+
+        List<Site> after = repo.sites.getEmptySites();
+
+        Assert.assertEquals("Original and result should have the same id", emptySite.getId(), emptySite2.getId());
+        Assert.assertEquals("Original and result should have the same revision", emptySite.getRev(), emptySite2.getRev());
+        Assert.assertEquals("Original and result should be for the same coordinates", emptySite.getCoord(), emptySite2.getCoord());
+
+        Assert.assertEquals("There should be the same number of sites before and after we attempted to add one with existing coordinates",
+                before.size(), after.size());
+    }
+
     @Test
     public void testGetRoom() throws JsonProcessingException {
-
         // Grab an empty room
         Site emptySite = repo.sites.getEmptySite();
 
         Site result = repo.sites.getSite(emptySite.getId());
+
+        Assert.assertEquals("Original and result should have the same id", emptySite.getId(), result.getId());
+        Assert.assertEquals("Original and result should have the same revision", emptySite.getRev(), result.getRev());
+        Assert.assertEquals("Original and result should be for the same coordinates", emptySite.getCoord(), result.getCoord());
+
+        Assert.assertNull("Original fetch of empty site from the DB should not contain exits", emptySite.getExits());
+        Assert.assertNotNull("Result should contain exits (even for empty room)", result.getExits());
+    }
+
+    @Ignore
+    public void testSiteDelete() throws JsonProcessingException {
+        String roomName = test.getMethodName() + "-1";
+
+        Site testSite = new Site();
+        testSite.setId(roomName);
+        testSite.setCoord(new Coordinates(Integer.MAX_VALUE, Integer.MAX_VALUE));
+
+        // Create the document directly, way off in the corner.
+        // We're skipping creation of surrounding empty links
+        repo.sites.db.create(testSite);
+        Assert.assertNotNull(testSite.getId());
+
+        // RETRIEVE
+        Site before = repo.sites.getSite(testSite.getId());
+        Assert.assertEquals("Original and result should have the same id", testSite.getId(), before.getId());
+        Assert.assertEquals("Original and result should have the same revision", testSite.getRev(), before.getRev());
+        System.out.println(debugWriter.writeValueAsString(before));
+
+        // DELETE
+        String revision = repo.sites.deleteSite(testSite.getId());
+        Assert.assertNotNull("Deleted revision should not be null", revision);
+
+        try {
+            Site after = repo.sites.getSite(testSite.getId());
+            Assert.fail("Expected DocumentNotFoundException when requesting a deleted document");
+        } catch(DocumentNotFoundException dne) {
+        }
+
+        List<Site> xy_replace = repo.sites.getByCoordinate(Integer.MAX_VALUE, Integer.MAX_VALUE);
+        Assert.assertEquals("A single replacement should be created for the same coordinates", 1, xy_replace.size());
+
+        // attempt to delete the replacement
+        repo.sites.db.delete(xy_replace.get(0));
     }
 
 }

@@ -41,7 +41,8 @@ public class MapResource {
     @io.swagger.annotations.ApiOperation(value = "Check application health",
         notes = "")
     public Response healthCheck() {
-        if ( mapRepository != null ) {
+        System.out.println("Checking health: " + mapRepository);
+        if ( mapRepository != null && mapRepository.connectionReady() ) {
             return Response.ok().build();
         } else {
             return Response.serverError().build();

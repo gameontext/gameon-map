@@ -11,11 +11,14 @@ import org.ektorp.CouchDbConnector;
 import org.ektorp.CouchDbInstance;
 import org.gameon.map.Log;
 import org.gameon.map.MapModificationException;
+import org.gameon.map.models.Coordinates;
+import org.gameon.map.models.Exits;
 import org.gameon.map.models.RoomInfo;
 import org.gameon.map.models.Site;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @ApplicationScoped
 public class MapRepository {
@@ -25,9 +28,14 @@ public class MapRepository {
 
     protected SiteDocuments sites;
 
+    protected ObjectMapper mapper;
+
     @PostConstruct
     protected void postConstruct() {
         String dbname = "map_repository";
+
+        // Create an ObjectMapper for marshalling responses back to REST clients
+        mapper = new ObjectMapper();
 
         try {
             // Connect to the database with the specified
@@ -36,6 +44,11 @@ public class MapRepository {
 
             // Ensure required views exist
             sites = new SiteDocuments(dbc);
+
+            // Make sure that first room has neighbors (should always do, but.. )
+            Exits exits = new Exits();
+            sites.createEmptyNeighbors(new Coordinates(0, 0), exits);
+
         } catch (Exception e) {
             // Log the warning, and then re-throw to prevent this class from going into service,
             // which will prevent injection to the Health check, which will make the app stay down.
@@ -44,6 +57,9 @@ public class MapRepository {
         }
     }
 
+    public boolean connectionReady() {
+        return true;
+    }
 
     /**
      * List of all not-empty rooms
@@ -105,9 +121,12 @@ public class MapRepository {
      */
     public void deleteSite(String id) {
         Log.log(Level.INFO, this, "Delete site: {0}", id);
+
         sites.deleteSite(id);
     }
 
 
-
+    public ObjectMapper mapper() {
+        return mapper;
+    }
 }

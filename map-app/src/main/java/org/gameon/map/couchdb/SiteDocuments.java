@@ -5,6 +5,7 @@ import java.util.logging.Level;
 
 import org.ektorp.ComplexKey;
 import org.ektorp.CouchDbConnector;
+import org.ektorp.DocumentNotFoundException;
 import org.ektorp.UpdateConflictException;
 import org.ektorp.ViewQuery;
 import org.ektorp.ViewResult;
@@ -54,6 +55,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  */
 public class SiteDocuments {
 
+    static final String DESIGN_DOC = "_design/site";
+
     final CouchDbConnector db;
     final ViewQuery allEmptySites;
     final ViewQuery all;
@@ -62,8 +65,8 @@ public class SiteDocuments {
 
     protected SiteDocuments(CouchDbConnector db) {
         this.db = db;
-        all = new ViewQuery().designDocId("_design/Site").viewName("all");
-        allEmptySites = new ViewQuery().designDocId("_design/Site").viewName("empty_sites");
+        all = new ViewQuery().designDocId(DESIGN_DOC).viewName("all");
+        allEmptySites = new ViewQuery().designDocId(DESIGN_DOC).viewName("empty_sites");
 
         mapper = new ObjectMapper();
     }
@@ -100,9 +103,10 @@ public class SiteDocuments {
         // Now we need to prep the response (with exits)..
         Exits exits = getExits(candidateSite.getCoord());
 
-        // Make sure we have new empty sites
+        // Make sure we have new empty sites (and add those to exits)
         createEmptyNeighbors(candidateSite.getCoord(), exits);
 
+        // Set and return the response!
         candidateSite.setExits(exits);
         return candidateSite;
     }
@@ -115,7 +119,7 @@ public class SiteDocuments {
      * @return Complete information for the specified room/site
      * @throws JsonProcessingException
      */
-    public Site getSite(String id) {
+    public Site getSite(String id) throws DocumentNotFoundException {
         // get the document from the DB
         Site site = db.get(Site.class, id);
         if ( site != null ) {
@@ -147,14 +151,24 @@ public class SiteDocuments {
      * DELETE
      *
      * @param id of site to delete
+     * @return the revision of the deleted document
      * @throws JsonProcessingException
      */
-    public void deleteSite(String id) {
-        // Get the site (includes reconstructing the exits)
-        Site site = getSite(id);
-        db.delete(site);
+    public String deleteSite(String id) throws DocumentNotFoundException {
+        System.out.println("HERE!!");
+        // Get the site first (need the coordinates)
+        Site site = db.get(Site.class, id);
+        Coordinates coord = site.getCoord();
 
+        System.out.println(site);
+        System.out.println(coord);
 
+        String revision = db.delete(site);
+
+        // Replace this site with an empty placeholder
+        createEmptySite(coord);
+
+        return revision;
     }
 
     /**
@@ -166,7 +180,7 @@ public class SiteDocuments {
      */
     protected List<Site> getByCoordinate(int x, int y) {
         ViewQuery getByCoordinate = new ViewQuery()
-                .designDocId("_design/Site")
+                .designDocId(DESIGN_DOC)
                 .viewName("uniqueSite")
                 .reduce(false)
                 .includeDocs(true)
@@ -186,7 +200,7 @@ public class SiteDocuments {
         // directional index (N/S/E/W/U/D), but skip this node (" "), as we have
         // that already.
         ViewQuery getNeighbors = new ViewQuery()
-                .designDocId("_design/Site")
+                .designDocId(DESIGN_DOC)
                 .viewName("neighbors")
                 .reduce(false) // do not reduce the result
                 .includeDocs(true) // include referenced documents
@@ -281,7 +295,7 @@ public class SiteDocuments {
      */
     protected Site getEmptySite() {
         ViewQuery oneEmptySite = new ViewQuery()
-                .designDocId("_design/Site")
+                .designDocId(DESIGN_DOC)
                 .viewName("empty_sites")
                 .limit(1);
 
@@ -331,19 +345,21 @@ public class SiteDocuments {
      * @param exits List of exits to be completed
      */
     protected void createEmptyNeighbors(Coordinates newRoom, Exits exits) {
-        if ( exits.getN() == null ) {
+        // Protect against MAX/MIN values so we can use the corners for testing.
+
+        if ( exits.getN() == null && newRoom.getY() < Integer.MAX_VALUE ) {
             Site newSite = createEmptySite(newRoom.getX(), newRoom.getY()+1);
             assignExit(exits, "N", newSite);
         }
-        if ( exits.getS() == null ) {
+        if ( exits.getS() == null && newRoom.getY() > Integer.MIN_VALUE  ) {
             Site newSite = createEmptySite(newRoom.getX(), newRoom.getY()-1);
             assignExit(exits, "S", newSite);
         }
-        if ( exits.getE() == null) {
+        if ( exits.getE() == null  && newRoom.getX() < Integer.MAX_VALUE ) {
             Site newSite = createEmptySite(newRoom.getX()+1, newRoom.getY());
             assignExit(exits, "E", newSite);
         }
-        if ( exits.getW() == null) {
+        if ( exits.getW() == null  && newRoom.getX() > Integer.MIN_VALUE ) {
             Site newSite = createEmptySite(newRoom.getX()-1, newRoom.getY());
             assignExit(exits, "W", newSite);
         }
