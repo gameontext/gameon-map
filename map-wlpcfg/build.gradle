@@ -78,7 +78,7 @@ task createNewContainer(type: DockerCreateContainer) {
     targetImageId { "gameon-map" }
     containerName = "gameon-map"
     portBindings = ['9447:9443']
-    links = ['map-couchdb:map-couchdb']
+    links = ['couchdb:couchdb']
     env = localEnvironment
 }
 
