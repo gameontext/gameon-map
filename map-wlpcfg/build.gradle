@@ -92,7 +92,7 @@ task createNewEtcdContainer(type: DockerCreateContainer) {
     containerName = "gameon-map"
     portBindings = ['9447:9443']
     env = etcdEnvironment
-    links = ['etcd:etcd', 'map-couchdb:map-couchdb']
+    links = ['etcd:etcd', 'couchdb:couchdb']
 }
 
 task startNewEtcdContainer(type: DockerStartContainer) {
