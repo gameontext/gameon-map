@@ -33,6 +33,7 @@ import org.gameon.map.models.RoomInfo;
 import org.gameon.map.models.Site;
 import org.junit.Assert;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
@@ -41,7 +42,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectWriter;
 
-//@Ignore
+@Ignore
 public class TestMapPlacement {
 
     protected static CouchDbInstance db;
