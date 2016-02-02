@@ -44,6 +44,7 @@ public class Exit {
 
     public Exit(Site targetSite, String direction) {
         this.id = targetSite.getId();
+
         if ( targetSite.getInfo() != null ) {
             this.name = targetSite.getInfo().getName();
             this.connDetails = targetSite.getInfo().getConnectionDetails();

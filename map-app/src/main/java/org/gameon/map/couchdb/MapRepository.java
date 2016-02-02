@@ -63,27 +63,33 @@ public class MapRepository {
 
     /**
      * List of all not-empty rooms
+     * @param map
      * @return list of rooms (all)
      */
-    public List<JsonNode> listSites() {
+    public List<JsonNode> listSites(String owner, String name) {
         Log.log(Level.INFO, this, "List all rooms");
 
-        return sites.listSites();
+        if ( owner != null && owner.trim().isEmpty() )
+            owner = null;
+        if ( name != null && name.trim().isEmpty() )
+            name = null;
+
+        return sites.listSites(owner, name);
     }
 
     /**
      * Connect/Add/Place a new room into the Map
-     *
+     * @param owner
      * @param newRoom Room or Suite to add
      * @return Wired node containing the room or Suite
      * @throws MapModificationException if something goes awry creating the room
      */
-    public Site connectRoom(RoomInfo newRoom) {
+    public Site connectRoom(String owner, RoomInfo newRoom) {
         Log.log(Level.INFO, this, "Add new site: {0}", newRoom);
 
         // TODO: Input validation for connection details (most important)
 
-        return sites.connectRoom(newRoom);
+        return sites.connectRoom(owner, newRoom);
     }
 
     /**
@@ -102,27 +108,29 @@ public class MapRepository {
     /**
      * Update room by id
      *
+     * @param owner
      * @param id Site/Room id
      * @param updatedInfo Updated room information
      * @return Complete information for the specified room/site
      * @throws JsonProcessingException
      * @throws MapModificationException if something goes awry creating the room
      */
-    public Site updateRoom(String id, RoomInfo roomInfo) {
+    public Site updateRoom(String owner, String id, RoomInfo roomInfo) {
         Log.log(Level.INFO, this, "Update site: {0} {1}", id, roomInfo);
 
-        return sites.updateRoom(id, roomInfo);
+        return sites.updateRoom(owner, id, roomInfo);
     }
 
 
     /**
      * Delete site by id
+     * @param owner Room owner (person attempting the delete)
      * @param id Site/Room id
      */
-    public void deleteSite(String id) {
-        Log.log(Level.INFO, this, "Delete site: {0}", id);
+    public void deleteSite(String owner, String id) {
+        Log.log(Level.INFO, this, "Delete site {0} by {1}", id, owner);
 
-        sites.deleteSite(id);
+        sites.deleteSite(owner, id);
     }
 
 

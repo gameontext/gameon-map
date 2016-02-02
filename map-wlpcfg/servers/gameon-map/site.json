@@ -14,6 +14,12 @@
        "uniqueSite": {
            "map": "function(doc) {\n  if ( doc.coord ) {\n    emit([doc.coord.x, doc.coord.y], 1);\n  }\n}",
            "reduce": "_count"
+       },
+       "owner_name": {
+           "map": "function(doc) {\n  if ( doc.info ) {\n     emit([doc.owner, doc.info.name], null);\n  }\n}"
+       },
+       "name": {
+           "map": "function(doc) {\n  if ( doc.info ) {\n     emit([doc.info.name], null);\n  }\n}"
        }
    }
 }

@@ -8,8 +8,6 @@ public class Coordinates {
 
     public Coordinates() {}
 
-
-
     @JsonIgnore
     public Coordinates(int x, int y) {
         this.x = x;

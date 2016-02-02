@@ -1,7 +1,10 @@
 package org.gameon.map.couchdb;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.logging.Level;
+
+import javax.ws.rs.core.Response;
 
 import org.ektorp.ComplexKey;
 import org.ektorp.CouchDbConnector;
@@ -10,6 +13,7 @@ import org.ektorp.UpdateConflictException;
 import org.ektorp.ViewQuery;
 import org.ektorp.ViewResult;
 import org.gameon.map.Log;
+import org.gameon.map.MapModificationException;
 import org.gameon.map.models.Coordinates;
 import org.gameon.map.models.Exit;
 import org.gameon.map.models.Exits;
@@ -65,7 +69,7 @@ public class SiteDocuments {
 
     protected SiteDocuments(CouchDbConnector db) {
         this.db = db;
-        all = new ViewQuery().designDocId(DESIGN_DOC).viewName("all");
+        all = new ViewQuery().designDocId(DESIGN_DOC).viewName("all").cacheOk(true);
         allEmptySites = new ViewQuery().designDocId(DESIGN_DOC).viewName("empty_sites");
 
         mapper = new ObjectMapper();
@@ -73,29 +77,61 @@ public class SiteDocuments {
 
     /**
      * LIST
-     * the 'allNotEmpty' view returns all entries grouped by coordinate (including exits)
+     * @param map
      * @return
      */
-    public List<JsonNode> listSites() {
-        // TODO: allow filters (index by owner, .. )
+    public List<JsonNode> listSites(String owner, String name) {
 
-        List<JsonNode> allSites = db.queryView(all, JsonNode.class);
-        return allSites;
+        List<JsonNode> sites = Collections.emptyList();
+
+        if ( owner != null && name != null ) {
+            ViewQuery owner_name = new ViewQuery().designDocId(DESIGN_DOC).viewName("owner_name")
+                    .includeDocs(true)
+                    .key(ComplexKey.of(owner, name));
+
+            sites = db.queryView(owner_name, JsonNode.class);
+        } else if ( owner != null ) {
+            ViewQuery owner_name = new ViewQuery().designDocId(DESIGN_DOC).viewName("owner_name")
+                    .includeDocs(true)
+                    .startKey(owner)
+                    .endKey(ComplexKey.of(owner, ComplexKey.emptyObject()));
+
+            sites = db.queryView(owner_name, JsonNode.class);
+        } else if ( name != null ) {
+            ViewQuery name_only = new ViewQuery().designDocId(DESIGN_DOC).viewName("name")
+                    .includeDocs(true)
+                    .startKey(name)
+                    .endKey(ComplexKey.of(name, ComplexKey.emptyObject()));
+
+            sites = db.queryView(name_only, JsonNode.class);
+        } else {
+            sites = db.queryView(all, JsonNode.class);
+        }
+
+        return sites;
     }
 
 
     /**
      * CREATE ROOM
+     * @param owner
      * @param newRoom Room or Suite to add
      * @return Wired site containing the room or Suite
      * @throws JsonProcessingException
      */
-    public Site connectRoom(RoomInfo newRoom) {
+    public Site connectRoom(String owner, RoomInfo newRoom) {
         Log.log(Level.INFO, this, "Add new room: {0}", newRoom);
+
+        // Revisit this with orgs.. *sigh*
+        if ( owner == null ) {
+            throw new MapModificationException(Response.Status.FORBIDDEN,
+                    "Room could not be created",
+                    "Owner was not specified (unauthenticated)");
+        }
 
         Site candidateSite = null;
         while (candidateSite == null ) {
-            candidateSite = assignEmptySite(newRoom);
+            candidateSite = assignEmptySite(owner, newRoom);
         }
 
         // Yay! We have an allocated, previously-empty node
@@ -117,7 +153,6 @@ public class SiteDocuments {
      *
      * @param id Site/Room id
      * @return Complete information for the specified room/site
-     * @throws JsonProcessingException
      */
     public Site getSite(String id) throws DocumentNotFoundException {
         // get the document from the DB
@@ -132,17 +167,29 @@ public class SiteDocuments {
 
     /**
      * UDPATE ROOM
+     * @param owner Owner(?) of the room
      * @param id of room to update
      * @param roomInfo updated Room or Suite information
      * @return Wired site containing the room or Suite
-     * @throws JsonProcessingException
      */
-    public Site updateRoom(String id, RoomInfo roomInfo) {
+    public Site updateRoom(String owner, String id, RoomInfo roomInfo) {
         // Get the site (includes reconstructing the exits)
         Site site = getSite(id);
-        site.setInfo(roomInfo);
 
-        db.update(site);
+        // Revisit this with orgs.. *sigh*
+        if ( site.getOwner() == null || !site.getOwner().equals(owner) ) {
+            throw new MapModificationException(Response.Status.FORBIDDEN,
+                    "Room " + id + " could not be updated",
+                    owner + " is not allowed to update room " + id);
+        }
+
+        site.setExits(null); // make sure exits is empty
+        site.setInfo(roomInfo);
+        db.update(site); // update DB
+
+        // Find exits for return value
+        Exits exits = getExits(site.getCoord());
+        site.setExits(exits);
         return site;
     }
 
@@ -150,19 +197,23 @@ public class SiteDocuments {
     /**
      * DELETE
      *
+     * @param owner Owner(?) of the room
      * @param id of site to delete
      * @return the revision of the deleted document
-     * @throws JsonProcessingException
      */
-    public String deleteSite(String id) throws DocumentNotFoundException {
+    public String deleteSite(String owner, String id) throws DocumentNotFoundException {
         System.out.println("HERE!!");
         // Get the site first (need the coordinates)
         Site site = db.get(Site.class, id);
+
+        // Revisit this with orgs.. *sigh*
+        if ( site.getOwner() == null || !site.getOwner().equals(owner) ) {
+            throw new MapModificationException(Response.Status.FORBIDDEN,
+                    "Room " + id + " could not be deleted",
+                    owner + " is not allowed to delete room " + id);
+        }
+
         Coordinates coord = site.getCoord();
-
-        System.out.println(site);
-        System.out.println(coord);
-
         String revision = db.delete(site);
 
         // Replace this site with an empty placeholder
@@ -263,10 +314,11 @@ public class SiteDocuments {
                 mapper.valueToTree(exits));
     }
 
-    protected Site assignEmptySite(RoomInfo newRoom) {
+    protected Site assignEmptySite(String owner, RoomInfo newRoom) {
         Site candidateSite = getEmptySite();
         Log.log(Level.INFO, this, "Found empty node: {0}", candidateSite);
 
+        candidateSite.setOwner(owner);
         candidateSite.setInfo(newRoom);
         candidateSite.setType("room");
 

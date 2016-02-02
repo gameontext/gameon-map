@@ -18,11 +18,14 @@ package org.gameon.map.couchdb;
 import java.net.MalformedURLException;
 import java.util.List;
 
+import javax.ws.rs.core.Response;
+
 import org.ektorp.CouchDbInstance;
 import org.ektorp.DocumentNotFoundException;
 import org.ektorp.http.HttpClient;
 import org.ektorp.http.StdHttpClient;
 import org.ektorp.impl.StdCouchDbInstance;
+import org.gameon.map.MapModificationException;
 import org.gameon.map.models.ConnectionDetails;
 import org.gameon.map.models.Coordinates;
 import org.gameon.map.models.Doors;
@@ -30,7 +33,6 @@ import org.gameon.map.models.RoomInfo;
 import org.gameon.map.models.Site;
 import org.junit.Assert;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
@@ -39,7 +41,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectWriter;
 
-@Ignore
+//@Ignore
 public class TestMapPlacement {
 
     protected static CouchDbInstance db;
@@ -65,9 +67,9 @@ public class TestMapPlacement {
     public TestName test = new TestName();
 
 
-    @Ignore
+    @Test
     public void testListRooms() throws JsonProcessingException {
-        List<JsonNode> sites = repo.listSites();
+        List<JsonNode> sites = repo.listSites(null, null);
         String fullString = debugWriter.writeValueAsString(sites);
         System.out.println(fullString);
 
@@ -77,11 +79,11 @@ public class TestMapPlacement {
         // TODO: more things to tweak summary response
     }
 
-    @Ignore
+    @Test
     public void testCreateUpdateRoom() throws JsonProcessingException {
-        String roomName = test.getMethodName() + "-1";
+        String roomName = test.getMethodName() + System.currentTimeMillis();
 
-        List<JsonNode> before = repo.sites.listSites();
+        List<JsonNode> before = repo.sites.listSites(null, null);
 
         RoomInfo info = new RoomInfo();
         info.setName(roomName);
@@ -93,25 +95,54 @@ public class TestMapPlacement {
         details.setTarget("test-socket");
         details.setType("test");
         info.setConnectionDetails(details);
-        System.out.println(debugWriter.writeValueAsString(info));
 
-        Site result = repo.connectRoom(info);
-        System.out.println(debugWriter.writeValueAsString(result));
+        Site result = repo.connectRoom("test", info);
+        String fullString = debugWriter.writeValueAsString(result);
 
-        List<JsonNode> after = repo.sites.listSites();
-        String fullString = debugWriter.writeValueAsString(after);
+        Assert.assertNotNull("North exit should be described: " + fullString, result.getExits().getN());
+        Assert.assertNotNull("South exit should be described: " + fullString, result.getExits().getS());
+        Assert.assertNotNull("East exit should be described: " + fullString, result.getExits().getE());
+        Assert.assertNotNull("West exit should be described: " + fullString, result.getExits().getW());
+        Assert.assertEquals("Owner should be set: " + fullString,"test", result.getOwner());
 
-        Assert.assertTrue("There should be _at least_ one more room afterwards", after.size() > before.size());
-        Assert.assertTrue("List should contain our new room", fullString.contains(result.getId()));
-        Assert.assertFalse("List should not contain exits", fullString.contains("\"exits\""));
+        List<JsonNode> after = repo.listSites("", "");
+        fullString = debugWriter.writeValueAsString(after);
 
-        Assert.assertNotNull("North exit should be described", result.getExits().getN());
-        Assert.assertNotNull("South exit should be described", result.getExits().getS());
-        Assert.assertNotNull("East exit should be described", result.getExits().getE());
-        Assert.assertNotNull("West exit should be described", result.getExits().getW());
+        Assert.assertTrue("List should contain our new room: " + fullString, fullString.contains(result.getId()));
+        Assert.assertFalse("List should not contain exits: " + fullString, fullString.contains("\"exits\""));
+
+        after = repo.sites.listSites("test", "");
+        fullString = debugWriter.writeValueAsString(after);
+
+        Assert.assertTrue("List should contain our new room: " + fullString, fullString.contains(result.getId()));
+
+        after = repo.sites.listSites("test", result.getInfo().getName());
+        Assert.assertEquals("List should only contain one element", 1, after.size());
+
+        fullString = debugWriter.writeValueAsString(after);
+        Assert.assertTrue("List should contain  ONLY our new room: " + fullString, fullString.contains(result.getId()));
+
+        // UPDATE that room
+
+        info = new RoomInfo();
+        info.setName(roomName + "b");
+
+        try {
+            repo.updateRoom("shouldn't work", result.getId(), info);
+            Assert.fail("Should not be able to update room with the wrong owner");
+        } catch(MapModificationException mme) {
+            Assert.assertEquals("Should return FORBIDDEN", Response.Status.FORBIDDEN, mme.getStatus());
+        }
+
+        Site update_result = repo.updateRoom("test", result.getId(), info);
+        fullString = debugWriter.writeValueAsString(update_result);
+
+        Assert.assertEquals("Should see updated name: " + fullString, roomName + "b", update_result.getInfo().getName());
+        Assert.assertEquals("Coordinates unchanged: " + fullString, result.getCoord(), update_result.getCoord());
+
     }
 
-    @Ignore
+    @Test
     public void testDuplicateEmptyRoom() throws JsonProcessingException {
         List<Site> before = repo.sites.getEmptySites();
 
@@ -148,11 +179,13 @@ public class TestMapPlacement {
         Assert.assertNotNull("Result should contain exits (even for empty room)", result.getExits());
     }
 
-    @Ignore
+
+    @Test
     public void testSiteDelete() throws JsonProcessingException {
         String roomName = test.getMethodName() + "-1";
 
         Site testSite = new Site();
+        testSite.setOwner("test");
         testSite.setId(roomName);
         testSite.setCoord(new Coordinates(Integer.MAX_VALUE, Integer.MAX_VALUE));
 
@@ -168,7 +201,7 @@ public class TestMapPlacement {
         System.out.println(debugWriter.writeValueAsString(before));
 
         // DELETE
-        String revision = repo.sites.deleteSite(testSite.getId());
+        String revision = repo.sites.deleteSite("test", testSite.getId());
         Assert.assertNotNull("Deleted revision should not be null", revision);
 
         try {
