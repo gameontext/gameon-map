@@ -64,7 +64,7 @@ public class MapRepository {
     /**
      * List of all not-empty rooms
      * @param map
-     * @return list of rooms (all)
+     * @return List of all sites, possibly filtered by owner and/or name. Will not return null.
      */
     public List<JsonNode> listSites(String owner, String name) {
         Log.log(Level.INFO, this, "List all rooms");

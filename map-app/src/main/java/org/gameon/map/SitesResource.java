@@ -69,7 +69,10 @@ public class SitesResource {
         notes = "Get a list of registered sites. Use link headers for pagination.",
         response = Site.class,
         responseContainer = "List")
-    @ApiParam( )
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Successful"),
+            @ApiResponse(code = 204, message = "No results found")
+        })
     @Produces(MediaType.APPLICATION_JSON)
     public Response listAll(
             @ApiParam(value = "filter by owner") @QueryParam("owner") String owner,
@@ -78,8 +81,12 @@ public class SitesResource {
         // TODO: pagination,  fields to include in list (i.e. just Exits).
         List<JsonNode> sites = mapRepository.listSites(owner, name);
 
-        // TODO -- this should be done better. Stream, something.
-        return Response.ok().entity(sites.toString()).build();
+        if ( sites.isEmpty() )
+            return Response.noContent().build();
+        else {
+            // TODO -- this should be done better. Stream, something.
+            return Response.ok().entity(sites.toString()).build();
+        }
     }
 
 
