@@ -34,7 +34,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  *   "coord": {
  *     "x": 0,
  *     "y": 0,
- *     "sort": 0
  *   },
  *   "info": {
  *     "name": "First Room",
@@ -54,18 +53,19 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  *     }
  *   },
  *   "type": "room",
+ *   "exits" : { ... } // RETURN ONLY.
  * }
  * </pre>
  */
 public class SiteDocuments {
 
-    static final String DESIGN_DOC = "_design/site";
+    protected static final String DESIGN_DOC = "_design/site";
 
-    final CouchDbConnector db;
-    final ViewQuery allEmptySites;
-    final ViewQuery all;
+    protected final CouchDbConnector db;
+    protected final ViewQuery allEmptySites;
+    protected final ViewQuery all;
 
-    final ObjectMapper mapper;
+    protected final ObjectMapper mapper;
 
     protected SiteDocuments(CouchDbConnector db) {
         this.db = db;
@@ -77,8 +77,9 @@ public class SiteDocuments {
 
     /**
      * LIST
-     * @param map
-     * @return
+     * @param owner Owner of sites (optional)
+     * @param name Name of site/room (optional)
+     * @return List of all sites, possibly filtered by owner and/or name. Will not return null.
      */
     public List<JsonNode> listSites(String owner, String name) {
 
@@ -108,25 +109,38 @@ public class SiteDocuments {
             sites = db.queryView(all, JsonNode.class);
         }
 
+        if ( sites == null )
+            return Collections.emptyList();
+
         return sites;
     }
 
 
     /**
      * CREATE ROOM
-     * @param owner
+     * @param owner Room/Suite owner
      * @param newRoom Room or Suite to add
      * @return Wired site containing the room or Suite
-     * @throws JsonProcessingException
+     * @throws MapModificationException
      */
     public Site connectRoom(String owner, RoomInfo newRoom) {
         Log.log(Level.INFO, this, "Add new room: {0}", newRoom);
 
-        // Revisit this with orgs.. *sigh*
+        // TODO: Revisit this when we have groups/organizations.. *sigh*
+
         if ( owner == null ) {
             throw new MapModificationException(Response.Status.FORBIDDEN,
                     "Room could not be created",
                     "Owner was not specified (unauthenticated)");
+        }
+
+        // Check for duplicate owner/room name: sloppy room registration
+        // with no pre-check would land here potentially often.
+        List<JsonNode> rooms = listSites(owner, newRoom.getName());
+        if ( rooms.size() > 0 ) {
+            throw new MapModificationException(Response.Status.CONFLICT,
+                    "Unable to place room in the map",
+                    "A room with this name ("+newRoom.getName()+") already exists for owner ("+owner+")");
         }
 
         Site candidateSite = null;
@@ -175,6 +189,7 @@ public class SiteDocuments {
     public Site updateRoom(String owner, String id, RoomInfo roomInfo) {
         // Get the site (includes reconstructing the exits)
         Site site = getSite(id);
+        RoomInfo oldInfo = site.getInfo();
 
         // Revisit this with orgs.. *sigh*
         if ( site.getOwner() == null || !site.getOwner().equals(owner) ) {
@@ -186,6 +201,20 @@ public class SiteDocuments {
         site.setExits(null); // make sure exits is empty
         site.setInfo(roomInfo);
         db.update(site); // update DB
+
+        // Room name change! check for duplicates..
+        if ( !oldInfo.getName().equals(roomInfo.getName()) ) {
+            List<JsonNode> rooms = listSites(owner, roomInfo.getName());
+            if ( rooms.size() > 1 ) {
+
+                site.setInfo(oldInfo); // revert!
+                db.update(site);
+
+                throw new MapModificationException(Response.Status.CONFLICT,
+                        "Unable to update room " + site.getId(),
+                        "A room with the modified name ("+roomInfo.getName()+") already exists for owner ("+owner+")");
+            }
+        }
 
         // Find exits for return value
         Exits exits = getExits(site.getCoord());
@@ -242,8 +271,8 @@ public class SiteDocuments {
 
 
     /**
-     * @param coord
-     * @return
+     * @param coord Position of the site in the map
+     * @return Exits for the room located at (x,y) in the map
      * @throws JsonProcessingException
      */
     protected Exits getExits(Coordinates coord) {
@@ -315,6 +344,8 @@ public class SiteDocuments {
     }
 
     protected Site assignEmptySite(String owner, RoomInfo newRoom) {
+
+        // Get an unassigned empty site
         Site candidateSite = getEmptySite();
         Log.log(Level.INFO, this, "Found empty node: {0}", candidateSite);
 
@@ -322,16 +353,30 @@ public class SiteDocuments {
         candidateSite.setInfo(newRoom);
         candidateSite.setType("room");
 
-        // Save the changes to remove the node from the list of empty sites.
-        // If there is a conflict, we'll return null so that the caller tries again.
         try {
             db.update(candidateSite);
         } catch (UpdateConflictException ex) {
+            // If there is a conflict, we'll return null so that the caller tries again.
             // RETURN NULL: Caller should retry
             return null;
         }
 
-        // Return the new/shiny node!
+        // Check again for duplicate owner/room name
+        List<JsonNode> rooms = listSites(owner, newRoom.getName());
+        if ( rooms.size() > 1 ) {
+            // we have a duplicate. *le sigh*
+
+            candidateSite.setOwner(null);
+            candidateSite.setInfo(null);
+            candidateSite.setType("empty");
+            db.update(candidateSite);
+
+            throw new MapModificationException(Response.Status.CONFLICT,
+                    "Unable to place room in the map",
+                    "A room with this name ("+newRoom.getName()+") already exists for owner ("+owner+")");
+        }
+
+        // Return the new/shiny site!
         return candidateSite;
     }
 

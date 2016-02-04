@@ -34,6 +34,9 @@ public class Exit {
     /** Terse/Short room name */
     private String name;
 
+    /** full name */
+    private String fullName;
+
     /** description of target room's door */
     private String door = null;
 
@@ -47,6 +50,7 @@ public class Exit {
 
         if ( targetSite.getInfo() != null ) {
             this.name = targetSite.getInfo().getName();
+            this.fullName = targetSite.getInfo().getFullName();
             this.connDetails = targetSite.getInfo().getConnectionDetails();
 
             // Note the direction flip. Assume we're in a room,
@@ -72,9 +76,14 @@ public class Exit {
             if ( this.door == null )
                 this.door = "A door";
 
+            // This won't be the prettiest. ew.
+            if ( this.fullName == null )
+                this.fullName = this.name;
+
         } else {
             // Empty/placeholder room. Still navigable if very unclear.
             this.name = "Nether space";
+            this.fullName = "Nether space";
             this.door = "Tenuous doorway filled with gray fog";
         }
     }
@@ -95,7 +104,7 @@ public class Exit {
     }
 
     @ApiModelProperty(
-            value = "Short name of the target room (small title bars)",
+            value = "Short/Terse name of the target room",
             example = "Barn",
             required = true)
     public String getName() {
@@ -104,6 +113,17 @@ public class Exit {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    @ApiModelProperty(
+            value = "Human-friendly room name",
+            example = "The First Room",
+            required = false)
+    public String getFullName() {
+        return fullName;
+    }
+    public void setFullName(String fullName) {
+        this.fullName = fullName;
     }
 
     @ApiModelProperty(

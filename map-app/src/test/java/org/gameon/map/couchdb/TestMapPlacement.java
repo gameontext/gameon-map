@@ -84,11 +84,9 @@ public class TestMapPlacement {
     public void testCreateUpdateRoom() throws JsonProcessingException {
         String roomName = test.getMethodName() + System.currentTimeMillis();
 
-        List<JsonNode> before = repo.sites.listSites(null, null);
-
         RoomInfo info = new RoomInfo();
         info.setName(roomName);
-        info.setDescription("Whee! Describing the room for " + roomName);
+        info.setDescription("Boring description for " + roomName);
         info.setFullName("Room for " + roomName);
         info.setDoors(new Doors(roomName));
 
@@ -97,22 +95,26 @@ public class TestMapPlacement {
         details.setType("test");
         info.setConnectionDetails(details);
 
+        // "connect" or place the new room into the map
         Site result = repo.connectRoom("test", info);
         String fullString = debugWriter.writeValueAsString(result);
 
+        // Make sure we get stuff for all of the exits back, and that the owner is not null
         Assert.assertNotNull("North exit should be described: " + fullString, result.getExits().getN());
         Assert.assertNotNull("South exit should be described: " + fullString, result.getExits().getS());
         Assert.assertNotNull("East exit should be described: " + fullString, result.getExits().getE());
         Assert.assertNotNull("West exit should be described: " + fullString, result.getExits().getW());
         Assert.assertEquals("Owner should be set: " + fullString,"test", result.getOwner());
 
+        // List all the rooms ("" should be treated the same as null)
         List<JsonNode> after = repo.listSites("", "");
         fullString = debugWriter.writeValueAsString(after);
 
         Assert.assertTrue("List should contain our new room: " + fullString, fullString.contains(result.getId()));
         Assert.assertFalse("List should not contain exits: " + fullString, fullString.contains("\"exits\""));
 
-        after = repo.sites.listSites("test", "");
+        // List rooms just for the "test" owner
+        after = repo.listSites("test", null);
         fullString = debugWriter.writeValueAsString(after);
 
         Assert.assertTrue("List should contain our new room: " + fullString, fullString.contains(result.getId()));
@@ -141,6 +143,13 @@ public class TestMapPlacement {
         Assert.assertEquals("Should see updated name: " + fullString, roomName + "b", update_result.getInfo().getName());
         Assert.assertEquals("Coordinates unchanged: " + fullString, result.getCoord(), update_result.getCoord());
 
+        // Try to create another room with the same info (same owner + name)
+        try {
+            repo.connectRoom("test", info);
+            Assert.fail("Should not be able to create a room with a not-unique owner-name combination");
+        } catch(MapModificationException mme) {
+            Assert.assertEquals("Should return CONFLICT", Response.Status.CONFLICT, mme.getStatus());
+        }
     }
 
     @Test
@@ -206,7 +215,7 @@ public class TestMapPlacement {
         Assert.assertNotNull("Deleted revision should not be null", revision);
 
         try {
-            Site after = repo.sites.getSite(testSite.getId());
+            repo.sites.getSite(testSite.getId());
             Assert.fail("Expected DocumentNotFoundException when requesting a deleted document");
         } catch(DocumentNotFoundException dne) {
         }

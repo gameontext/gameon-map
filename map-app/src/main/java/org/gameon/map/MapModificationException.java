@@ -8,8 +8,8 @@ import javax.ws.rs.core.Response;
  */
 public class MapModificationException extends RuntimeException {
 
-    final Response.Status status;
-    final String moreInfo;
+    private final Response.Status status;
+    private final String moreInfo;
 
     public MapModificationException(String message) {
         this(message, null);

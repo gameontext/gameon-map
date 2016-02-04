@@ -27,22 +27,22 @@ import io.swagger.annotations.ApiModelProperty;
 public class RoomInfo {
 
     /** name of room (short / url-friendly) */
-    String name;
+    private String name;
 
     /** Connection details */
-    ConnectionDetails connectionDetails = null;
+    private ConnectionDetails connectionDetails = null;
 
     /** full name */
-    String fullName;
+    private String fullName;
 
     /** Room door */
-    String description;
+    private String description;
 
     /** Optional door descriptions */
-    Doors doors;
+    private Doors doors;
 
     @ApiModelProperty(
-            value = "Short name of the target room (small title bars)",
+            value = "Short/Terse name of the target room, must be unique within the owner's rooms",
             example = "First Room",
             required = true)
     public String getName() {

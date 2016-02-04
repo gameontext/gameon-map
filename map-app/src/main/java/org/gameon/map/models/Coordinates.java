@@ -3,8 +3,9 @@ package org.gameon.map.models;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public class Coordinates {
-    int x;
-    int y;
+
+    private int x;
+    private int y;
 
     public Coordinates() {}
 
@@ -57,11 +58,8 @@ public class Coordinates {
             return false;
         if (getClass() != obj.getClass())
             return false;
+
         Coordinates other = (Coordinates) obj;
-        if (x != other.x)
-            return false;
-        if (y != other.y)
-            return false;
-        return true;
+        return (x == other.x && y == other.y);
     }
 }

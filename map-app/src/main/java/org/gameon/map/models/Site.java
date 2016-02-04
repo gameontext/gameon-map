@@ -21,6 +21,9 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
+
 /**
  * When rooms or suites are added, they are persisted into the data store
  * as suites.
@@ -28,7 +31,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * Not all elements that are stored in the datastore are returned to the user.
  *
  */
-@io.swagger.annotations.ApiModel(
+@ApiModel(
         description = "A room (or suite) is anchored into the map as a site when it is registered. "
                 + "The mapping should remain fairly stable unless a room is removed and re-appears.")
 @JsonInclude(Include.NON_EMPTY)
@@ -36,7 +39,7 @@ public class Site {
 
     /** Site id */
     @JsonProperty("_id")
-    @io.swagger.annotations.ApiModelProperty(
+    @ApiModelProperty(
             value = "Site id",
             readOnly = true,
             name = "_id",
@@ -46,31 +49,31 @@ public class Site {
 
     /** Document revision */
     @JsonProperty("_rev")
-    @io.swagger.annotations.ApiModelProperty(hidden = true)
+    @ApiModelProperty(hidden = true)
     private String rev;
 
     /** Descriptive room info */
-    @io.swagger.annotations.ApiModelProperty(
+    @ApiModelProperty(
             value = "Information about the room or suite: descriptive elements, service URL, etc.",
             required = true)
     private RoomInfo info;
 
     /** Exit bindings: the other rooms' doors */
-    @io.swagger.annotations.ApiModelProperty(
+    @ApiModelProperty(
             value = "Exits: Doors to other rooms",
             required = true)
     private Exits exits;
 
     /** Owner of the room */
-    @io.swagger.annotations.ApiModelProperty(
+    @ApiModelProperty(
             value = "Owner",
             required = true)
-    String owner;
+    private String owner;
 
     @TypeDiscriminator
     private Coordinates coord;
 
-    @io.swagger.annotations.ApiModelProperty(hidden = true)
+    @ApiModelProperty(hidden = true)
     private String type;
 
     public Site() {}

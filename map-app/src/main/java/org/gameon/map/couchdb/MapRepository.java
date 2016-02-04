@@ -69,12 +69,14 @@ public class MapRepository {
     public List<JsonNode> listSites(String owner, String name) {
         Log.log(Level.INFO, this, "List all rooms");
 
-        if ( owner != null && owner.trim().isEmpty() )
-            owner = null;
-        if ( name != null && name.trim().isEmpty() )
-            name = null;
+        return sites.listSites(nullEmpty(owner), nullEmpty(name));
+    }
 
-        return sites.listSites(owner, name);
+    private String nullEmpty(String parameter) {
+        if ( parameter != null && parameter.trim().isEmpty() ) {
+            return null;
+        }
+        return parameter;
     }
 
     /**

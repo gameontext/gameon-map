@@ -10,9 +10,9 @@ import io.swagger.annotations.ApiModelProperty;
 @JsonInclude(Include.NON_EMPTY)
 public class ConnectionDetails {
 
-    String type;
+    private String type;
 
-    String target;
+    private String target;
 
     @ApiModelProperty(
             value = "Connection type",

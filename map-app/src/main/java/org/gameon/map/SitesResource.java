@@ -59,7 +59,7 @@ public class SitesResource {
     protected MapRepository mapRepository;
 
     @Context
-    HttpServletRequest httpRequest;
+    protected HttpServletRequest httpRequest;
 
     /**
      * GET /map/v1/sites
