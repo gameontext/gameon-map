@@ -77,7 +77,7 @@ task removeCurrentContainer(type: DockerRemoveContainer) {
 task createNewContainer(type: DockerCreateContainer) {
     targetImageId { "gameon-map" }
     containerName = "gameon-map"
-    portBindings = ['9447:9443']
+    portBindings = ['9087:9080','9447:9443']
     links = ['couchdb:couchdb']
     env = localEnvironment
 }
@@ -90,7 +90,7 @@ task startNewContainer(type: DockerStartContainer) {
 task createNewEtcdContainer(type: DockerCreateContainer) {
     targetImageId { "gameon-map" }
     containerName = "gameon-map"
-    portBindings = ['9447:9443']
+    portBindings = ['9087:9080','9447:9443']
     env = etcdEnvironment
     links = ['etcd:etcd', 'couchdb:couchdb']
 }

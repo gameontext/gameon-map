@@ -68,5 +68,5 @@ else
   fi
 
 
-  /opt/ibm/wlp/bin/server run defaultServer
+  exec /opt/ibm/wlp/bin/server run defaultServer
 fi
