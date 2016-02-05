@@ -9,6 +9,7 @@ import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.annotation.WebFilter;
+import javax.servlet.http.HttpServletRequest;
 
 @WebFilter(
         filterName = "corsFilter",
@@ -28,10 +29,11 @@ public class AuthFilter implements Filter {
 
         // TODO: a bunch of verification...
         if ( id == null )
-            id = "game-on.org-provisional";
-
+            id = ((HttpServletRequest)request).getHeader("gameon-id");
+            if ( id == null ) {
+                id = "game-on.org-provisional";
+            }
         request.setAttribute("player.id", id);
-
         chain.doFilter(request, response);
     }
 
