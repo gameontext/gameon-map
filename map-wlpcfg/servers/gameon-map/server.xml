@@ -17,6 +17,9 @@
     <keyStore id="defaultKeyStore" password="testOnlyKeystore"/>
     <keyStore id="defaultTrustStore" location="truststore.jks" password="truststore"/>
 
+	<sslDefault sslRef="DefaultSSLSettings" />
+	<ssl id="DefaultSSLSettings" keyStoreRef="defaultKeyStore" trustStoreRef="defaultTrustStore" />
+
     <!-- This is required to prevent the web apps from being lazily loaded -->
     <webContainer deferServletLoad="false"/>
     
