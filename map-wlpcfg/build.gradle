@@ -27,8 +27,12 @@ if (null != System.getenv('DOCKER_CERT_PATH')){
 }
 
 def localEnvironment = ["LICENSE=accept",
-            "REGISTRATION_SECRET=" + System.getenv('REGISTRATION_SECRET'),
-            "QUERY_SECRET=" + System.getenv('QUERY_SECRET'),
+            "COUCHDB_URL=" + System.getenv('COUCHDB_URL'),
+            "COUCHDB_USER=" + System.getenv('COUCHDB_USER'),
+            "COUCHDB_PASSWORD=" + System.getenv('COUCHDB_PASSWORD'),
+            "MAP_KEY=" + System.getenv('MAP_KEY'),
+            "MAP_URL=" + System.getenv('MAP_URL'),
+            "MAP_PLAYER_URL=" + System.getenv('MAP_PLAYER_URL'),
             "MAP_HTTPS_PORT=" + System.getenv('MAP_HTTPS_PORT')]
 
 def etcdEnvironment = ["LICENSE=accept", "ETCDCTL_ENDPOINT=http://etcd:4001"]

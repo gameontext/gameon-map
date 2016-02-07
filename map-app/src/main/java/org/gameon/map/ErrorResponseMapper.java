@@ -46,7 +46,8 @@ public class ErrorResponseMapper implements ExceptionMapper<Exception> {
 
         objNode.put("status", status.getStatusCode());
         objNode.put("message", message);
+        
 
-        return Response.status(status).entity("YAY").build();
+        return Response.status(status).entity(objNode.toString()).build();
     }
 }

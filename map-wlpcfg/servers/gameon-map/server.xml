@@ -12,13 +12,23 @@
         <feature>couchdb-1.0</feature>
     </featureManager>
 
-    <httpEndpoint host="*" httpPort="-1" httpsPort="9443" id="defaultHttpEndpoint"/>
+    <httpEndpoint host="*" httpPort="9080" httpsPort="9443" id="defaultHttpEndpoint"/>
 
     <keyStore id="defaultKeyStore" password="testOnlyKeystore"/>
     <keyStore id="defaultTrustStore" location="truststore.jks" password="truststore"/>
 
     <!-- This is required to prevent the web apps from being lazily loaded -->
     <webContainer deferServletLoad="false"/>
+    
+    <!-- Signed JWT keystore info -->
+	<jndiEntry jndiName="jwtKeyStore" value="${server.config.dir}/resources/security/key.jks"/>
+	<jndiEntry jndiName="jwtKeyStorePassword" value="testOnlyKeystore"/>
+	<jndiEntry jndiName="jwtKeyStoreAlias" value="default"/>
+	
+	<jndiEntry jndiName="playerUrl" value="${env.MAP_PLAYER_URL}"/>
+	
+	<!-- This is our private backend room registration key, only used for recroom/nodejs etc -->
+    <jndiEntry jndiName="registrationSecret" value="${env.MAP_KEY}"/>   
 
     <logging traceSpecification="*=info:net.wasdev.gameon.*=all" copySystemStreams="false"/>
 
@@ -31,12 +41,12 @@
       username="${env.COUCHDB_USER}"
       password="${env.COUCHDB_PASSWORD}"/>
 
-    <library id="couchdb-lib" apiTypeVisibility="spec,ibm-api,api,third-party" >
+    <library id="couchdb-lib" >
         <fileset dir='${server.config.dir}/lib' />
     </library>
 
     <webApplication contextRoot="/map" id="map-app" location="map-app.war">
-      <classloader apiTypeVisibility="spec,ibm-api,api,third-party" commonLibraryRef="couchdb-lib"></classloader>
+      <classloader commonLibraryRef="couchdb-lib"></classloader>
     </webApplication>
 
 </server>
