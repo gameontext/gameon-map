@@ -52,7 +52,7 @@ public class RoomInfo {
         this.name = name;
     }
 
-    @ApiModelProperty(required = true, value = "")
+    @ApiModelProperty(required = true)
     public ConnectionDetails getConnectionDetails() {
         return connectionDetails;
     }
@@ -83,7 +83,6 @@ public class RoomInfo {
     }
 
     @ApiModelProperty(
-            value = "Descriptions for the doors used to enter the room",
             required = false)
     public Doors getDoors() {
         return doors;

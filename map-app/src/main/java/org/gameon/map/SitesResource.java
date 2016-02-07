@@ -51,7 +51,7 @@ import io.swagger.annotations.ApiResponses;
  * Root of CRUD operations on or with sites
  */
 @Path("/sites")
-@Api( value = "sites")
+@Api( tags = {"map"})
 @Produces(MediaType.APPLICATION_JSON)
 public class SitesResource {
 

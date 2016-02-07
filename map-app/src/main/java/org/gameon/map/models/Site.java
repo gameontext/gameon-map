@@ -54,13 +54,11 @@ public class Site {
 
     /** Descriptive room info */
     @ApiModelProperty(
-            value = "Information about the room or suite: descriptive elements, service URL, etc.",
             required = true)
     private RoomInfo info;
 
     /** Exit bindings: the other rooms' doors */
     @ApiModelProperty(
-            value = "Exits: Doors to other rooms",
             required = true)
     private Exits exits;
 

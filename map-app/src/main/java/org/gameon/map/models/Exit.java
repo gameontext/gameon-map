@@ -139,7 +139,6 @@ public class Exit {
     }
 
     @ApiModelProperty(
-            value = "Connection details used by the mediator to connect to the room on the player's behalf",
             required = true)
     public ConnectionDetails getConnectionDetails() {
         return connDetails;
