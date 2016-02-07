@@ -20,6 +20,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import javax.annotation.Resource;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import javax.inject.Inject;
@@ -47,6 +48,9 @@ public class AuthFilter implements Filter {
     /** CDI injection of client for Player CRUD operations */
     @Inject
     PlayerClient playerClient;
+    
+    @Resource(lookup="registrationSecret")
+    String registrationSecret;
     
     @Override
     public void init(FilterConfig filterConfig) throws ServletException {
@@ -177,7 +181,7 @@ public class AuthFilter implements Filter {
     private String getKeyForId(String id){
         //first.. handle our built-in key
         if("game-on.org".equals(id)){
-            return "fish";
+            return registrationSecret;
         }
         
         String key = null;
