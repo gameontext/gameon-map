@@ -36,7 +36,6 @@ public class Exits {
     private Exit d = null;
 
     @io.swagger.annotations.ApiModelProperty(
-            value = "Only present if there is an established path North",
             required = false)
     public Exit getN() {
         return n;
@@ -47,7 +46,6 @@ public class Exits {
     }
 
     @io.swagger.annotations.ApiModelProperty(
-            value = "Only present if there is an established path South",
             required = false)
     public Exit getS() {
         return s;
@@ -58,7 +56,6 @@ public class Exits {
     }
 
     @io.swagger.annotations.ApiModelProperty(
-            value = "Only present if there is an established path East",
             required = false)
     public Exit getE() {
         return e;
@@ -69,7 +66,6 @@ public class Exits {
     }
 
     @io.swagger.annotations.ApiModelProperty(
-            value = "Only present if there is an established path West",
             required = false)
     public Exit getW() {
         return w;
@@ -80,7 +76,6 @@ public class Exits {
     }
 
     @io.swagger.annotations.ApiModelProperty(
-            value = "Only present if there is an established path Up",
             required = false)
     public Exit getU() {
         return u;
@@ -91,7 +86,6 @@ public class Exits {
     }
 
     @io.swagger.annotations.ApiModelProperty(
-            value = "Only present if there is an established path Down",
             required = false)
     public Exit getD() {
         return d;

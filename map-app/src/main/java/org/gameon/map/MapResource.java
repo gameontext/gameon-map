@@ -22,7 +22,10 @@ import javax.ws.rs.core.Response;
 
 import org.gameon.map.couchdb.MapRepository;
 
+import io.swagger.annotations.Api;
+
 @Path("/")
+@Api( value = "map")
 public class MapResource {
 
     @Inject
