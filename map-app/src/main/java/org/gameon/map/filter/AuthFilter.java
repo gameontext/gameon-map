@@ -342,8 +342,8 @@ public class AuthFilter implements Filter {
                 }
                 
             }else{
-                System.out.println("Had hmac "+hmacHeader+" and calculated "+hmac+" using key "+secret+" for id "+id);
-                ((HttpServletResponse)response).sendError(HttpServletResponse.SC_FORBIDDEN,"Bad gameon-signature value "+"Had hmac "+hmacHeader+" and calculated "+hmac+" using key "+secret+" for id "+id+gameonDate+bodyHashHeader);
+                System.out.println("Had hmac "+hmacHeader+" and calculated "+hmac+" using key(first2chars) "+secret.substring(0, 2)+" for id "+id);
+                ((HttpServletResponse)response).sendError(HttpServletResponse.SC_FORBIDDEN,"Had hmac "+hmacHeader+" and calculated (first 4chars) "+hmac.substring(0,4)+" using key(first2chars) "+secret.substring(0, 2)+" for id "+id);
                 return false;
             }                                
         }else{
