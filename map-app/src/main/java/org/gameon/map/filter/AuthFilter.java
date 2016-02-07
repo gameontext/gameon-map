@@ -309,7 +309,11 @@ public class AuthFilter implements Filter {
 
     private boolean validateHeaderBasedAuth(ServletResponse response, ServletAuthWrapper saw, String id, String gameonDate, boolean postData)
             throws NoSuchAlgorithmException, UnsupportedEncodingException, InvalidKeyException, IOException {        
-        String secret = getKeyForId(id);        
+        String secret = getKeyForId(id);  
+        if(secret == null){            
+            ((HttpServletResponse)response).sendError(HttpServletResponse.SC_FORBIDDEN,"Unable to obtain shared secret for player "+id+" from player service");
+            return false;
+        }
         String body = postData ? saw.getBody() : "";
         String bodyHash = postData ? buildHash(body) : "";
         String bodyHashHeader = postData ? saw.getSigBody() : "";
