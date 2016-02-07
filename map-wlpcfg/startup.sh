@@ -20,7 +20,7 @@ if [ "$ETCDCTL_ENDPOINT" != "" ]; then
   export COUCHDB_USER=$(etcdctl get /couchdb/user)
   export COUCHDB_PASSWORD=$(etcdctl get /passwords/couchdb)
   export MAP_KEY=$(etcdctl get /passwords/map-key)
-  export MAP_PLAYER_URL=$(etcdctl get /map/url)
+  export MAP_PLAYER_URL=$(etcdctl get /player/url)
 
   /opt/ibm/wlp/bin/server start defaultServer
   echo Starting the logstash forwarder...
