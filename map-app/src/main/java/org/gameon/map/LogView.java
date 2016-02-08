@@ -48,8 +48,11 @@ public class LogView extends HttpServlet {
                 }
                 count++;
             }
+            if(f.list().length==0){
+                out.println(" - Is empty<br>");
+            }
         } else {
-            System.out.println(" - Is empty, or not a directory." + "<br>");
+            out.println(" - Is empty, or not a directory." + "<br>");
         }
     }
 
@@ -138,7 +141,7 @@ public class LogView extends HttpServlet {
                                         listFilesInDir(out, logdir, "l");
 
                                         String ffdcDir = new File(new File(logdir), "ffdc").getAbsolutePath();
-                                        out.println("FFDC_DIR: " + String.valueOf(logdir) + "<br>");
+                                        out.println("FFDC_DIR: " + String.valueOf(ffdcDir) + "<br>");
                                         listFilesInDir(out, ffdcDir, "f");
                                     } else {
                                         // going to try default location..
@@ -150,6 +153,17 @@ public class LogView extends HttpServlet {
                                         out.println("FFDC_DIR: " + String.valueOf(ffdcDir) + "<br>");
                                         listFilesInDir(out, ffdcDir, "f");
                                     }
+                                    
+                                    // going to try default location..
+                                    String hardcoded = "/opt/ibm/wlp/usr/servers/defaultServer/logs";
+                                    out.println("Looking in hardcoded location "+hardcoded);
+                                    String otherlogdir = Paths.get(hardcoded).toString();
+                                    listFilesInDir(out, otherlogdir, "x");
+
+                                    String hardffdcDir = new File(new File(otherlogdir), "ffdc").getAbsolutePath();
+                                    out.println("hardcoded ffdc: " + String.valueOf(hardffdcDir) + "<br>");
+                                    listFilesInDir(out, hardffdcDir, "y");
+                                    
                                 } else if ("view".equals(cmd)) {
                                     response.addHeader("Content-Type", MediaType.TEXT_PLAIN);
                                     String choice = request.getParameter("choice");
@@ -164,8 +178,7 @@ public class LogView extends HttpServlet {
                                                 logdir = Paths.get(outdir, "defaultServer", "logs").toString();
                                             }
                                             viewFile(out, logdir, choice.substring(1).trim());
-                                        } else if (choice.startsWith("f")) {
-
+                                        } else if (choice.startsWith("f")) {                                            
                                             String logdir = System.getenv("LOG_DIR");
                                             if (logdir == null) {
                                                 String outdir = System.getenv("WLP_OUTPUT_DIR");
@@ -173,6 +186,12 @@ public class LogView extends HttpServlet {
                                             }
                                             String ffdcDir = new File(new File(logdir), "ffdc").getAbsolutePath();
                                             viewFile(out, ffdcDir, choice.substring(1).trim());
+                                        } else if (choice.startsWith("x")) {
+                                            String hardcoded = "/opt/ibm/wlp/usr/servers/defaultServer/logs";
+                                            viewFile(out, hardcoded, choice.substring(1).trim());
+                                        } else if (choice.startsWith("y")) {
+                                            String hardcoded = "/opt/ibm/wlp/usr/servers/defaultServer/logs/ffdc";
+                                            viewFile(out, hardcoded, choice.substring(1).trim());
                                         }
                                     } else {
                                         ((HttpServletResponse) response).sendError(HttpServletResponse.SC_BAD_REQUEST,
