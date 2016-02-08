@@ -155,7 +155,7 @@ public class LogView extends HttpServlet {
                                     }
                                     
                                     // going to try default location..
-                                    String hardcoded = "/opt/ibm/wlp/usr/servers/defaultServer/logs";
+                                    String hardcoded = "/logs";
                                     out.println("Looking in hardcoded location "+hardcoded+"<br>");
                                     String otherlogdir = Paths.get(hardcoded).toString();
                                     listFilesInDir(out, otherlogdir, "x");
@@ -187,10 +187,10 @@ public class LogView extends HttpServlet {
                                             String ffdcDir = new File(new File(logdir), "ffdc").getAbsolutePath();
                                             viewFile(out, ffdcDir, choice.substring(1).trim());
                                         } else if (choice.startsWith("x")) {
-                                            String hardcoded = "/opt/ibm/wlp/usr/servers/defaultServer/logs";
+                                            String hardcoded = "/logs";
                                             viewFile(out, hardcoded, choice.substring(1).trim());
                                         } else if (choice.startsWith("y")) {
-                                            String hardcoded = "/opt/ibm/wlp/usr/servers/defaultServer/logs/ffdc";
+                                            String hardcoded = "/logs/ffdc";
                                             viewFile(out, hardcoded, choice.substring(1).trim());
                                         }
                                     } else {
