@@ -7,6 +7,7 @@ if [ "$ETCDCTL_ENDPOINT" != "" ]; then
   rm etcd-v2.2.2-linux-amd64.tar.gz
   mv etcdctl /usr/local/bin/etcdctl
 
+  mkdir -p /opt/ibm/wlp/usr/servers/defaultServer/resources/security
   cd /opt/ibm/wlp/usr/servers/defaultServer/resources/
   etcdctl get /proxy/third-party-ssl-cert > cert.pem
   openssl pkcs12 -passin pass:keystore -passout pass:keystore -export -out cert.pkcs12 -in cert.pem
