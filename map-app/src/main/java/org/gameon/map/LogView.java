@@ -19,9 +19,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.core.MediaType;
 
-/**
- * Servlet implementation class LogView
- */
 @WebServlet("/LogView")
 public class LogView extends HttpServlet {
     private static final long serialVersionUID = 1L;

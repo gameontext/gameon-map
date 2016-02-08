@@ -301,6 +301,10 @@ public class AuthFilter implements Filter {
                 chain.doFilter(saw, response);
                 return;
             }          
+            if(requestUri.toLowerCase().startsWith("/map/logview")){
+                chain.doFilter(request, response);
+                return;
+            }
             ((HttpServletResponse)response).sendError(HttpServletResponse.SC_FORBIDDEN, "Request made to unknown url pattern. "+httpRequest.getRequestURI());         
         }else{
             ((HttpServletResponse)response).sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Only supports http servlet requests");
