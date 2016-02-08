@@ -156,7 +156,7 @@ public class LogView extends HttpServlet {
                                     
                                     // going to try default location..
                                     String hardcoded = "/opt/ibm/wlp/usr/servers/defaultServer/logs";
-                                    out.println("Looking in hardcoded location "+hardcoded);
+                                    out.println("Looking in hardcoded location "+hardcoded+"<br>");
                                     String otherlogdir = Paths.get(hardcoded).toString();
                                     listFilesInDir(out, otherlogdir, "x");
 
