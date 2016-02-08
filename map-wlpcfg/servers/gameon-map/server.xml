@@ -33,7 +33,10 @@
 	<!-- This is our private backend room registration key, only used for recroom/nodejs etc -->
     <jndiEntry jndiName="registrationSecret" value="${env.MAP_KEY}"/>   
 
-    <logging traceSpecification="*=info:net.wasdev.gameon.*=all" copySystemStreams="false"/>
+    <!-- <logging traceSpecification="*=info:net.wasdev.gameon.*=all" copySystemStreams="false"/> -->
+    <logging traceSpecification="*=info:net.wasdev.gameon.*=all" />
+    <jndiEntry jndiName="serverName" value="${wlp.server.name}"/>
+    <jndiEntry jndiName="serverOutputDir" value="${server.output.dir}"/>
 
     <applicationMonitor dropinsEnabled="false" />
 

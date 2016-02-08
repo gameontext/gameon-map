@@ -232,18 +232,14 @@ public class AuthFilter implements Filter {
             HttpServletRequest httpRequest = (HttpServletRequest)request;
             
             String requestUri = httpRequest.getRequestURI();
-            
-            System.out.println("Evaluating uri of "+requestUri);
-            
+                      
             if(requestUri.startsWith("/map/v1/health")){
-                System.out.println("No auth needed for health");
                 //no auth needed for health.
                 chain.doFilter(request, response);
                 return;
             }
             
             if(requestUri.startsWith("/map/v1/sites")){
-
                 //auth needed for sites endpoints.               
                 ServletAuthWrapper saw = new ServletAuthWrapper(httpRequest);
                 
@@ -302,6 +298,7 @@ public class AuthFilter implements Filter {
                 return;
             }          
             if(requestUri.toLowerCase().startsWith("/map/logview")){
+                //logview manages its own auth.
                 chain.doFilter(request, response);
                 return;
             }

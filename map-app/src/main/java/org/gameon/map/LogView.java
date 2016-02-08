@@ -19,6 +19,9 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.core.MediaType;
 
+/**
+ * Servlet implementation class LogView
+ */
 @WebServlet("/LogView")
 public class LogView extends HttpServlet {
     private static final long serialVersionUID = 1L;
@@ -106,6 +109,23 @@ public class LogView extends HttpServlet {
                                 PrintWriter out = response.getWriter();
                                 
                                 if ("list".equals(cmd)) {
+                                    
+                                    String serverName;
+                                    try {
+                                        serverName = (String) new InitialContext().lookup("serverName");
+                                    } catch (NamingException e) {
+                                        serverName = "Naming Exception "+e;
+                                    }
+                                    
+                                    String serverOutputDir;
+                                    try {
+                                        serverOutputDir = (String) new InitialContext().lookup("serverOutputDir");
+                                    } catch (NamingException e) {
+                                        serverOutputDir = "Naming Exception "+e;                                        
+                                    }
+                                    out.println("${wlp.server.name} "+serverName+"<br>");
+                                    out.println("${server.output.dir} "+serverOutputDir+"<br>");
+                                    
                                     response.addHeader("Content-Type", MediaType.TEXT_HTML);
                                     String outdir = System.getenv("WLP_OUTPUT_DIR");
                                     out.println("WLP_OUTPUT_DIR: " + String.valueOf(outdir) + "<br>");
@@ -127,7 +147,7 @@ public class LogView extends HttpServlet {
                                         listFilesInDir(out, logdir, "l");
 
                                         String ffdcDir = new File(new File(logdir), "ffdc").getAbsolutePath();
-                                        out.println("FFDC_DIR: " + String.valueOf(logdir) + "<br>");
+                                        out.println("FFDC_DIR: " + String.valueOf(ffdcDir) + "<br>");
                                         listFilesInDir(out, ffdcDir, "f");
                                     }
                                 } else if ("view".equals(cmd)) {
