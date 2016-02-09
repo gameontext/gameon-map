@@ -9,6 +9,8 @@ import org.ektorp.DocumentNotFoundException;
 import org.ektorp.UpdateConflictException;
 import org.gameon.map.couchdb.MapRepository;
 
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 @Provider
@@ -38,15 +40,20 @@ public class ErrorResponseMapper implements ExceptionMapper<Exception> {
             DocumentNotFoundException dne = (DocumentNotFoundException) exception;
             status = Response.Status.NOT_FOUND;
             message = dne.getPath();
-            objNode.put("more_info", dne.getBody());
+            objNode.set("more_info", dne.getBody());
 
         } else if ( exception instanceof UpdateConflictException ) {
             status = Response.Status.CONFLICT;
+
+        } else if ( exception instanceof JsonParseException ) {
+            status = Response.Status.BAD_REQUEST;
+
+        } else if ( exception instanceof JsonMappingException ) {
+            status = Response.Status.BAD_REQUEST;
         }
 
         objNode.put("status", status.getStatusCode());
         objNode.put("message", message);
-        
 
         return Response.status(status).entity(objNode.toString()).build();
     }
