@@ -31,7 +31,7 @@ if [ "$ETCDCTL_ENDPOINT" != "" ]; then
   export MAP_KEY=$(etcdctl get /passwords/map-key)
   export MAP_PLAYER_URL=$(etcdctl get /player/url)
 
-  /opt/ibm/wlp/bin/server start defaultServer
+  /opt/ibm/wlp/bin/server run defaultServer
   echo Starting the logstash forwarder...
   sed -i s/PLACEHOLDER_LOGHOST/$(etcdctl get /logstash/endpoint)/g /opt/forwarder.conf
   cd /opt
