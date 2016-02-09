@@ -2,10 +2,6 @@
 
 if [ "$ETCDCTL_ENDPOINT" != "" ]; then
   echo Setting up etcd...
-  wget https://github.com/coreos/etcd/releases/download/v2.2.2/etcd-v2.2.2-linux-amd64.tar.gz -q
-  tar xzf etcd-v2.2.2-linux-amd64.tar.gz etcd-v2.2.2-linux-amd64/etcdctl --strip-components=1
-  rm etcd-v2.2.2-linux-amd64.tar.gz
-  mv etcdctl /usr/local/bin/etcdctl
 
   mkdir -p /opt/ibm/wlp/usr/servers/defaultServer/resources/security
   cd /opt/ibm/wlp/usr/servers/defaultServer/resources/
