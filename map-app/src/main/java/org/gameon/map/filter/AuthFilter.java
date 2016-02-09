@@ -244,8 +244,9 @@ public class AuthFilter implements Filter {
                 ServletAuthWrapper saw = new ServletAuthWrapper(httpRequest);
                 
                 String id = saw.getId();
-                if ( id == null )
+                if ( id == null ){
                     id = "game-on.org";
+                }
                 String gameonDate = saw.getDate();                
                 try{
                     //we protect Map, and our requirements vary per http method
@@ -271,13 +272,13 @@ public class AuthFilter implements Filter {
                             if(!validateHeaderBasedAuth(response, saw, id, gameonDate, false)){
                                 return;
                             }
-                            return;
+                            break;
                         }
                         case "PUT":{
                             if(!validateHeaderBasedAuth(response, saw, id, gameonDate, true)){
                                 return;
                             }
-                            return;
+                            break;
                         }
                         default:{
                             ((HttpServletResponse)response).sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Unsupported Http Method "+httpRequest.getMethod());
@@ -332,7 +333,7 @@ public class AuthFilter implements Filter {
                     return false;
                 }else{                    
                     //TODO: add replay check.. 
-                    
+                    System.out.println("Allowing invocation for id "+id);
                     //otherwise.. we're done here.. auth is good, we'll come out the switch
                     //and pass control to the original method.
                     return true;
@@ -343,8 +344,8 @@ public class AuthFilter implements Filter {
                 }
                 
             }else{
-                System.out.println("Had hmac "+hmacHeader+" and calculated "+hmac+" using key(first2chars) "+secret.substring(0, 2)+" for id "+id);
-                ((HttpServletResponse)response).sendError(HttpServletResponse.SC_FORBIDDEN,"Had hmac "+hmacHeader+" and calculated (first 4chars) "+hmac.substring(0,4)+" using key(first2chars) "+secret.substring(0, 2)+" for id "+id);
+                System.out.println("Had hmac "+hmacHeader+" and calculated "+hmac+" using key first2chars '"+secret.substring(0, 2)+"' for id "+id);
+                ((HttpServletResponse)response).sendError(HttpServletResponse.SC_FORBIDDEN,"Had hmac '"+hmacHeader+"' and first 4chars of calculated were '"+hmac.substring(0,4)+"' using key with first 2chars '"+secret.substring(0, 2)+"' for id "+id);
                 return false;
             }                                
         }else{

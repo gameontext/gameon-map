@@ -135,9 +135,9 @@ public class LogView extends HttpServlet {
                                     if (outdir != null) {
                                         listFilesInDir(out, outdir, "o");
                                     }
-                                    String logdir = System.getenv("LOG_DIR");
+                                    String logdir = System.getenv("X_LOG_DIR");
                                     if (logdir != null) {
-                                        out.println("LOG_DIR: " + String.valueOf(logdir) + "<br>");
+                                        out.println("X_LOG_DIR: " + String.valueOf(logdir) + "<br>");
                                         listFilesInDir(out, logdir, "l");
 
                                         String ffdcDir = new File(new File(logdir), "ffdc").getAbsolutePath();
@@ -179,7 +179,7 @@ public class LogView extends HttpServlet {
                                             }
                                             viewFile(out, logdir, choice.substring(1).trim());
                                         } else if (choice.startsWith("f")) {                                            
-                                            String logdir = System.getenv("LOG_DIR");
+                                            String logdir = System.getenv("X_LOG_DIR");
                                             if (logdir == null) {
                                                 String outdir = System.getenv("WLP_OUTPUT_DIR");
                                                 logdir = Paths.get(outdir, "defaultServer", "logs").toString();
