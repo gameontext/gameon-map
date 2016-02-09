@@ -2,6 +2,19 @@
 
 if [ "$ETCDCTL_ENDPOINT" != "" ]; then
   echo Setting up etcd...
+  echo "** Testing connection to ${COUCHDB_URL}"
+  etcdctl ls
+  RC=$?
+
+  while [ $RC -ne 0 ]; do
+      sleep 15
+
+      # recheck condition
+      echo "** Re-testing connection"
+      etcdctl ls
+      RC=$?
+  done
+  echo "We are done and etcdctl is done"
 
   mkdir -p /opt/ibm/wlp/usr/servers/defaultServer/resources/security
   cd /opt/ibm/wlp/usr/servers/defaultServer/resources/
