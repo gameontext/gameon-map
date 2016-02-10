@@ -231,7 +231,6 @@ public class SiteDocuments {
      * @return the revision of the deleted document
      */
     public String deleteSite(String owner, String id) throws DocumentNotFoundException {
-        System.out.println("HERE!!");
         // Get the site first (need the coordinates)
         Site site = db.get(Site.class, id);
 

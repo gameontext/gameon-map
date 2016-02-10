@@ -70,7 +70,7 @@ public class TestMapPlacement {
 
     @Test
     public void testListRooms() throws JsonProcessingException {
-        List<JsonNode> sites = repo.listSites(null, null);
+        List<JsonNode> sites = repo.listSites(null, null, null);
         String fullString = debugWriter.writeValueAsString(sites);
         System.out.println(fullString);
 
@@ -107,14 +107,14 @@ public class TestMapPlacement {
         Assert.assertEquals("Owner should be set: " + fullString,"test", result.getOwner());
 
         // List all the rooms ("" should be treated the same as null)
-        List<JsonNode> after = repo.listSites("", "");
+        List<JsonNode> after = repo.listSites(null, "", "");
         fullString = debugWriter.writeValueAsString(after);
 
         Assert.assertTrue("List should contain our new room: " + fullString, fullString.contains(result.getId()));
         Assert.assertFalse("List should not contain exits: " + fullString, fullString.contains("\"exits\""));
 
         // List rooms just for the "test" owner
-        after = repo.listSites("test", null);
+        after = repo.listSites("test", "test", null);
         fullString = debugWriter.writeValueAsString(after);
 
         Assert.assertTrue("List should contain our new room: " + fullString, fullString.contains(result.getId()));

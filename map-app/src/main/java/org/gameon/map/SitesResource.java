@@ -79,11 +79,11 @@ public class SitesResource {
             @ApiParam(value = "filter by name") @QueryParam("name") String name) {
 
         // TODO: pagination,  fields to include in list (i.e. just Exits).
-        List<JsonNode> sites = mapRepository.listSites(owner, name);
+        List<JsonNode> sites = mapRepository.listSites(getAuthenticatedId(true), owner, name);
 
         if ( sites.isEmpty() )
             return Response.noContent().build();
-        else {
+        else {           
             // TODO -- this should be done better. Stream, something.
             return Response.ok().entity(sites.toString()).build();
         }
@@ -109,7 +109,7 @@ public class SitesResource {
 
         // NOTE: Thrown exeptions are mapped (see MapModificationException)
 
-        Site mappedRoom = mapRepository.connectRoom(getOwner(), newRoom);
+        Site mappedRoom = mapRepository.connectRoom(getAuthenticatedId(false), newRoom);
 
         return Response.created(URI.create("/map/v1/sites/" + mappedRoom.getId())).entity(mappedRoom).build();
     }
@@ -127,7 +127,7 @@ public class SitesResource {
     public Response getRoom(
             @ApiParam(value = "target room id", required = true) @PathParam("id") String roomId) {
 
-        Site mappedRoom = mapRepository.getRoom(roomId);
+        Site mappedRoom = mapRepository.getRoom(getAuthenticatedId(true),roomId);
         System.out.println(mappedRoom);
         return Response.ok(mappedRoom).build();
     }
@@ -148,7 +148,7 @@ public class SitesResource {
             @ApiParam(value = "target room id", required = true) @PathParam("id") String roomId,
             @ApiParam(value = "Updated room attributes", required = true) RoomInfo roomInfo) {
 
-        Site mappedRoom = mapRepository.updateRoom(getOwner(), roomId, roomInfo);
+        Site mappedRoom = mapRepository.updateRoom(getAuthenticatedId(false), roomId, roomInfo);
         return Response.ok(mappedRoom).build();
     }
 
@@ -167,18 +167,27 @@ public class SitesResource {
     public Response deleteRoom(
             @ApiParam(value = "target room id", required = true) @PathParam("id") String roomId) {
 
-        mapRepository.deleteSite(getOwner(), roomId);
+        mapRepository.deleteSite(getAuthenticatedId(false), roomId);
         return Response.noContent().build();
     }
 
-    private String getOwner() {
-        // This attribute should always be set, see the AuthFilter
-        String owner = (String) httpRequest.getAttribute("player.id");
-        if ( owner == null || owner.isEmpty() ) {
+    private String getAuthenticatedId(boolean allowUnauthenticated) {
+        // This attribute will be set by the auth filter when a user has made
+        // an authenticated request. 
+        String authedId = (String) httpRequest.getAttribute("player.id");
+        if ( allowUnauthenticated ){
+            //if we allow unauthenticated, we will clean up so null==unauthed.
+            if(authedId!=null && authedId.isEmpty()){
+                authedId = null;
+            }
+        }else if (authedId == null || authedId.isEmpty()) {
+            //else we don't allow unauthenticated, so if auth id is absent
+            //throw exception to prevent handling the request.
             throw new MapModificationException(Response.Status.BAD_REQUEST,
                      "Unauthenticated client", "Room owner could not be determined.");
         }
 
-        return owner;
+        return authedId;
+        
     }
 }
