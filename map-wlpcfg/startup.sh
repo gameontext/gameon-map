@@ -2,16 +2,16 @@
 
 if [ "$ETCDCTL_ENDPOINT" != "" ]; then
   echo Setting up etcd...
-  echo "** Testing connection to ${COUCHDB_URL}"
-  etcdctl ls
+  echo "** Testing etcd is accessible"
+  etcdctl --debug ls
   RC=$?
 
   while [ $RC -ne 0 ]; do
       sleep 15
 
       # recheck condition
-      echo "** Re-testing connection"
-      etcdctl ls
+      echo "** Re-testing etcd connection"
+      etcdctl --debug ls
       RC=$?
   done
   echo "We are done and etcdctl is done"
