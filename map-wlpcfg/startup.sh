@@ -14,7 +14,7 @@ if [ "$ETCDCTL_ENDPOINT" != "" ]; then
       etcdctl --debug ls
       RC=$?
   done
-  echo "We are done and etcdctl is done"
+  echo "etcdctl returned sucessfully, continuing"
 
   mkdir -p /opt/ibm/wlp/usr/servers/defaultServer/resources/security
   cd /opt/ibm/wlp/usr/servers/defaultServer/resources/
