@@ -1,5 +1,6 @@
 package org.gameon.map.couchdb;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 
@@ -73,8 +74,18 @@ public class MapRepository {
      */
     public List<JsonNode> listSites(String authenticatedId, String owner, String name) {
         Log.log(Level.INFO, this, "List all rooms");
-        List<JsonNode> result = sites.listSites(nullEmpty(owner), nullEmpty(name));
+        
+        //strategic fix until we figure out why the views are not working as required. 
+        //this query SHOULD return by owner & name.. at the mo it's not doing that, 
+        //and I need it to work for the room registration to be viable.. 
+        //so I'm going to filter it below in the loop where I remove connectionDetails blocks.
+        //List<JsonNode> result = sites.listSites(nullEmpty(owner), nullEmpty(name));
+        
+        List<JsonNode> result = sites.listSites(null,null);
+        List<JsonNode> filtered = new ArrayList<JsonNode>();
 
+                
+        //we have to step through any results to remove the connectionDetails blocks.
         for(JsonNode j : result){
             JsonNode ownerNode = j.get("owner");
             if(ownerNode!=null && ownerNode.getNodeType().equals(JsonNodeType.STRING)){
@@ -90,10 +101,26 @@ public class MapRepository {
                         }
                     }
                 }
-            }
+                
+                //do the job the db should have done for us. temporary.
+                boolean ownerOk=false;
+                if(owner==null || owner.equals(ownerNodeString)){
+                    ownerOk=true;
+                }           
+                ObjectNode infoObj = (ObjectNode)j.get("info");
+                JsonNode nameNode = infoObj.get("name");
+                String nameString = (nameNode!=null && nameNode.getNodeType().equals(JsonNodeType.STRING))?nameNode.textValue():null;
+                boolean nameOk=false;
+                if(name==null || name.equals(nameString)){
+                    nameOk=true;
+                }              
+                if(ownerOk && nameOk){
+                     filtered.add(j);
+                }
+                
+            }         
         }
-
-        return result;
+        return filtered;
     }
 
     private String nullEmpty(String parameter) {
