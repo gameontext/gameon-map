@@ -53,28 +53,7 @@ public class Exit {
             this.fullName = targetSite.getInfo().getFullName();
             this.connDetails = targetSite.getInfo().getConnectionDetails();
 
-            // Note the direction flip. Assume we're in a room,
-            // and there is a room to the North:
-            // To build the North _EXIT_ (of the South room), we're
-            // getting the South _DOOR_ (of the North room).
-            switch(direction) {
-                case "N" :
-                    this.door = targetSite.getInfo().getDoors().getS();
-                    break;
-                case "S" :
-                    this.door = targetSite.getInfo().getDoors().getN();
-                    break;
-                case "E" :
-                    this.door = targetSite.getInfo().getDoors().getW();
-                    break;
-                case "W" :
-                    this.door = targetSite.getInfo().getDoors().getE();
-                    break;
-            }
-
-            // Really generic. They gave us nothing interesting.
-            if ( this.door == null )
-                this.door = "A door";
+            setDoorNameFromTargetSite(targetSite, direction);
 
             // This won't be the prettiest. ew.
             if ( this.fullName == null )
@@ -86,6 +65,35 @@ public class Exit {
             this.fullName = "Nether space";
             this.door = "Tenuous doorway filled with gray fog";
         }
+    }
+
+    private void setDoorNameFromTargetSite(Site targetSite, String direction) {
+        RoomInfo targetSiteInfo = targetSite.getInfo();
+        Doors doors = targetSiteInfo != null ? targetSiteInfo.getDoors() : null;
+        if (doors != null) {
+            // Note the direction flip. Assume we're in a room,
+            // and there is a room to the North:
+            // To build the North _EXIT_ (of the South room), we're
+            // getting the South _DOOR_ (of the North room).
+            switch(direction) {
+                case "N" :
+                    this.door = doors.getS();
+                    break;
+                case "S" :
+                    this.door = doors.getN();
+                    break;
+                case "E" :
+                    this.door = doors.getW();
+                    break;
+                case "W" :
+                    this.door = doors.getE();
+                    break;
+            }
+        }
+
+        // Really generic. They gave us nothing interesting.
+        if ( this.door == null )
+            this.door = "A door";
     }
 
     @ApiModelProperty(
