@@ -16,6 +16,8 @@
 package org.gameon.map.couchdb;
 
 import java.net.MalformedURLException;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 
 import javax.ws.rs.core.Response;
@@ -31,7 +33,9 @@ import org.gameon.map.models.Coordinates;
 import org.gameon.map.models.Doors;
 import org.gameon.map.models.RoomInfo;
 import org.gameon.map.models.Site;
+import org.junit.After;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -48,6 +52,7 @@ public class TestMapPlacement {
     protected static CouchDbInstance db;
     protected static MapRepository repo;
     protected static ObjectWriter debugWriter;
+    private Collection<OwnerSitePair> sitesToDelete;
 
     @BeforeClass
     public static void beforeClass() throws MalformedURLException {
@@ -67,7 +72,18 @@ public class TestMapPlacement {
     @Rule
     public TestName test = new TestName();
 
-
+    @Before
+    public void initialiseIdsToDelete() {
+        sitesToDelete = new HashSet<>();
+    }
+    
+    @After
+    public void removeSitesCreatedForTest() {
+        for (OwnerSitePair siteToDelete : sitesToDelete) {
+            repo.deleteSite(siteToDelete.owner, siteToDelete.siteId);
+        }
+    }
+    
     @Test
     public void testListRooms() throws JsonProcessingException {
         List<JsonNode> sites = repo.listSites(null, null, null);
@@ -82,8 +98,118 @@ public class TestMapPlacement {
 
     @Test
     public void testCreateUpdateRoom() throws JsonProcessingException {
+        String owner = "test";
         String roomName = test.getMethodName() + System.currentTimeMillis();
 
+        Site result = createRoom(owner, roomName);
+        String fullString = debugWriter.writeValueAsString(result);
+
+        // Make sure we get stuff for all of the exits back, and that the owner is not null
+        Assert.assertNotNull("North exit should be described: " + fullString, result.getExits().getN());
+        Assert.assertNotNull("South exit should be described: " + fullString, result.getExits().getS());
+        Assert.assertNotNull("East exit should be described: " + fullString, result.getExits().getE());
+        Assert.assertNotNull("West exit should be described: " + fullString, result.getExits().getW());
+        Assert.assertEquals("Owner should be set: " + fullString,owner, result.getOwner());
+
+        // List all the rooms ("" should be treated the same as null)
+        List<JsonNode> after = repo.listSites(null, "", "");
+        fullString = debugWriter.writeValueAsString(after);
+
+        Assert.assertTrue("List should contain our new room: " + fullString, fullString.contains(result.getId()));
+        Assert.assertFalse("List should not contain exits: " + fullString, fullString.contains("\"exits\""));
+
+        // List rooms just for the "test" owner
+        after = repo.listSites(owner, owner, null);
+        fullString = debugWriter.writeValueAsString(after);
+
+        Assert.assertTrue("List should contain our new room: " + fullString, fullString.contains(result.getId()));
+
+        after = repo.sites.listSites(owner, result.getInfo().getName());
+        Assert.assertEquals("List should only contain one element", 1, after.size());
+
+        fullString = debugWriter.writeValueAsString(after);
+        Assert.assertTrue("List should contain  ONLY our new room: " + fullString, fullString.contains(result.getId()));
+
+        // UPDATE that room
+
+        RoomInfo info = new RoomInfo();
+        info.setName(roomName + "b");
+
+        try {
+            repo.updateRoom("shouldn't work", result.getId(), info);
+            Assert.fail("Should not be able to update room with the wrong owner");
+        } catch(MapModificationException mme) {
+            Assert.assertEquals("Should return FORBIDDEN", Response.Status.FORBIDDEN, mme.getStatus());
+        }
+
+        Site update_result = repo.updateRoom(owner, result.getId(), info);
+        fullString = debugWriter.writeValueAsString(update_result);
+
+        Assert.assertEquals("Should see updated name: " + fullString, roomName + "b", update_result.getInfo().getName());
+        Assert.assertEquals("Coordinates unchanged: " + fullString, result.getCoord(), update_result.getCoord());
+
+        // Try to create another room with the same info (same owner + name)
+        try {
+            result = repo.connectRoom(owner, info);
+            sitesToDelete.add(new OwnerSitePair(owner, result.getId()));
+            Assert.fail("Should not be able to create a room with a not-unique owner-name combination");
+        } catch(MapModificationException mme) {
+            Assert.assertEquals("Should return CONFLICT", Response.Status.CONFLICT, mme.getStatus());
+        }
+    }
+
+    @Test
+    public void testFilteringByOwner() throws JsonProcessingException {
+        /*
+         * Create three rooms with different owners, we do three as the original
+         * bug was due to a range of rooms having the wrong start and end index
+         * so this should flush out all types of those errors.
+         */
+        String baseRoomName = test.getMethodName() + System.currentTimeMillis();
+        String owner1 = "test1";
+        String owner2 = "test2";
+        String owner3 = "test3";
+        Site room1 = createRoom(owner1, baseRoomName + "a");
+        Site room2 = createRoom(owner2, baseRoomName + "b");
+        Site room3 = createRoom(owner3, baseRoomName + "c");
+        
+        testSitesFilteredByOwner(owner1, room1, room2, room3);
+        testSitesFilteredByOwner(owner2, room2, room1, room3);
+        testSitesFilteredByOwner(owner3, room3, room1, room2);
+    }
+    
+    private void testSitesFilteredByOwner(String owner, Site roomExpectedToBePresent, Site... roomsThatShouldBeMissing) throws JsonProcessingException {
+        List<JsonNode> allSitesForOwner = repo.listSites(null, owner, null);
+        String fullString = debugWriter.writeValueAsString(allSitesForOwner);
+        Assert.assertTrue("The expected site " + roomExpectedToBePresent + " is missing from the list: " + fullString, fullString.contains(roomExpectedToBePresent.getId()));
+        if (roomsThatShouldBeMissing != null) {
+            for (Site unexpectedRoom : roomsThatShouldBeMissing) {
+                Assert.assertFalse("The expected site " + unexpectedRoom + " should not be in the list: " + fullString, fullString.contains(unexpectedRoom.getId()));
+            }
+        }
+    }
+    
+    @Test
+    public void testFilterByName() throws JsonProcessingException {
+        /*
+         * There was a bug that the filter by name would return the named room
+         * and previous one so create at least two rooms to show bug
+         */
+        String baseRoomName = test.getMethodName() + System.currentTimeMillis();
+        String owner = "test";
+        String room1Name = baseRoomName + "a";
+        String room2Name = baseRoomName + "b";
+        createRoom(owner, room1Name);
+        createRoom(owner, room2Name);
+        List<JsonNode> sitesForName1 = repo.listSites(null, null, room1Name);
+        String fullString = debugWriter.writeValueAsString(sitesForName1);
+        Assert.assertEquals("Only one site should have the name " + room1Name + " but got: " + fullString, 1, sitesForName1.size());
+        List<JsonNode> sitesForName2 = repo.listSites(null, null, room2Name);
+        fullString = debugWriter.writeValueAsString(sitesForName2);
+        Assert.assertEquals("Only one site should have the name " + room2Name + " but got: " + fullString, 1, sitesForName2.size());
+    }
+
+    private Site createRoom(String owner, String roomName) {
         RoomInfo info = new RoomInfo();
         info.setName(roomName);
         info.setDescription("Boring description for " + roomName);
@@ -96,60 +222,9 @@ public class TestMapPlacement {
         info.setConnectionDetails(details);
 
         // "connect" or place the new room into the map
-        Site result = repo.connectRoom("test", info);
-        String fullString = debugWriter.writeValueAsString(result);
-
-        // Make sure we get stuff for all of the exits back, and that the owner is not null
-        Assert.assertNotNull("North exit should be described: " + fullString, result.getExits().getN());
-        Assert.assertNotNull("South exit should be described: " + fullString, result.getExits().getS());
-        Assert.assertNotNull("East exit should be described: " + fullString, result.getExits().getE());
-        Assert.assertNotNull("West exit should be described: " + fullString, result.getExits().getW());
-        Assert.assertEquals("Owner should be set: " + fullString,"test", result.getOwner());
-
-        // List all the rooms ("" should be treated the same as null)
-        List<JsonNode> after = repo.listSites(null, "", "");
-        fullString = debugWriter.writeValueAsString(after);
-
-        Assert.assertTrue("List should contain our new room: " + fullString, fullString.contains(result.getId()));
-        Assert.assertFalse("List should not contain exits: " + fullString, fullString.contains("\"exits\""));
-
-        // List rooms just for the "test" owner
-        after = repo.listSites("test", "test", null);
-        fullString = debugWriter.writeValueAsString(after);
-
-        Assert.assertTrue("List should contain our new room: " + fullString, fullString.contains(result.getId()));
-
-        after = repo.sites.listSites("test", result.getInfo().getName());
-        Assert.assertEquals("List should only contain one element", 1, after.size());
-
-        fullString = debugWriter.writeValueAsString(after);
-        Assert.assertTrue("List should contain  ONLY our new room: " + fullString, fullString.contains(result.getId()));
-
-        // UPDATE that room
-
-        info = new RoomInfo();
-        info.setName(roomName + "b");
-
-        try {
-            repo.updateRoom("shouldn't work", result.getId(), info);
-            Assert.fail("Should not be able to update room with the wrong owner");
-        } catch(MapModificationException mme) {
-            Assert.assertEquals("Should return FORBIDDEN", Response.Status.FORBIDDEN, mme.getStatus());
-        }
-
-        Site update_result = repo.updateRoom("test", result.getId(), info);
-        fullString = debugWriter.writeValueAsString(update_result);
-
-        Assert.assertEquals("Should see updated name: " + fullString, roomName + "b", update_result.getInfo().getName());
-        Assert.assertEquals("Coordinates unchanged: " + fullString, result.getCoord(), update_result.getCoord());
-
-        // Try to create another room with the same info (same owner + name)
-        try {
-            repo.connectRoom("test", info);
-            Assert.fail("Should not be able to create a room with a not-unique owner-name combination");
-        } catch(MapModificationException mme) {
-            Assert.assertEquals("Should return CONFLICT", Response.Status.CONFLICT, mme.getStatus());
-        }
+        Site result = repo.connectRoom(owner, info);
+        sitesToDelete.add(new OwnerSitePair(owner, result.getId()));
+        return result;
     }
 
     @Test
@@ -225,6 +300,15 @@ public class TestMapPlacement {
 
         // attempt to delete the replacement
         repo.sites.db.delete(xy_replace.get(0));
+    }
+    
+    private static class OwnerSitePair {
+        private final String owner;
+        private final String siteId;
+        public OwnerSitePair(String owner, String siteId) {
+            this.owner = owner;
+            this.siteId = siteId;
+        }
     }
 
 }

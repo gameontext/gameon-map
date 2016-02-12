@@ -94,15 +94,14 @@ public class SiteDocuments {
         } else if ( owner != null ) {
             ViewQuery owner_name = new ViewQuery().designDocId(DESIGN_DOC).viewName("owner_name")
                     .includeDocs(true)
-                    .startKey(owner)
+                    .startKey(ComplexKey.of(owner))
                     .endKey(ComplexKey.of(owner, ComplexKey.emptyObject()));
 
             sites = db.queryView(owner_name, JsonNode.class);
         } else if ( name != null ) {
             ViewQuery name_only = new ViewQuery().designDocId(DESIGN_DOC).viewName("name")
                     .includeDocs(true)
-                    .startKey(name)
-                    .endKey(ComplexKey.of(name, ComplexKey.emptyObject()));
+                    .key(ComplexKey.of(name));
 
             sites = db.queryView(name_only, JsonNode.class);
         } else {
