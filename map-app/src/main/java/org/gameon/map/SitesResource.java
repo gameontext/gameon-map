@@ -130,7 +130,6 @@ public class SitesResource {
             @ApiParam(value = "target room id", required = true) @PathParam("id") String roomId) {
 
         Site mappedRoom = mapRepository.getRoom(getAuthenticatedId(AuthMode.UNAUTHENTICATED_OK),roomId);
-        System.out.println(mappedRoom);
         return Response.ok(mappedRoom).build();
     }
 
