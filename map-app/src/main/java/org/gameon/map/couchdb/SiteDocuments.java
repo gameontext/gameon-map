@@ -85,34 +85,54 @@ public class SiteDocuments {
 
         List<JsonNode> sites = Collections.emptyList();
 
-        if ( owner != null && name != null ) {
-            ViewQuery owner_name = new ViewQuery().designDocId(DESIGN_DOC).viewName("owner_name")
-                    .includeDocs(true)
-                    .key(ComplexKey.of(owner, name));
-
-            sites = db.queryView(owner_name, JsonNode.class);
-        } else if ( owner != null ) {
-            ViewQuery owner_name = new ViewQuery().designDocId(DESIGN_DOC).viewName("owner_name")
-                    .includeDocs(true)
-                    .startKey(owner)
-                    .endKey(ComplexKey.of(owner, ComplexKey.emptyObject()));
-
-            sites = db.queryView(owner_name, JsonNode.class);
-        } else if ( name != null ) {
-            ViewQuery name_only = new ViewQuery().designDocId(DESIGN_DOC).viewName("name")
-                    .includeDocs(true)
-                    .startKey(name)
-                    .endKey(ComplexKey.of(name, ComplexKey.emptyObject()));
-
-            sites = db.queryView(name_only, JsonNode.class);
-        } else {
-            sites = db.queryView(all, JsonNode.class);
-        }
+        ViewQuery viewQuery = createQueryToAppropriateView(owner, name);
+        sites = db.queryView(viewQuery, JsonNode.class);
 
         if ( sites == null )
             return Collections.emptyList();
 
         return sites;
+    }
+    
+    private ViewQuery createQueryToAppropriateView(String owner, String name) {
+        if (owner == null && name == null) {
+            return all;
+        } else if (owner != null) {
+            return createQueryToOwnerNameView(owner, name);
+        } else {
+            return createQueryToNameView(name);
+        }
+    }
+    
+    private ViewQuery createQueryToNameView(String name) {
+        return createQueryWithoutKeys("name")
+                .key(ComplexKey.of(name));
+    }
+
+    private ViewQuery createQueryToOwnerNameView(String owner, String name) {
+        ViewQuery ownerNameQuery = createQueryWithoutKeys("owner_name");
+        if (name == null) {
+            ownerNameQuery = addKeyRangeForAllWithSameFirstEntryInComplexKey(ownerNameQuery, owner);
+        } else {
+            ownerNameQuery = addComplexKey(ownerNameQuery, owner, name);
+        }
+        return ownerNameQuery;
+    }
+
+    private ViewQuery addKeyRangeForAllWithSameFirstEntryInComplexKey(ViewQuery ownerNameQuery, String key) {
+        return ownerNameQuery.startKey(ComplexKey.of(key))
+                            .endKey(ComplexKey.of(key, ComplexKey.emptyObject()));
+    }
+    
+    private ViewQuery addComplexKey(ViewQuery ownerNameQuery, String key1, String key2) {
+        return ownerNameQuery.key(ComplexKey.of(key1, key2));
+    }
+
+    private ViewQuery createQueryWithoutKeys(String viewName) {
+        return new ViewQuery()
+                .designDocId(DESIGN_DOC)
+                .viewName(viewName)
+                .includeDocs(true);
     }
 
 
