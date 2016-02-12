@@ -30,16 +30,25 @@ if [ "$ETCDCTL_ENDPOINT" != "" ]; then
   export COUCHDB_PASSWORD=$(etcdctl get /passwords/couchdb)
   export MAP_KEY=$(etcdctl get /passwords/map-key)
   export MAP_PLAYER_URL=$(etcdctl get /player/url)
+  export LOGSTASH_ENDPOINT=${etcdctl get /logstash/endpoint)
 
-  /opt/ibm/wlp/bin/server run defaultServer
-  echo Starting the logstash forwarder...
-  sed -i s/PLACEHOLDER_LOGHOST/$(etcdctl get /logstash/endpoint)/g /opt/forwarder.conf
-  cd /opt
-  chmod +x ./forwarder
-  etcdctl get /logstash/cert > logstash-forwarder.crt
-  etcdctl get /logstash/key > logstash-forwarder.key
-  sleep 0.5
-  ./forwarder --config ./forwarder.conf
+  # Softlayer needs a logstash endpoint so we set up the server
+  # to run in the background and the primary task is running the
+  # forwarder. In ICS, Liberty is the primary task so we need to
+  # run it in the foreground
+  if [ "$LOGSTASH_ENDPOINT" != "" ]; then
+    /opt/ibm/wlp/bin/server start defaultServer
+    echo Starting the logstash forwarder...
+    sed -i s/PLACEHOLDER_LOGHOST/${LOGSTASH_ENDPOINT}/g /opt/forwarder.conf
+    cd /opt
+    chmod +x ./forwarder
+    etcdctl get /logstash/cert > logstash-forwarder.crt
+    etcdctl get /logstash/key > logstash-forwarder.key
+    sleep 0.5
+    ./forwarder --config ./forwarder.conf
+  else
+    /opt/ibm/wlp/bin/server run defaultServer
+  fi
 else
   # LOCAL DEVELOPMENT!
   # We do not want to ruin the cloudant admin party, but our code is written to expect
