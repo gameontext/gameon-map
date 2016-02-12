@@ -84,7 +84,7 @@ public class MapRepository {
                 String ownerNodeString = ownerNode.textValue();
                 //remove connectionDetailsBlocks for unauthenticated, or non matching ids, 
                 //unless id is game-on.org
-                if(authenticatedId==null || !(authenticatedId.equals(ownerNodeString))||authenticatedId.equals(GAME_ON_ORG)){
+                if(authenticatedId==null || !(authenticatedId.equals(ownerNodeString)||authenticatedId.equals(GAME_ON_ORG))){
                     JsonNode info = j.get("info");
                     if(info.getNodeType() == JsonNodeType.OBJECT){
                         ObjectNode infoObj = (ObjectNode)info;
@@ -132,7 +132,7 @@ public class MapRepository {
         Log.log(Level.INFO, this, "Lookup site: {0}", id);
         Site result = sites.getSite(id); 
         String owner = result.getOwner();
-        if(authenticatedId==null || !(authenticatedId.equals(owner))||authenticatedId.equals(GAME_ON_ORG)){
+        if(authenticatedId==null || !(authenticatedId.equals(owner)||authenticatedId.equals(GAME_ON_ORG))){
             //unauthenticated, or non matching id, remove connection details block (except for game on id)
             if(result.getInfo()!=null && result.getInfo().getConnectionDetails()!=null){
                 result.getInfo().setConnectionDetails(null);
