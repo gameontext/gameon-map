@@ -30,7 +30,7 @@ if [ "$ETCDCTL_ENDPOINT" != "" ]; then
   export COUCHDB_PASSWORD=$(etcdctl get /passwords/couchdb)
   export MAP_KEY=$(etcdctl get /passwords/map-key)
   export MAP_PLAYER_URL=$(etcdctl get /player/url)
-  export LOGSTASH_ENDPOINT=${etcdctl get /logstash/endpoint)
+  export LOGSTASH_ENDPOINT=$(etcdctl get /logstash/endpoint)
 
   # Softlayer needs a logstash endpoint so we set up the server
   # to run in the background and the primary task is running the
