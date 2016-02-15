@@ -1,5 +1,6 @@
 package org.gameon.map;
 
+import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.ExceptionMapper;
@@ -11,6 +12,7 @@ import org.gameon.map.couchdb.MapRepository;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 @Provider
@@ -21,9 +23,19 @@ public class ErrorResponseMapper implements ExceptionMapper<Exception> {
     @Inject
     protected MapRepository mapRepository;
 
+    protected ObjectMapper mapper;
+
+    @PostConstruct
+    protected void postConstruct() {
+        mapper = mapRepository.mapper();
+        if ( mapper == null )
+            mapper = new ObjectMapper();
+    }
+
     @Override
     public Response toResponse(Exception exception) {
-        ObjectNode objNode = mapRepository.mapper().createObjectNode();
+
+        ObjectNode objNode = mapper.createObjectNode();
 
         Response.Status status = Response.Status.INTERNAL_SERVER_ERROR;
         String message = exception.getMessage();
