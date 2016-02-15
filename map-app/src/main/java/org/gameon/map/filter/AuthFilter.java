@@ -43,6 +43,12 @@ import javax.servlet.http.HttpServletResponse;
           )
 public class AuthFilter implements Filter {
 
+    /**
+     * If any player secret comes back as this string, they have been revoked by admin, and 
+     * will be treated as unable to authenticate.
+     */
+    private static final String ACCESS_DENIED = "ACCESS_DENIED";
+
     private Map<String,TimestampedKey> apiKeyForId = Collections.synchronizedMap( new HashMap<String,TimestampedKey>() );
     
     /** CDI injection of client for Player CRUD operations */
@@ -314,6 +320,10 @@ public class AuthFilter implements Filter {
         String secret = getKeyForId(id);  
         if(secret == null){            
             ((HttpServletResponse)response).sendError(HttpServletResponse.SC_FORBIDDEN,"Unable to obtain shared secret for player "+id+" from player service");
+            return false;
+        }
+        if(ACCESS_DENIED.equals(secret)){
+            ((HttpServletResponse)response).sendError(HttpServletResponse.SC_FORBIDDEN,"Auth key revoked and disabled by admin");
             return false;
         }
         String body = postData ? saw.getBody() : "";
