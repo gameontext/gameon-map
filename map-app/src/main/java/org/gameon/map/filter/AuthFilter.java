@@ -217,8 +217,10 @@ public class AuthFilter implements Filter {
             
             String requestUri = httpRequest.getRequestURI();
                        
-            if(requestUri.startsWith("/map/v1/health") || requestUri.startsWith("/map/v1/app")) {
-                //no auth needed for health.
+            if(requestUri.startsWith("/map/v1/health") 
+               || requestUri.startsWith("/map/v1/app")
+               || requestUri.startsWith("/map/LogView")) {
+                //no auth needed for health, etc
                 chain.doFilter(request, response);
                 return;
             }
