@@ -259,13 +259,13 @@ public class AuthFilter implements Filter {
                             if(!validateHeaderBasedAuth(response, saw, id, gameonDate, false, mapID)) {
                                 return;
                             }
-                            return;
+                            break; // we support DELETE.
                         }
                         case "PUT":{
                             if(!validateHeaderBasedAuth(response, saw, id, gameonDate, true, mapID)){
                                 return;
                             }
-                            return;
+                            break; // we support PUT, too!
                         }
                         default:{
                             ((HttpServletResponse)response).sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Unsupported Http Method "+httpRequest.getMethod());
