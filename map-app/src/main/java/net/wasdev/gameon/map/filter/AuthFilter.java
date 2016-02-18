@@ -219,8 +219,10 @@ public class AuthFilter implements Filter {
             
             String requestUri = httpRequest.getRequestURI();
                        
-            if(requestUri.startsWith("/map/v1/health") || requestUri.startsWith("/map/v1/app") || requestUri.startsWith("/map/LogView")) {
-                //no auth needed for health.
+            if(requestUri.startsWith("/map/v1/health") 
+               || requestUri.startsWith("/map/v1/app")
+               || requestUri.startsWith("/map/LogView")) {
+                //no auth needed for health, etc
                 chain.doFilter(request, response);
                 return;
             }
@@ -259,13 +261,13 @@ public class AuthFilter implements Filter {
                             if(!validateHeaderBasedAuth(response, saw, id, gameonDate, false, mapID)) {
                                 return;
                             }
-                            break;
+                            break; // we support DELETE.
                         }
                         case "PUT":{
                             if(!validateHeaderBasedAuth(response, saw, id, gameonDate, true, mapID)){
                                 return;
                             }
-                            break;
+                            break; // we support PUT, too!
                         }
                         default:{
                             ((HttpServletResponse)response).sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Unsupported Http Method "+httpRequest.getMethod());
