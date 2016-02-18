@@ -34,7 +34,9 @@
     <jndiEntry jndiName="registrationSecret" value="${env.MAP_KEY}"/>   
 
     <!-- <logging traceSpecification="*=info:net.wasdev.gameon.*=all" copySystemStreams="false"/> -->
-    <logging traceSpecification="*=info:net.wasdev.gameon.*=all" />
+    <!-- <logging traceSpecification="*=info:net.wasdev.gameon.*=all" /> -->
+    <logging consoleLogLevel="INFO" traceSpecification="*=info:net.wasdev.gameon.*=all"/>
+    
     <jndiEntry jndiName="serverName" value="${wlp.server.name}"/>
     <jndiEntry jndiName="serverOutputDir" value="${server.output.dir}"/>
 
