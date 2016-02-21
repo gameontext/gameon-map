@@ -103,3 +103,6 @@ task startNewEtcdContainer(type: DockerStartContainer) {
     dependsOn createNewEtcdContainer
     targetContainerId { "gameon-map" }
 }
+
+task listDockerImages(type: DockerListImages) {
+}
