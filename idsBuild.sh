@@ -24,5 +24,8 @@ cd map-wlpcfg
 ../gradlew removeCurrentContainer
 ../gradlew startNewEtcdContainer
 
+echo Displaying Docker images...
+docker images
+
 cd ..
 rm -rf dockercfg
