@@ -23,8 +23,6 @@ import javax.ws.rs.core.Response;
 import io.swagger.annotations.Api;
 import net.wasdev.gameon.map.couchdb.MapRepository;
 
-import io.swagger.annotations.Api;
-
 @Path("/")
 @Api( value = "map")
 public class MapResource {

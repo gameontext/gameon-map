@@ -24,8 +24,17 @@ cd map-wlpcfg
 ../gradlew removeCurrentContainer
 ../gradlew startNewEtcdContainer
 
-echo Displaying Docker images...
-docker images
-
 cd ..
+
+echo Getting a load of stuff that lets me use docker.
+wget http://security.ubuntu.com/ubuntu/pool/main/a/apparmor/libapparmor1_2.8.95~2430-0ubuntu5.3_amd64.deb -O libapparmor.deb
+sudo dpkg -i libapparmor.deb
+rm libapparmor.deb
+wget https://get.docker.com/builds/Linux/x86_64/docker-1.9.1 --quiet -O docker
+chmod +x docker
+echo Displaying Docker images...
+./docker images
+echo Cleaning Up...
+rm docker
+
 rm -rf dockercfg
