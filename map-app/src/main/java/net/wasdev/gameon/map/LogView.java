@@ -172,7 +172,7 @@ public class LogView extends HttpServlet {
                                             String outdir = System.getenv("WLP_OUTPUT_DIR");
                                             viewFile(out, outdir, choice.substring(1).trim());
                                         } else if (choice.startsWith("l")) {
-                                            String logdir = System.getenv("LOG_DIR");
+                                            String logdir = System.getenv("X_LOG_DIR");
                                             if (logdir == null) {
                                                 String outdir = System.getenv("WLP_OUTPUT_DIR");
                                                 logdir = Paths.get(outdir, "defaultServer", "logs").toString();
