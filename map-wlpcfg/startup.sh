@@ -1,5 +1,9 @@
 #!/bin/bash
 
+if [ "$SERVERDIRNAME" == "" ]; then
+  SERVERDIRNAME=defaultServer
+fi
+
 if [ "$ETCDCTL_ENDPOINT" != "" ]; then
   echo Setting up etcd...
   echo "** Testing etcd is accessible"
@@ -16,8 +20,8 @@ if [ "$ETCDCTL_ENDPOINT" != "" ]; then
   done
   echo "etcdctl returned sucessfully, continuing"
 
-  mkdir -p /opt/ibm/wlp/usr/servers/defaultServer/resources/security
-  cd /opt/ibm/wlp/usr/servers/defaultServer/resources/
+  mkdir -p /opt/ibm/wlp/usr/servers/$SERVERDIRNAME/resources/security
+  cd /opt/ibm/wlp/usr/servers/$SERVERDIRNAME/resources/
   etcdctl get /proxy/third-party-ssl-cert > cert.pem
   openssl pkcs12 -passin pass:keystore -passout pass:keystore -export -out cert.pkcs12 -in cert.pem
   keytool -import -v -trustcacerts -alias default -file cert.pem -storepass truststore -keypass keystore -noprompt -keystore security/truststore.jks
@@ -41,7 +45,7 @@ if [ "$ETCDCTL_ENDPOINT" != "" ]; then
   # forwarder. In ICS, Liberty is the primary task so we need to
   # run it in the foreground
   if [ "$LOGSTASH_ENDPOINT" != "" ]; then
-    /opt/ibm/wlp/bin/server start defaultServer
+    /opt/ibm/wlp/bin/server start $SERVERDIRNAME
     echo Starting the logstash forwarder...
     sed -i s/PLACEHOLDER_LOGHOST/${LOGSTASH_ENDPOINT}/g /opt/forwarder.conf
     cd /opt
@@ -51,7 +55,7 @@ if [ "$ETCDCTL_ENDPOINT" != "" ]; then
     sleep 0.5
     ./forwarder --config ./forwarder.conf
   else
-    /opt/ibm/wlp/bin/server run defaultServer
+    /opt/ibm/wlp/bin/server run $SERVERDIRNAME 
   fi
 else
   # LOCAL DEVELOPMENT!
@@ -59,7 +63,7 @@ else
   # that creds are required, so we should make sure the required user/password exist
 
   AUTH_HOST="http://${COUCHDB_USER}:${COUCHDB_PASSWORD}@couchdb:5984"
-  SERVER_PATH=/opt/ibm/wlp/usr/servers/defaultServer
+  SERVER_PATH=/opt/ibm/wlp/usr/servers/$SERVERDIRNAME
 
   echo "** Testing connection to ${COUCHDB_URL}"
   curl --fail -X GET ${AUTH_HOST}/_config/admins/${COUCHDB_USER}
@@ -100,6 +104,5 @@ else
       curl -X POST -H "Content-Type: application/json" --data @${SERVER_PATH}/firstRoom.json ${AUTH_HOST}/map_repository
   fi
 
-
-  exec /opt/ibm/wlp/bin/server run defaultServer
+  exec /opt/ibm/wlp/bin/server run $SERVERDIRNAME
 fi
