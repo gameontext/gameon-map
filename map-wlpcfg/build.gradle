@@ -69,7 +69,7 @@ docker {
 
 task buildDockerImage(type: DockerBuildImage, dependsOn: ['copyApplication', 'copyCouchdb']) {
     inputDir = file('.')
-    dockerFile = file('Dockerfile')
+    dockerFile = file('Dockerfile.live')
     tag = 'gameon-map'
     quiet = false
 }
