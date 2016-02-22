@@ -1,4 +1,4 @@
-FROM websphere-liberty-logmetx:beta
+FROM websphere-liberty-monitored-2:beta
 
 MAINTAINER Ben Smith
 
