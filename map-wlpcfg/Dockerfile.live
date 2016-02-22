@@ -13,4 +13,5 @@ COPY ./forwarder.conf /opt/forwarder.conf
 
 COPY ./startup.sh /opt/startup.sh
 
+CMD ["/bin/cp","-rp","/opt/ibm/wlp/usr/servers/defaultServer/*","/opt/ibm/wlp/usr/servers/$SERVERDIRNAME/"]
 CMD ["/opt/startup.sh"]
