@@ -6,6 +6,7 @@ ENV SERVERDIRNAME map
 
 ADD https://download.elastic.co/logstash-forwarder/binaries/logstash-forwarder_linux_amd64 /opt/forwarder
 ADD ./servers/gameon-map /opt/ibm/wlp/usr/servers/$SERVERDIRNAME/
+ADD ./server-logmet-dropin.xml /opt/ibm/wlp/usr/servers/$SERVERDIRNAME/configDropins/overrides/
 RUN apt-get update; apt-get install -y curl
 RUN wget https://github.com/coreos/etcd/releases/download/v2.2.2/etcd-v2.2.2-linux-amd64.tar.gz -q; tar xzf etcd-v2.2.2-linux-amd64.tar.gz etcd-v2.2.2-linux-amd64/etcdctl --strip-components=1; rm etcd-v2.2.2-linux-amd64.tar.gz; mv etcdctl /usr/local/bin/etcdctl
 
@@ -13,5 +14,4 @@ COPY ./forwarder.conf /opt/forwarder.conf
 
 COPY ./startup.sh /opt/startup.sh
 
-CMD ["/bin/cp","-rp","/opt/ibm/wlp/usr/servers/defaultServer/*","/opt/ibm/wlp/usr/servers/$SERVERDIRNAME/"]
 CMD ["/opt/startup.sh"]
