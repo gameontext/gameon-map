@@ -235,6 +235,7 @@ public class AuthFilter implements Filter {
                 String id = saw.getId();
                 if ( id == null )
                     id = "game-on.org";
+              
                 String gameonDate = saw.getDate();    
                 String mapID = saw.getMapID();
                 try{
@@ -302,6 +303,10 @@ public class AuthFilter implements Filter {
         } 
         if(isDuplicate(hmacHeader)) {
             ((HttpServletResponse)response).sendError(HttpServletResponse.SC_FORBIDDEN,"Duplicate request received");
+            return false;
+        }
+        if(id==null || id.trim().isEmpty()) {
+            ((HttpServletResponse)response).sendError(HttpServletResponse.SC_FORBIDDEN,"Request requires an ID.");
             return false;
         }
         if(instanceCheckingEnabled || ((mapID != null) && (mapID.length() > 0))) {
