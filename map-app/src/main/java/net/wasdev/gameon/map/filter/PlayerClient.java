@@ -195,7 +195,8 @@ public class PlayerClient {
     	}else{
     		client = HttpClientBuilder.create().build();
     	}
-    	HttpGet hg = new HttpGet(playerLocation+"/"+playerId+"?jwt="+jwt);
+    	HttpGet hg = new HttpGet(playerLocation+"/"+playerId);
+    	hg.addHeader("gameon-jwt", jwt);
     	
     	System.out.println("Building web target "+hg.getURI().toString());
      
