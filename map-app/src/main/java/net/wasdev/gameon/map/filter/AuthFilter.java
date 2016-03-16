@@ -46,6 +46,9 @@ import net.wasdev.gameon.map.Log;
         urlPatterns = {"/*"}
           )
 public class AuthFilter implements Filter {
+    
+    @Resource(lookup="systemId")
+    String SYSTEM_ID;
 
     private static final long EXPIRES_REQUEST_MS = TimeUnit.MINUTES.toMillis(5);                            //expiry time for requests in ms
     private static final long EXPIRES_PLAYERID_MS = TimeUnit.DAYS.toMillis(1);      //expiry time for player ID before checking for revocation (in ms)
@@ -155,7 +158,7 @@ public class AuthFilter implements Filter {
      */
     private String getKeyForId(String id){
         //first.. handle our built-in key
-        if("game-on.org".equals(id)){
+        if(SYSTEM_ID.equals(id)){
             return registrationSecret;
         }
         

@@ -26,9 +26,10 @@ import net.wasdev.gameon.map.models.Site;
 @ApplicationScoped
 public class MapRepository {
 
-    private static final String GAME_ON_ORG = "game-on.org";
+    @Resource(lookup="systemId")
+    protected String SYSTEM_ID;
 
-    @Resource(name = "couchdb/connector")
+    @Resource(lookup="couchdb/connector")
     protected CouchDbInstance db;
 
     protected SiteDocuments sites;
@@ -83,8 +84,8 @@ public class MapRepository {
             if(ownerNode!=null && ownerNode.getNodeType().equals(JsonNodeType.STRING)){
                 String ownerNodeString = ownerNode.textValue();
                 //remove connectionDetailsBlocks for unauthenticated, or non matching ids, 
-                //unless id is game-on.org
-                if(authenticatedId==null || !(authenticatedId.equals(ownerNodeString)||authenticatedId.equals(GAME_ON_ORG))){
+                //unless id is the system id.
+                if(authenticatedId==null || !(authenticatedId.equals(ownerNodeString)||authenticatedId.equals(SYSTEM_ID))){
                     JsonNode info = j.get("info");
                     if(info.getNodeType() == JsonNodeType.OBJECT){
                         ObjectNode infoObj = (ObjectNode)info;
@@ -132,8 +133,8 @@ public class MapRepository {
         Log.log(Level.INFO, this, "Lookup site: {0}", id);
         Site result = sites.getSite(id); 
         String owner = result.getOwner();
-        if(authenticatedId==null || !(authenticatedId.equals(owner)||authenticatedId.equals(GAME_ON_ORG))){
-            //unauthenticated, or non matching id, remove connection details block (except for game on id)
+        if(authenticatedId==null || !(authenticatedId.equals(owner)||authenticatedId.equals(SYSTEM_ID))){
+            //unauthenticated, or non matching id, remove connection details block (except for system id)
             if(result.getInfo()!=null && result.getInfo().getConnectionDetails()!=null){
                 result.getInfo().setConnectionDetails(null);
             }

@@ -39,6 +39,7 @@ if [ "$ETCDCTL_ENDPOINT" != "" ]; then
   export LOGMET_PORT=$(etcdctl get /logmet/port)
   export LOGMET_TENANT=$(etcdctl get /logmet/tenant)
   export LOGMET_PWD=$(etcdctl get /logmet/pwd)
+  export SYSTEM_ID=$(etcdctl get /player/system_id)
 
   # Softlayer needs a logstash endpoint so we set up the server
   # to run in the background and the primary task is running the
@@ -101,7 +102,10 @@ else
   echo "** Checking firstroom"
   curl --fail -X GET ${AUTH_HOST}/map_repository/firstroom
   if [ $? -eq 22 ]; then
-      curl -X POST -H "Content-Type: application/json" --data @${SERVER_PATH}/firstRoom.json ${AUTH_HOST}/map_repository
+      echo "Updating firstroom.json ${SERVER_PATH}/firstRoom.json"
+      sed "s/game-on.org/${SYSTEM_ID}/g" ${SERVER_PATH}/firstRoom.json > ${SERVER_PATH}/firstRoom.withid.json
+      echo "Adding firstroom to db"
+      curl -X POST -H "Content-Type: application/json" --data @${SERVER_PATH}/firstRoom.withid.json ${AUTH_HOST}/map_repository
   fi
 
   exec /opt/ibm/wlp/bin/server run $SERVERDIRNAME
