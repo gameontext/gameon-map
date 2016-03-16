@@ -37,7 +37,8 @@ def localEnvironment = ["LICENSE=accept",
             "LOGMET_HOST=" + System.getenv('LOGMET_HOST'),
             "LOGMET_PORT=" + System.getenv('LOGMET_PORT'),
             "LOGMET_TENANT=" + System.getenv('LOGMET_TENANT'),
-            "LOGMET_PWD=" + System.getenv('LOGMET_PWD')]
+            "LOGMET_PWD=" + System.getenv('LOGMET_PWD'),
+            "SYSTEM_ID=" + System.getenv('SYSTEM_ID')]
 
 def etcdEnvironment = ["LICENSE=accept", "ETCDCTL_ENDPOINT=http://etcd:4001"]
 
