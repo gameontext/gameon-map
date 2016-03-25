@@ -1,3 +1,18 @@
+/*******************************************************************************
+ * Copyright (c) 2016 IBM Corp.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *******************************************************************************/
 package net.wasdev.gameon.map.filter;
 
 import java.io.BufferedReader;
@@ -46,7 +61,7 @@ import net.wasdev.gameon.map.Log;
         urlPatterns = {"/*"}
           )
 public class AuthFilter implements Filter {
-    
+
     @Resource(lookup="systemId")
     String SYSTEM_ID;
 
@@ -60,19 +75,19 @@ public class AuthFilter implements Filter {
     private static final boolean instanceCheckingEnabled = false;                   //remove this to enforce map instance checking to counter replays
     //this map contains all the received messages, it is thread safe
     private static ConcurrentMap<String,TimestampedKey> requests = new ConcurrentHashMap<>();
-    
+
     /** CDI injection of client for Player CRUD operations */
     @Inject
     PlayerClient playerClient;
-    
+
     @Resource(lookup="registrationSecret")
     String registrationSecret;
-    
+
     @Override
     public void init(FilterConfig filterConfig) throws ServletException {
         filterConfig.getServletContext().setAttribute(INSTANCE_ID, instanceID);
     }
-    
+
     /**
      * We need to hash the request body.. which is read via an input stream that can only be read once
      * so if we need to read it, then we need to keep hold of it so the client servlet can read it too.
@@ -84,7 +99,7 @@ public class AuthFilter implements Filter {
         public ServletAuthWrapper (HttpServletRequest req) throws IOException{
             super(req);
             this.req = req;
-            
+
             try (BufferedReader buffer = new BufferedReader(
                     new InputStreamReader(req.getInputStream(),"UTF-8"))) {
                 body = buffer.lines().collect(Collectors.joining("\n"));
@@ -94,7 +109,7 @@ public class AuthFilter implements Filter {
             return req.getHeader("gameon-id");
         }
         public String getDate(){
-            return req.getHeader("gameon-date");           
+            return req.getHeader("gameon-date");
         }
         public String getSigBody(){
             return req.getHeader("gameon-sig-body");
@@ -105,7 +120,7 @@ public class AuthFilter implements Filter {
         public String getMapID() {
             return req.getHeader(INSTANCE_ID);
         }
-        
+
         public String getBody(){
             return body;
         }
@@ -113,7 +128,8 @@ public class AuthFilter implements Filter {
         public ServletInputStream getInputStream() throws IOException {
             final ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(body.getBytes("UTF-8"));
             ServletInputStream inputStream = new ServletInputStream() {
-                public int read () 
+                @Override
+                public int read ()
                     throws IOException {
                     return byteArrayInputStream.read();
                 }
@@ -127,32 +143,32 @@ public class AuthFilter implements Filter {
                 }
                 @Override
                 public void setReadListener(ReadListener readListener) {
-                    throw new RuntimeException("Not implemented");            
+                    throw new RuntimeException("Not implemented");
                 }
             };
             return inputStream;
         }
     }
-    
+
     private String buildHmac(List<String> stuffToHash, String key) throws NoSuchAlgorithmException, InvalidKeyException, UnsupportedEncodingException{
         Mac mac = Mac.getInstance("HmacSHA256");
         mac.init(new SecretKeySpec(key.getBytes("UTF-8"), "HmacSHA256"));
-        
+
         StringBuffer hashData = new StringBuffer();
         for(String s: stuffToHash){
-            hashData.append(s);            
+            hashData.append(s);
         }
-        
+
         return Base64.getEncoder().encodeToString( mac.doFinal(hashData.toString().getBytes("UTF-8")) );
     }
-    
+
     private String buildHash(String data) throws NoSuchAlgorithmException, UnsupportedEncodingException{
         MessageDigest md = MessageDigest.getInstance("SHA-256");
-        md.update(data.getBytes("UTF-8")); 
+        md.update(data.getBytes("UTF-8"));
         byte[] digest = md.digest();
         return Base64.getEncoder().encodeToString( digest );
     }
-    
+
     /**
      * Obtain the apiKey for the given id, using a local cache to avoid hitting couchdb too much.
      */
@@ -161,14 +177,14 @@ public class AuthFilter implements Filter {
         if(SYSTEM_ID.equals(id)){
             return registrationSecret;
         }
-        
+
         TimestampedKey t = new TimestampedKey(EXPIRES_PLAYERID_MS);
         TimestampedKey result =  apiKeyForId.putIfAbsent(id, t);    //check cache for this id.
         if(result != null) {
             //the id has been seen, so check to see if it has expired
             if(!result.hasExpired()) {
                 Log.log(Level.INFO,"Map using cached key for {0}",id);
-                return result.getKey();                
+                return result.getKey();
             }
             Log.log(Level.INFO,"Map expired cached key for {0}",id);
             apiKeyForId.replace(id, t); //replace old entry with new one to be initialised
@@ -183,15 +199,15 @@ public class AuthFilter implements Filter {
             return null;
         }
     }
-    
-    
+
+
     //checks to see if the HMAC has previously been processed by the server
     private boolean isDuplicate(String hmac) {
         if(requests.size() > TRIGGER_CLEANUP_DEPTH) {
             Log.log(Level.INFO,this,"Clearing expired hmacs");
             long count = 0;
             /*
-             * This will do for the moment, however it will still be possible the multiple 
+             * This will do for the moment, however it will still be possible the multiple
              * requests are doing a clean up at the same time. However the use of ConcurrentMaps
              * and weakly consistent iterators means that ConcurrentModificationExceptions will not occur
              * (it just isn't very efficient at the moment).
@@ -219,27 +235,27 @@ public class AuthFilter implements Filter {
 
         if(request instanceof HttpServletRequest){
             HttpServletRequest httpRequest = (HttpServletRequest)request;
-            
+
             String requestUri = httpRequest.getRequestURI();
-                       
-            if(requestUri.startsWith("/map/v1/health") 
+
+            if(requestUri.startsWith("/map/v1/health")
                || requestUri.startsWith("/map/v1/app")
                || requestUri.startsWith("/map/LogView")) {
                 //no auth needed for health, etc
                 chain.doFilter(request, response);
                 return;
             }
-            
+
             if(requestUri.startsWith("/map/v1/sites")){
 
-                //auth needed for sites endpoints.               
+                //auth needed for sites endpoints.
                 ServletAuthWrapper saw = new ServletAuthWrapper(httpRequest);
-                
+
                 String id = saw.getId();
                 if ( id == null )
                     id = "game-on.org";
-              
-                String gameonDate = saw.getDate();    
+
+                String gameonDate = saw.getDate();
                 String mapID = saw.getMapID();
                 try{
                     //we protect Map, and our requirements vary per http method
@@ -276,21 +292,21 @@ public class AuthFilter implements Filter {
                         default:{
                             ((HttpServletResponse)response).sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Unsupported Http Method "+httpRequest.getMethod());
                             return;
-                        }                    
+                        }
                     }
                 }catch(UnsupportedEncodingException | NoSuchAlgorithmException | InvalidKeyException e){
                     e.printStackTrace();
                     ((HttpServletResponse)response).sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Error processing headers "+e.getMessage());
                     return;
                 }
-                     
+
                 request.setAttribute("player.id", id);
-       
-                //pass our request wrapper to the chain.. NOT the original request, because we may have 
+
+                //pass our request wrapper to the chain.. NOT the original request, because we may have
                 //already burnt the input stream by reading it to hash the body.
                 chain.doFilter(saw, response);
                 return;
-            }          
+            }
             ((HttpServletResponse)response).sendError(HttpServletResponse.SC_FORBIDDEN, "Request made to unknown url pattern. "+httpRequest.getRequestURI());
         }else{
             ((HttpServletResponse)response).sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Only supports http servlet requests");
@@ -298,12 +314,12 @@ public class AuthFilter implements Filter {
     }
 
     private boolean validateHeaderBasedAuth(ServletResponse response, ServletAuthWrapper saw, String id, String gameonDate, boolean postData, String mapID)
-            throws NoSuchAlgorithmException, UnsupportedEncodingException, InvalidKeyException, IOException {       
+            throws NoSuchAlgorithmException, UnsupportedEncodingException, InvalidKeyException, IOException {
         String hmacHeader = saw.getSignature();
         if((hmacHeader == null) || (hmacHeader.length() == 0)) {
             ((HttpServletResponse)response).sendError(HttpServletResponse.SC_FORBIDDEN,"Invalid signature received");
             return false;
-        } 
+        }
         if(isDuplicate(hmacHeader)) {
             ((HttpServletResponse)response).sendError(HttpServletResponse.SC_FORBIDDEN,"Duplicate request received");
             return false;
@@ -320,8 +336,8 @@ public class AuthFilter implements Filter {
         } else {
             mapID = "";     //checking is disabled, so remove mapID
         }
-        String secret = getKeyForId(id);  
-        if(secret == null){            
+        String secret = getKeyForId(id);
+        if(secret == null){
             ((HttpServletResponse)response).sendError(HttpServletResponse.SC_FORBIDDEN,"Unable to obtain shared secret for player "+id+" from player service");
             return false;
         }
@@ -331,16 +347,16 @@ public class AuthFilter implements Filter {
         if(bodyHash!=null && bodyHash.equals(bodyHashHeader)){
             String hmac = buildHmac(Arrays.asList(
                     new String[] { mapID, id,gameonDate,bodyHashHeader} ), secret);
-            
+
             if(hmac!=null && hmac.equals(hmacHeader)){
                 Instant now = Instant.now();
-                Instant then = Instant.parse(gameonDate);    
+                Instant then = Instant.parse(gameonDate);
                 try{
                 if(Duration.between(now,then).toMillis() > EXPIRES_REQUEST_MS) {
                     //fail.. time delta too much.
                     ((HttpServletResponse)response).sendError(HttpServletResponse.SC_FORBIDDEN,"Time delta of "+Duration.between(now,then).toMillis()+"ms is too great.");
                     return false;
-                }else{        
+                }else{
                     Log.log(Level.FINER, this, "Hmac signed request Approved for id {0}", id);
                     return true;
                 }
@@ -348,12 +364,12 @@ public class AuthFilter implements Filter {
                     ((HttpServletResponse)response).sendError(HttpServletResponse.SC_FORBIDDEN,"Unable to parse gameon-date header");
                     return false;
                 }
-                
+
             }else{
                 Log.log(Level.INFO,this,"Had hmac {0} and calculated(first4chars) {1} using key(first2chars) {2} for id {3}",hmacHeader,hmac.substring(0,4),secret.substring(0, 2),id);
                 ((HttpServletResponse)response).sendError(HttpServletResponse.SC_FORBIDDEN,"Had hmac "+hmacHeader+" and calculated (first 4chars) "+hmac.substring(0,4)+" using key(first2chars) "+secret.substring(0, 2)+" for id "+id);
                 return false;
-            }                                
+            }
         }else{
             ((HttpServletResponse)response).sendError(HttpServletResponse.SC_FORBIDDEN,"Bad gameon-sig-body value");
             return false;

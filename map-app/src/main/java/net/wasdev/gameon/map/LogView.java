@@ -1,3 +1,18 @@
+/*******************************************************************************
+ * Copyright (c) 2016 IBM Corp.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *******************************************************************************/
 package net.wasdev.gameon.map;
 
 import java.io.File;
@@ -81,6 +96,7 @@ public class LogView extends HttpServlet {
      * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse
      *      response)
      */
+    @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         String authHeader = request.getHeader("Authorization");
@@ -101,34 +117,34 @@ public class LogView extends HttpServlet {
                             try {
                                 expectedPassword = (String) new InitialContext().lookup("registrationSecret");
                             } catch (NamingException e) {
-                                ((HttpServletResponse) response).sendError(HttpServletResponse.SC_FORBIDDEN,
+                                response.sendError(HttpServletResponse.SC_FORBIDDEN,
                                         "unable to obtain pw to auth against");
                                 return;
                             }
 
                             if ("admin".equals(login) && expectedPassword.equals(password)) {
-                                
+
                                 String cmd = request.getParameter("cmd");
                                 PrintWriter out = response.getWriter();
-                                
+
                                 if ("list".equals(cmd)) {
-                                    
+
                                     String serverName;
                                     try {
                                         serverName = (String) new InitialContext().lookup("serverName");
                                     } catch (NamingException e) {
                                         serverName = "Naming Exception "+e;
                                     }
-                                    
+
                                     String serverOutputDir;
                                     try {
                                         serverOutputDir = (String) new InitialContext().lookup("serverOutputDir");
                                     } catch (NamingException e) {
-                                        serverOutputDir = "Naming Exception "+e;                                        
+                                        serverOutputDir = "Naming Exception "+e;
                                     }
                                     out.println("${wlp.server.name} "+serverName+"<br>");
                                     out.println("${server.output.dir} "+serverOutputDir+"<br>");
-                                    
+
                                     response.addHeader("Content-Type", MediaType.TEXT_HTML);
                                     String outdir = System.getenv("WLP_OUTPUT_DIR");
                                     out.println("WLP_OUTPUT_DIR: " + String.valueOf(outdir) + "<br>");
@@ -153,7 +169,7 @@ public class LogView extends HttpServlet {
                                         out.println("FFDC_DIR: " + String.valueOf(ffdcDir) + "<br>");
                                         listFilesInDir(out, ffdcDir, "f");
                                     }
-                                    
+
                                     // going to try default location..
                                     String hardcoded = "/logs";
                                     out.println("Looking in hardcoded location "+hardcoded+"<br>");
@@ -163,7 +179,7 @@ public class LogView extends HttpServlet {
                                     String hardffdcDir = new File(new File(otherlogdir), "ffdc").getAbsolutePath();
                                     out.println("hardcoded ffdc: " + String.valueOf(hardffdcDir) + "<br>");
                                     listFilesInDir(out, hardffdcDir, "y");
-                                    
+
                                 } else if ("view".equals(cmd)) {
                                     response.addHeader("Content-Type", MediaType.TEXT_PLAIN);
                                     String choice = request.getParameter("choice");
@@ -178,7 +194,7 @@ public class LogView extends HttpServlet {
                                                 logdir = Paths.get(outdir, "defaultServer", "logs").toString();
                                             }
                                             viewFile(out, logdir, choice.substring(1).trim());
-                                        } else if (choice.startsWith("f")) {                                            
+                                        } else if (choice.startsWith("f")) {
                                             String logdir = System.getenv("X_LOG_DIR");
                                             if (logdir == null) {
                                                 String outdir = System.getenv("WLP_OUTPUT_DIR");
@@ -194,7 +210,7 @@ public class LogView extends HttpServlet {
                                             viewFile(out, hardcoded, choice.substring(1).trim());
                                         }
                                     } else {
-                                        ((HttpServletResponse) response).sendError(HttpServletResponse.SC_BAD_REQUEST,
+                                        response.sendError(HttpServletResponse.SC_BAD_REQUEST,
                                                 "view cmd requires choice param");
                                     }
                                 } else {
@@ -205,12 +221,12 @@ public class LogView extends HttpServlet {
                                 }
                             }
                         } else {
-                            ((HttpServletResponse) response).sendError(HttpServletResponse.SC_FORBIDDEN,
+                            response.sendError(HttpServletResponse.SC_FORBIDDEN,
                                     "badly formed auth header.");
                             return;
                         }
                     } catch (UnsupportedEncodingException e) {
-                        ((HttpServletResponse) response).sendError(HttpServletResponse.SC_FORBIDDEN,
+                        response.sendError(HttpServletResponse.SC_FORBIDDEN,
                                 "Error decoding auth");
                         return;
                     }
@@ -218,7 +234,7 @@ public class LogView extends HttpServlet {
             }
         } else {
             response.addHeader("WWW-Authenticate", "Basic realm=\"Ozzy LogView\"");
-            ((HttpServletResponse) response).sendError(HttpServletResponse.SC_UNAUTHORIZED, "Access denied");
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Access denied");
             return;
         }
     }
@@ -227,6 +243,7 @@ public class LogView extends HttpServlet {
      * @see HttpServlet#doPost(HttpServletRequest request, HttpServletResponse
      *      response)
      */
+    @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         // TODO Auto-generated method stub

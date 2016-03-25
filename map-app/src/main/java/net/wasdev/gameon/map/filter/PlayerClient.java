@@ -1,3 +1,18 @@
+/*******************************************************************************
+ * Copyright (c) 2016 IBM Corp.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *******************************************************************************/
 package net.wasdev.gameon.map.filter;
 
 import java.io.FileInputStream;
@@ -54,13 +69,13 @@ public class PlayerClient {
 
     /**
      * The player URL injected from JNDI via CDI.
-     * 
+     *
      * @see {@code playerUrl} in
      *      {@code /mediator-wlpcfg/servers/gameon-mediator/server.xml}
      */
     @Resource(lookup = "playerUrl")
     String playerLocation;
-    
+
     // Keystore info for jwt parsing / creation.
     @Resource(lookup = "jwtKeyStore")
     String keyStore;
@@ -68,11 +83,11 @@ public class PlayerClient {
     String keyStorePW;
     @Resource(lookup = "jwtKeyStoreAlias")
     String keyStoreAlias;
-    
+
     /** The Key to Sign JWT's with (once it's loaded) */
     private static Key signingKey = null;
 
-    
+
     /**
      * The {@code @PostConstruct} annotation indicates that this method should
      * be called immediately after the {@code ConciergeClient} is instantiated
@@ -84,7 +99,7 @@ public class PlayerClient {
     @PostConstruct
     public void initClient(){
     }
-    
+
     /**
      * Obtain the key we'll use to sign the jwts we use to talk to Player endpoints.
      *
@@ -112,13 +127,13 @@ public class PlayerClient {
         }
 
     }
-    
+
     /**
      * Obtain a JWT for the player id that can be used to invoke player REST services.
-     * 
-     * We can create this, because the concierge has access to the private certificate 
-     * required to sign such a JWT. 
-     * 
+     *
+     * We can create this, because the concierge has access to the private certificate
+     * required to sign such a JWT.
+     *
      * @param playerId The id to build the JWT for
      * @return The JWT as a string.
      * @throws IOException
@@ -149,18 +164,18 @@ public class PlayerClient {
         onwardsClaims.setExpiration(calendar2.getTime());
 
         // finally build the new jwt, using the claims we just built, signing it
-        // with our signing key, and adding a key hint as kid to the encryption 
-        // header, which is optional, but can be used by the receivers of the 
+        // with our signing key, and adding a key hint as kid to the encryption
+        // header, which is optional, but can be used by the receivers of the
         // jwt to know which key they should verifiy it with.
         String newJwt = Jwts.builder().setHeaderParam("kid", "playerssl").setClaims(onwardsClaims)
                 .signWith(SignatureAlgorithm.RS256, signingKey).compact();
 
-        
+
         return newJwt;
     }
 
 
-    
+
     /**
      * Obtain apiKey for player id.
      *
@@ -170,24 +185,24 @@ public class PlayerClient {
      */
     public String getApiKey(String playerId) throws IOException {
     	String jwt = getClientJwtForId(playerId);
-    	
+
     	HttpClient client = null;
     	if("development".equals(System.getenv("MAP_PLAYER_MODE"))){
     		System.out.println("Using development mode player connection. (DefaultSSL,NoHostNameValidation)");
     		try{
 	    		HttpClientBuilder b = HttpClientBuilder.create();
-	    		
+
 	    		//use the default ssl context, we have a trust store configured for player cert.
 	    		SSLContext sslContext = SSLContext.getDefault();
-	    		
+
 	    		//use a very trusting truststore.. (not needed..)
 	    		//SSLContext sslContext = new SSLContextBuilder().loadTrustMaterial(null, new TrustSelfSignedStrategy()).build();
-	    		    	
+
 	    		b.setSSLContext( sslContext);
-	    		
+
 	    		//disable hostname validation, because we'll need to access the cert via a different hostname.
 	    		b.setSSLHostnameVerifier(NoopHostnameVerifier.INSTANCE);
-	    		
+
 	    		client = b.build();
     		}catch(Exception e){
     			throw new IOException(e);
@@ -197,21 +212,21 @@ public class PlayerClient {
     	}
     	HttpGet hg = new HttpGet(playerLocation+"/"+playerId);
     	hg.addHeader("gameon-jwt", jwt);
-    	
+
     	System.out.println("Building web target "+hg.getURI().toString());
-     
+
         try {
             // Make GET request using the specified target, get result as a
             // string containing JSON
         	HttpResponse r = client.execute(hg);
         	String result = new BasicResponseHandler().handleResponse(r);
-                     
+
             // Parse the JSON response, and retrieve the apiKey field value.
             ObjectMapper om = new ObjectMapper();
             JsonNode jn = om.readValue(result,JsonNode.class);
-            
+
             Log.log(Level.FINER, this, "Got player record for {0} from player service", playerId);
-            
+
             return jn.get("apiKey").textValue();
         } catch (HttpResponseException hre) {
         	System.out.println("Error communicating with player service: "+hre.getStatusCode()+" "+hre.getMessage());

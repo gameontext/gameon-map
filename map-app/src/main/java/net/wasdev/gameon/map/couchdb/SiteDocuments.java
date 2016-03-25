@@ -1,3 +1,18 @@
+/*******************************************************************************
+ * Copyright (c) 2016 IBM Corp.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *******************************************************************************/
 package net.wasdev.gameon.map.couchdb;
 
 import java.util.Collections;
@@ -94,7 +109,7 @@ public class SiteDocuments {
 
         return sites;
     }
-    
+
     private ViewQuery createQueryToAppropriateView(String owner, String name) {
         if (owner == null && name == null) {
             return all;
@@ -104,7 +119,7 @@ public class SiteDocuments {
             return createQueryToNameView(name);
         }
     }
-    
+
     private ViewQuery createQueryToNameView(String name) {
         return createQueryWithoutKeys("name")
                 .key(ComplexKey.of(name));
@@ -124,7 +139,7 @@ public class SiteDocuments {
         return ownerNameQuery.startKey(ComplexKey.of(key))
                             .endKey(ComplexKey.of(key, ComplexKey.emptyObject()));
     }
-    
+
     private ViewQuery addComplexKey(ViewQuery ownerNameQuery, String key1, String key2) {
         return ownerNameQuery.key(ComplexKey.of(key1, key2));
     }
@@ -188,6 +203,7 @@ public class SiteDocuments {
      *
      * @param id Site/Room id
      * @return Complete information for the specified room/site
+     * @throws DocumentNotFoundException for unknown room
      */
     public Site getSite(String id) throws DocumentNotFoundException {
         // get the document from the DB
@@ -202,21 +218,21 @@ public class SiteDocuments {
 
     /**
      * UDPATE ROOM
-     * @param owner Owner(?) of the room
+     * @param user Owner(?) of the room
      * @param id of room to update
      * @param roomInfo updated Room or Suite information
      * @return Wired site containing the room or Suite
      */
-    public Site updateRoom(String owner, String id, RoomInfo roomInfo) {
+    public Site updateRoom(String user, String id, RoomInfo roomInfo) {
         // Get the site (includes reconstructing the exits)
         Site site = getSite(id);
         RoomInfo oldInfo = site.getInfo();
 
         // Revisit this with orgs.. *sigh*
-        if ( site.getOwner() == null || !site.getOwner().equals(owner) ) {
+        if ( site.getOwner() == null || !site.getOwner().equals(user) ) {
             throw new MapModificationException(Response.Status.FORBIDDEN,
                     "Room " + id + " could not be updated",
-                    owner + " is not allowed to update room " + id);
+                    user + " is not allowed to update room " + id);
         }
 
         site.setExits(null); // make sure exits is empty
@@ -225,7 +241,7 @@ public class SiteDocuments {
 
         // Room name change! check for duplicates..
         if ( !oldInfo.getName().equals(roomInfo.getName()) ) {
-            List<JsonNode> rooms = listSites(owner, roomInfo.getName());
+            List<JsonNode> rooms = listSites(user, roomInfo.getName());
             if ( rooms.size() > 1 ) {
 
                 site.setInfo(oldInfo); // revert!
@@ -233,7 +249,7 @@ public class SiteDocuments {
 
                 throw new MapModificationException(Response.Status.CONFLICT,
                         "Unable to update room " + site.getId(),
-                        "A room with the modified name ("+roomInfo.getName()+") already exists for owner ("+owner+")");
+                        "A room with the modified name ("+roomInfo.getName()+") already exists for owner ("+user+")");
             }
         }
 
@@ -247,19 +263,19 @@ public class SiteDocuments {
     /**
      * DELETE
      *
-     * @param owner Owner(?) of the room
+     * @param user Owner(?) of the room
      * @param id of site to delete
      * @return the revision of the deleted document
      */
-    public String deleteSite(String owner, String id) throws DocumentNotFoundException {
+    public String deleteSite(String user, String id) throws DocumentNotFoundException {
         // Get the site first (need the coordinates)
         Site site = db.get(Site.class, id);
 
         // Revisit this with orgs.. *sigh*
-        if ( site.getOwner() == null || !site.getOwner().equals(owner) ) {
+        if ( site.getOwner() == null || !site.getOwner().equals(user) ) {
             throw new MapModificationException(Response.Status.FORBIDDEN,
                     "Room " + id + " could not be deleted",
-                    owner + " is not allowed to delete room " + id);
+                    user + " is not allowed to delete room " + id);
         }
 
         Coordinates coord = site.getCoord();

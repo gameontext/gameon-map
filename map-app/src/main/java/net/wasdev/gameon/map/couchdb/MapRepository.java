@@ -1,3 +1,18 @@
+/*******************************************************************************
+ * Copyright (c) 2016 IBM Corp.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *******************************************************************************/
 package net.wasdev.gameon.map.couchdb;
 
 import java.util.List;
@@ -9,6 +24,7 @@ import javax.enterprise.context.ApplicationScoped;
 
 import org.ektorp.CouchDbConnector;
 import org.ektorp.CouchDbInstance;
+import org.ektorp.DocumentNotFoundException;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -69,23 +85,22 @@ public class MapRepository {
 
     /**
      * List of all not-empty rooms
-     * @param authenticatedId the id of the person requesting the list, or null if unauthenticated
+     * @param user the id of the person requesting the list, or null if unauthenticated
      * @param map
      * @return List of all sites, possibly filtered by owner and/or name. Will not return null.
      */
-    public List<JsonNode> listSites(String authenticatedId, String owner, String name) {
+    public List<JsonNode> listSites(String user, String owner, String name) {
         Log.log(Level.INFO, this, "List all rooms");
-        
+
         List<JsonNode> result = sites.listSites(nullEmpty(owner), nullEmpty(name));
-                
+
         //we have to step through any results to remove the connectionDetails blocks.
         for(JsonNode j : result){
             JsonNode ownerNode = j.get("owner");
             if(ownerNode!=null && ownerNode.getNodeType().equals(JsonNodeType.STRING)){
                 String ownerNodeString = ownerNode.textValue();
-                //remove connectionDetailsBlocks for unauthenticated, or non matching ids, 
-                //unless id is the system id.
-                if(authenticatedId==null || !(authenticatedId.equals(ownerNodeString)||authenticatedId.equals(SYSTEM_ID))){
+                //remove connectionDetailsBlocks unless requested by owner or the system id
+                if( stripSensitiveData(user, ownerNodeString)){
                     JsonNode info = j.get("info");
                     if(info.getNodeType() == JsonNodeType.OBJECT){
                         ObjectNode infoObj = (ObjectNode)info;
@@ -94,7 +109,7 @@ public class MapRepository {
                         }
                     }
                 }
-            }         
+            }
         }
         return result;
     }
@@ -108,37 +123,40 @@ public class MapRepository {
 
     /**
      * Connect/Add/Place a new room into the Map
-     * @param authenticatedId the person adding the new room
+     * @param user the person adding the new room
      * @param newRoom Room or Suite to add
      * @return Wired node containing the room or Suite
      * @throws MapModificationException if something goes awry creating the room
      */
-    public Site connectRoom(String authenticatedId, RoomInfo newRoom) {
+    public Site connectRoom(String user, RoomInfo newRoom) {
         Log.log(Level.INFO, this, "Add new site: {0}", newRoom);
 
         // TODO: Input validation for connection details (most important)
 
-        return sites.connectRoom(authenticatedId, newRoom);
+        return sites.connectRoom(user, newRoom);
     }
 
     /**
      * Get room by id
      *
-     * @param authenticatedId person requesting the room, or null if unauthenticated
+     * @param user person requesting the room, or null if unauthenticated
      * @param id Site/Room id
      * @return Complete information for the specified room/site
-     * @throws MapModificationException if something goes awry creating the room
+     * @throws DocumentNotFoundException for unknown room
      */
-    public Site getRoom(String authenticatedId, String id) {
+    public Site getRoom(String user, String id) {
         Log.log(Level.INFO, this, "Lookup site: {0}", id);
-        Site result = sites.getSite(id); 
+        Site result = sites.getSite(id);
+
         String owner = result.getOwner();
-        if(authenticatedId==null || !(authenticatedId.equals(owner)||authenticatedId.equals(SYSTEM_ID))){
-            //unauthenticated, or non matching id, remove connection details block (except for system id)
+
+        if( stripSensitiveData(user, owner) ){
+            // Remove connection details block (except for owner or system id)
             if(result.getInfo()!=null && result.getInfo().getConnectionDetails()!=null){
                 result.getInfo().setConnectionDetails(null);
             }
         }
+
         return result;
     }
 
@@ -158,7 +176,6 @@ public class MapRepository {
         return sites.updateRoom(authenticatedId, id, roomInfo);
     }
 
-
     /**
      * Delete site by id
      * @param authenticatedId person attempting the delete
@@ -170,8 +187,11 @@ public class MapRepository {
         sites.deleteSite(authenticatedId, id);
     }
 
-
     public ObjectMapper mapper() {
         return mapper;
+    }
+
+    private boolean stripSensitiveData(String user, String owner) {
+        return ( user==null || !(user.equals(owner)||user.equals(SYSTEM_ID)) );
     }
 }
