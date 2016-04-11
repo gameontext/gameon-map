@@ -324,7 +324,7 @@ public class SiteDocuments {
                 .endKey(ComplexKey.of(coord.getX(), coord.getY(), "Z"));
 
         ViewResult result = db.queryView(getNeighbors);
-        Log.log(Level.INFO, this, "Found neighbors: {0}", result);
+        Log.log(Level.FINEST, this, "Found neighbors: {0}", result);
 
         Exits exits = new Exits();
 
@@ -383,7 +383,7 @@ public class SiteDocuments {
 
         // Get an unassigned empty site
         Site candidateSite = getEmptySite();
-        Log.log(Level.INFO, this, "Found empty node: {0}", candidateSite);
+        Log.log(Level.FINEST, this, "Found empty node: {0}", candidateSite);
 
         candidateSite.setOwner(owner);
         candidateSite.setInfo(newRoom);

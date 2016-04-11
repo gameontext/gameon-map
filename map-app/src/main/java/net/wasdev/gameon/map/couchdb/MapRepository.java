@@ -62,7 +62,7 @@ public class MapRepository {
         try {
             // Connect to the database with the specified
             CouchDbConnector dbc = db.createConnector(dbname, false);
-            Log.log(Level.INFO, this, "Connected to {0}", dbname);
+            Log.log(Level.FINER, this, "Connected to {0}", dbname);
 
             // Ensure required views exist
             sites = new SiteDocuments(dbc);
@@ -90,7 +90,7 @@ public class MapRepository {
      * @return List of all sites, possibly filtered by owner and/or name. Will not return null.
      */
     public List<JsonNode> listSites(String user, String owner, String name) {
-        Log.log(Level.INFO, this, "List all rooms");
+        Log.log(Level.FINER, this, "List all rooms");
 
         List<JsonNode> result = sites.listSites(nullEmpty(owner), nullEmpty(name));
 
@@ -129,7 +129,7 @@ public class MapRepository {
      * @throws MapModificationException if something goes awry creating the room
      */
     public Site connectRoom(String user, RoomInfo newRoom) {
-        Log.log(Level.INFO, this, "Add new site: {0}", newRoom);
+        Log.log(Level.FINER, this, "Add new site: {0}", newRoom);
 
         // TODO: Input validation for connection details (most important)
 
@@ -145,7 +145,7 @@ public class MapRepository {
      * @throws DocumentNotFoundException for unknown room
      */
     public Site getRoom(String user, String id) {
-        Log.log(Level.INFO, this, "Lookup site: {0}", id);
+        Log.log(Level.FINER, this, "Lookup site: {0}", id);
         Site result = sites.getSite(id);
 
         String owner = result.getOwner();
@@ -171,7 +171,7 @@ public class MapRepository {
      * @throws MapModificationException if something goes awry creating the room
      */
     public Site updateRoom(String authenticatedId, String id, RoomInfo roomInfo) {
-        Log.log(Level.INFO, this, "Update site: {0} {1}", id, roomInfo);
+        Log.log(Level.FINER, this, "Update site: {0} {1}", id, roomInfo);
 
         return sites.updateRoom(authenticatedId, id, roomInfo);
     }
@@ -182,7 +182,7 @@ public class MapRepository {
      * @param id Site/Room id
      */
     public void deleteSite(String authenticatedId, String id) {
-        Log.log(Level.INFO, this, "Delete site {0} by {1}", id, authenticatedId);
+        Log.log(Level.FINER, this, "Delete site {0} by {1}", id, authenticatedId);
 
         sites.deleteSite(authenticatedId, id);
     }
