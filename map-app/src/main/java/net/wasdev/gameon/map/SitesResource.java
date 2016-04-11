@@ -110,6 +110,7 @@ public class SitesResource {
 
         // NOTE: Thrown exeptions are mapped (see MapModificationException)
 
+        newRoom.getConnectionDetails().setOrigin(httpRequest.getScheme() + "://" + httpRequest.getRemoteHost() + ":" + httpRequest.getRemotePort());
         Site mappedRoom = mapRepository.connectRoom(getAuthenticatedId(AuthMode.AUTHENTICATION_REQUIRED), newRoom);
 
         return Response.created(URI.create("/map/v1/sites/" + mappedRoom.getId())).entity(mappedRoom).build();
@@ -148,6 +149,7 @@ public class SitesResource {
             @ApiParam(value = "target room id", required = true) @PathParam("id") String roomId,
             @ApiParam(value = "Updated room attributes", required = true) RoomInfo roomInfo) {
 
+        roomInfo.getConnectionDetails().setOrigin(httpRequest.getScheme() + "://" + httpRequest.getRemoteHost() + ":" + httpRequest.getRemotePort());
         Site mappedRoom = mapRepository.updateRoom(getAuthenticatedId(AuthMode.AUTHENTICATION_REQUIRED), roomId, roomInfo);
         return Response.ok(mappedRoom).build();
     }
@@ -196,4 +198,5 @@ public class SitesResource {
         return authedId;
         
     }
+
 }

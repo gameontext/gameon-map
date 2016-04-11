@@ -28,6 +28,8 @@ public class ConnectionDetails {
     private String type;
 
     private String target;
+    
+    private String origin;
 
     @ApiModelProperty(
             value = "Connection type",
@@ -53,12 +55,24 @@ public class ConnectionDetails {
         this.target = target;
     }
 
+    @ApiModelProperty(
+            value = "The origin with which the room was registered as per https://tools.ietf.org/html/rfc6454",
+            example = "http://example.com",
+            required = false)
+    public String getOrigin() {
+        return origin;
+    }
+    public void setOrigin(String origin) {
+        this.origin = origin;
+    }
+    
     @Override
     public String toString()  {
       StringBuilder sb = new StringBuilder();
       sb.append("class ConnectionDetails {\n");
       sb.append("  type: ").append(type).append("\n");
       sb.append("  target: ").append(target).append("\n");
+      sb.append("  origin: ").append(origin).append("\n");
       sb.append("}\n");
       return sb.toString();
     }
