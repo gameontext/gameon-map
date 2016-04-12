@@ -2,6 +2,13 @@
 
 if [ "$SERVERDIRNAME" == "" ]; then
   SERVERDIRNAME=defaultServer
+else
+  # Share the configuration directory via symlink
+  ln -s /opt/ibm/wlp/usr/servers/defaultServer /opt/ibm/wlp/usr/servers/$SERVERDIRNAME
+
+  # move the convenience output dir link to the new output location
+  rm /output
+  ln -s $WLP_OUTPUT_DIR/$SERVERDIRNAME /output
 fi
 
 if [ "$ETCDCTL_ENDPOINT" != "" ]; then
@@ -56,7 +63,7 @@ if [ "$ETCDCTL_ENDPOINT" != "" ]; then
     sleep 0.5
     ./forwarder --config ./forwarder.conf
   else
-    /opt/ibm/wlp/bin/server run $SERVERDIRNAME 
+    /opt/ibm/wlp/bin/server run $SERVERDIRNAME
   fi
 else
   # LOCAL DEVELOPMENT!
