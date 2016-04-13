@@ -72,7 +72,7 @@ public class ConnectionDetails {
       sb.append("class ConnectionDetails {\n");
       sb.append("  type: ").append(type).append("\n");
       sb.append("  target: ").append(target).append("\n");
-      sb.append("  origin: ").append(token).append("\n");
+      sb.append("  token: ").append(token).append("\n");
       sb.append("}\n");
       return sb.toString();
     }
