@@ -29,7 +29,7 @@ public class ConnectionDetails {
 
     private String target;
     
-    private String origin;
+    private String token;
 
     @ApiModelProperty(
             value = "Connection type",
@@ -56,14 +56,14 @@ public class ConnectionDetails {
     }
 
     @ApiModelProperty(
-            value = "The origin with which the room was registered as per https://tools.ietf.org/html/rfc6454",
-            example = "http://example.com",
+            value = "A token which if supplied by the room is used to authenticate when the mediator establishes a connection.",
+            example = "[any text string]",
             required = false)
-    public String getOrigin() {
-        return origin;
+    public String getToken() {
+        return token;
     }
-    public void setOrigin(String origin) {
-        this.origin = origin;
+    public void setToken(String token) {
+        this.token = token;
     }
     
     @Override
@@ -72,7 +72,7 @@ public class ConnectionDetails {
       sb.append("class ConnectionDetails {\n");
       sb.append("  type: ").append(type).append("\n");
       sb.append("  target: ").append(target).append("\n");
-      sb.append("  origin: ").append(origin).append("\n");
+      sb.append("  origin: ").append(token).append("\n");
       sb.append("}\n");
       return sb.toString();
     }
