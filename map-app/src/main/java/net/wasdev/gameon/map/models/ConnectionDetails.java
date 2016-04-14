@@ -56,8 +56,8 @@ public class ConnectionDetails {
     }
 
     @ApiModelProperty(
-            value = "A token which if supplied by the room is used to authenticate when the mediator establishes a connection.",
-            example = "[any text string]",
+            value = "A token used for mutual identification between the room and the mediator during the initial handshake when the connection is established (optional)",
+            example = "A-totally-arbitrary-really-long-string",
             required = false)
     public String getToken() {
         return token;
