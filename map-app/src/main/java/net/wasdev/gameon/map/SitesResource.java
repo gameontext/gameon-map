@@ -109,7 +109,6 @@ public class SitesResource {
             @ApiParam(value = "New room attributes", required = true) RoomInfo newRoom) {
 
         // NOTE: Thrown exeptions are mapped (see MapModificationException)
-
         Site mappedRoom = mapRepository.connectRoom(getAuthenticatedId(AuthMode.AUTHENTICATION_REQUIRED), newRoom);
 
         return Response.created(URI.create("/map/v1/sites/" + mappedRoom.getId())).entity(mappedRoom).build();
@@ -196,4 +195,5 @@ public class SitesResource {
         return authedId;
         
     }
+
 }

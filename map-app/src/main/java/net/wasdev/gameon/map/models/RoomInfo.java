@@ -25,7 +25,7 @@ import io.swagger.annotations.ApiModelProperty;
         description = "Mutable information: descriptive elements, service URL, etc.")
 @JsonInclude(Include.NON_EMPTY)
 public class RoomInfo {
-
+    
     /** name of room (short / url-friendly) */
     private String name;
 
@@ -40,7 +40,7 @@ public class RoomInfo {
 
     /** Optional door descriptions */
     private Doors doors;
-
+    
     @ApiModelProperty(
             value = "Short/Terse name of the target room, must be unique within the owner's rooms",
             example = "First Room",

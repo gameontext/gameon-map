@@ -28,6 +28,8 @@ public class ConnectionDetails {
     private String type;
 
     private String target;
+    
+    private String token;
 
     @ApiModelProperty(
             value = "Connection type",
@@ -53,12 +55,24 @@ public class ConnectionDetails {
         this.target = target;
     }
 
+    @ApiModelProperty(
+            value = "A token used for mutual identification between the room and the mediator during the initial handshake when the connection is established (optional)",
+            example = "A-totally-arbitrary-really-long-string",
+            required = false)
+    public String getToken() {
+        return token;
+    }
+    public void setToken(String token) {
+        this.token = token;
+    }
+    
     @Override
     public String toString()  {
       StringBuilder sb = new StringBuilder();
       sb.append("class ConnectionDetails {\n");
       sb.append("  type: ").append(type).append("\n");
       sb.append("  target: ").append(target).append("\n");
+      sb.append("  token: ").append(token).append("\n");
       sb.append("}\n");
       return sb.toString();
     }
