@@ -41,7 +41,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectWriter;
 
 import net.wasdev.gameon.map.MapModificationException;
-import net.wasdev.gameon.map.couchdb.MapRepository;
+import net.wasdev.gameon.map.couchdb.auth.AccessOwnContentPolicy;
 import net.wasdev.gameon.map.models.ConnectionDetails;
 import net.wasdev.gameon.map.models.Coordinates;
 import net.wasdev.gameon.map.models.Doors;
@@ -121,7 +121,7 @@ public class TestMapPlacement {
         Assert.assertFalse("List should not contain exits: " + fullString, fullString.contains("\"exits\""));
 
         // List rooms just for the "test" owner
-        after = repo.listSites(owner, owner, null);
+        after = repo.listSites(new AccessOwnContentPolicy(owner), owner, null);
         fullString = debugWriter.writeValueAsString(after);
 
         Assert.assertTrue("List should contain our new room: " + fullString, fullString.contains(result.getId()));

@@ -17,6 +17,7 @@ package net.wasdev.gameon.map;
 
 import java.net.HttpURLConnection;
 import java.net.URI;
+import java.util.Collections;
 import java.util.List;
 
 import javax.inject.Inject;
@@ -43,6 +44,13 @@ import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import net.wasdev.gameon.map.couchdb.MapRepository;
+import net.wasdev.gameon.map.couchdb.auth.ResourceAccessPolicy;
+import net.wasdev.gameon.map.couchdb.auth.NoAccessPolicy;
+import net.wasdev.gameon.map.couchdb.auth.ResourceAccessPolicyFactory;
+import net.wasdev.gameon.map.couchdb.auth.AccessCertainResourcesPolicy;
+import net.wasdev.gameon.map.couchdb.auth.FullAccessPolicy;
+import net.wasdev.gameon.map.couchdb.auth.AccessOwnContentPolicy;
+import net.wasdev.gameon.map.models.ConnectionDetails;
 import net.wasdev.gameon.map.models.RoomInfo;
 import net.wasdev.gameon.map.models.Site;
 
@@ -53,6 +61,9 @@ import net.wasdev.gameon.map.models.Site;
 @Api( tags = {"map"})
 @Produces(MediaType.APPLICATION_JSON)
 public class SitesResource {
+	
+    @Inject
+    private ResourceAccessPolicyFactory resourceAccessPolicyFactory;
 
     @Inject
     protected MapRepository mapRepository;
@@ -78,9 +89,11 @@ public class SitesResource {
     public Response listAll(
             @ApiParam(value = "filter by owner") @QueryParam("owner") String owner,
             @ApiParam(value = "filter by name") @QueryParam("name") String name) {
-
+    	String authenticatedId = getAuthenticatedId(AuthMode.UNAUTHENTICATED_OK);
+    	ResourceAccessPolicy auth = resourceAccessPolicyFactory.createPolicyForUser(authenticatedId);
+    	
         // TODO: pagination,  fields to include in list (i.e. just Exits).
-        List<JsonNode> sites = mapRepository.listSites(getAuthenticatedId(AuthMode.UNAUTHENTICATED_OK), owner, name);
+        List<JsonNode> sites = mapRepository.listSites(auth, owner, name);
 
         if ( sites.isEmpty() )
             return Response.noContent().build();
@@ -90,8 +103,7 @@ public class SitesResource {
         }
     }
 
-
-    /**
+	/**
      * POST /map/v1/sites
      * @throws JsonProcessingException
      */
@@ -126,8 +138,10 @@ public class SitesResource {
     @Produces(MediaType.APPLICATION_JSON)
     public Response getRoom(
             @ApiParam(value = "target room id", required = true) @PathParam("id") String roomId) {
-
-        Site mappedRoom = mapRepository.getRoom(getAuthenticatedId(AuthMode.UNAUTHENTICATED_OK),roomId);
+    	String authenticatedId = getAuthenticatedId(AuthMode.UNAUTHENTICATED_OK);
+    	ResourceAccessPolicy auth = resourceAccessPolicyFactory.createPolicyForUser(authenticatedId);
+    	
+        Site mappedRoom = mapRepository.getRoom(auth,roomId);
         return Response.ok(mappedRoom).build();
     }
 

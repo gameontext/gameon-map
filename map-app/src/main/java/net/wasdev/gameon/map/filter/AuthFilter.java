@@ -82,7 +82,13 @@ public class AuthFilter implements Filter {
 
     @Resource(lookup="registrationSecret")
     String registrationSecret;
-
+    
+    @Resource(lookup="sweepId")
+    String sweepId;
+    
+    @Resource(lookup="sweepSecret")
+    String sweepSecret;
+    
     @Override
     public void init(FilterConfig filterConfig) throws ServletException {
         filterConfig.getServletContext().setAttribute(INSTANCE_ID, instanceID);
@@ -176,6 +182,8 @@ public class AuthFilter implements Filter {
         //first.. handle our built-in key
         if(SYSTEM_ID.equals(id)){
             return registrationSecret;
+        } else if (sweepId.equals(id)) {
+        	return sweepSecret;
         }
 
         TimestampedKey t = new TimestampedKey(EXPIRES_PLAYERID_MS);
@@ -232,7 +240,6 @@ public class AuthFilter implements Filter {
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
             throws IOException, ServletException {
-
         if(request instanceof HttpServletRequest){
             HttpServletRequest httpRequest = (HttpServletRequest)request;
 
