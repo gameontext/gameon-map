@@ -30,48 +30,48 @@ public class ResourceAccessPolicyTest {
 	@Test
 	public void sweepCanAccessConnectionDetails() {
 		ResourceAccessPolicy policy = factory.createPolicyForUser(TEST_SWEEP_ID);
-		assertThat(policy, canViewResource(ConnectionDetails.class));
+		assertThat(policy, is(ableToViewResource(ConnectionDetails.class)));
 	}
 
 	@Test
 	public void sweepCanNotAccessArbitraryClass() {
 		ResourceAccessPolicy policy = factory.createPolicyForUser(TEST_SWEEP_ID);
-		assertThat(policy, not(canViewResource(String.class)));
+		assertThat(policy, not(ableToViewResource(String.class)));
 	}
 
 	@Test
 	public void systemCanAccessEverything() {
 		ResourceAccessPolicy policy = factory.createPolicyForUser(TEST_SYSTEM_ID);
-		assertThat(policy, canViewResourceOwnedBy(null));
-		assertThat(policy, canViewResourceOwnedBy(TEST_USER));
-		assertThat(policy, canViewResourceOwnedBy(TEST_OTHER_OWNER));
+		assertThat(policy, is(ableToViewResourceOwnedBy(null)));
+		assertThat(policy, is(ableToViewResourceOwnedBy(TEST_USER)));
+		assertThat(policy, is(ableToViewResourceOwnedBy(TEST_OTHER_OWNER)));
 	}
 
 	@Test
 	public void nullUserCanAccessNothing() {
 		ResourceAccessPolicy policy = factory.createPolicyForUser(null);
-		assertThat(policy, not(canViewResourceOwnedBy(null)));
-		assertThat(policy, not(canViewResourceOwnedBy(TEST_USER)));
-		assertThat(policy, not(canViewResourceOwnedBy(TEST_OTHER_OWNER)));
+		assertThat(policy, not(ableToViewResourceOwnedBy(null)));
+		assertThat(policy, not(ableToViewResourceOwnedBy(TEST_USER)));
+		assertThat(policy, not(ableToViewResourceOwnedBy(TEST_OTHER_OWNER)));
 	}
 
 	@Test
 	public void userCanAccessOwnItems() {
 		ResourceAccessPolicy policy = factory.createPolicyForUser(TEST_USER);
-		assertThat(policy, canViewResourceOwnedBy(TEST_USER));
+		assertThat(policy, is(ableToViewResourceOwnedBy(TEST_USER)));
 	}
 
 	@Test
 	public void userCanNotAccessOtherItems() {
 		ResourceAccessPolicy policy = factory.createPolicyForUser(TEST_USER);
-		assertThat(policy, not(canViewResourceOwnedBy(TEST_OTHER_OWNER)));
+		assertThat(policy, not(ableToViewResourceOwnedBy(TEST_OTHER_OWNER)));
 	}
 	
-	private static Matcher<ResourceAccessPolicy> canViewResourceOwnedBy(String owner) {
+	private static Matcher<ResourceAccessPolicy> ableToViewResourceOwnedBy(String owner) {
 		return new AuthorisedToViewMatcher(owner, null);
 	}
 	
-	private static Matcher<ResourceAccessPolicy> canViewResource(Class<?> resource) {
+	private static Matcher<ResourceAccessPolicy> ableToViewResource(Class<?> resource) {
 		return new AuthorisedToViewMatcher(null, resource);
 	}
 	
@@ -93,10 +93,17 @@ public class ResourceAccessPolicyTest {
 
 		@Override
 		public void describeTo(Description description) {
-			description.appendText("should be able to view resource ")
+			description.appendText("able to view resource of type ")
 						.appendValue(resourceType)
 						.appendText(" owned by ")
 						.appendText(owner);
+		}
+		
+		@Override
+		public void describeMismatch(Object item, Description description) {
+			description.appendText("the policy ");
+			description.appendValue(item);
+			description.appendText(" was unable to");
 		}
 		
 	}
