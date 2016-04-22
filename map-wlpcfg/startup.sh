@@ -47,7 +47,9 @@ if [ "$ETCDCTL_ENDPOINT" != "" ]; then
   export LOGMET_TENANT=$(etcdctl get /logmet/tenant)
   export LOGMET_PWD=$(etcdctl get /logmet/pwd)
   export SYSTEM_ID=$(etcdctl get /player/system_id)
-
+  export SWEEP_ID=$(etcdctl get /npc/sweep/id)
+  export SWEEP_SECRET=$(etcdctl get /npc/sweep/password)
+  
   # Softlayer needs a logstash endpoint so we set up the server
   # to run in the background and the primary task is running the
   # forwarder. In ICS, Liberty is the primary task so we need to
