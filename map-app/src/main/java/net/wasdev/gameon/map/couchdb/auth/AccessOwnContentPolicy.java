@@ -2,15 +2,15 @@ package net.wasdev.gameon.map.couchdb.auth;
 
 public class AccessOwnContentPolicy implements ResourceAccessPolicy {
 
-	private String user;
+    private String user;
 
-	public AccessOwnContentPolicy(String user) {
-		this.user = user;
-	}
+    public AccessOwnContentPolicy(String user) {
+        this.user = user;
+    }
 
-	@Override
-	public boolean isAuthorisedToView(String resourceOwnedBy, Class<?> resourceType) {
-		return user.equals(resourceOwnedBy);
-	}
-	
+    @Override
+    public boolean isAuthorisedToView(String resourceOwnedBy, Class<?> resourceType) {
+        return user.equals(resourceOwnedBy);
+    }
+
 }

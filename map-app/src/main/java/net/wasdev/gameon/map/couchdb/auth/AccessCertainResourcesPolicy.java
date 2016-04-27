@@ -5,14 +5,15 @@ import java.util.HashSet;
 
 public class AccessCertainResourcesPolicy implements ResourceAccessPolicy {
 
-	private final Collection<Class<?>> authorisedToView;
-	public AccessCertainResourcesPolicy(Collection<Class<?>> authorisedToView) {
-		this.authorisedToView = new HashSet<Class<?>>(authorisedToView);
-	}
+    private final Collection<Class<?>> authorisedToView;
 
-	@Override
-	public boolean isAuthorisedToView(String resourceOwnedBy, Class<?> resourceType) {
-		return authorisedToView.contains(resourceType);
-	}
-	
+    public AccessCertainResourcesPolicy(Collection<Class<?>> authorisedToView) {
+        this.authorisedToView = new HashSet<Class<?>>(authorisedToView);
+    }
+
+    @Override
+    public boolean isAuthorisedToView(String resourceOwnedBy, Class<?> resourceType) {
+        return authorisedToView.contains(resourceType);
+    }
+
 }
