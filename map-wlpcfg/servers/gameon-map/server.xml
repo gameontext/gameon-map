@@ -40,6 +40,10 @@
     
     <!-- The id we recognise as the system id. -->
     <jndiEntry jndiName="systemId" value="${env.SYSTEM_ID}"/>
+    
+    <!-- Sweep registration information -->
+    <jndiEntry jndiName="sweepId" value="${env.SWEEP_ID}"/>
+    <jndiEntry jndiName="sweepSecret" value="${env.SWEEP_SECRET}"/>
 
     <!-- <logging traceSpecification="*=info:net.wasdev.gameon.*=all" copySystemStreams="false"/> -->
     <!-- <logging traceSpecification="*=info:net.wasdev.gameon.*=all" /> -->

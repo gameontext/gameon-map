@@ -34,6 +34,8 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import net.wasdev.gameon.map.Log;
 import net.wasdev.gameon.map.MapModificationException;
+import net.wasdev.gameon.map.couchdb.auth.ResourceAccessPolicy;
+import net.wasdev.gameon.map.models.ConnectionDetails;
 import net.wasdev.gameon.map.models.Coordinates;
 import net.wasdev.gameon.map.models.Exits;
 import net.wasdev.gameon.map.models.RoomInfo;
@@ -41,9 +43,6 @@ import net.wasdev.gameon.map.models.Site;
 
 @ApplicationScoped
 public class MapRepository {
-
-    @Resource(lookup="systemId")
-    protected String SYSTEM_ID;
 
     @Resource(lookup="couchdb/connector")
     protected CouchDbInstance db;
@@ -89,7 +88,7 @@ public class MapRepository {
      * @param map
      * @return List of all sites, possibly filtered by owner and/or name. Will not return null.
      */
-    public List<JsonNode> listSites(String user, String owner, String name) {
+    public List<JsonNode> listSites(ResourceAccessPolicy accessPolicy, String owner, String name) {
         Log.log(Level.FINER, this, "List all rooms");
 
         List<JsonNode> result = sites.listSites(nullEmpty(owner), nullEmpty(name));
@@ -100,7 +99,7 @@ public class MapRepository {
             if(ownerNode!=null && ownerNode.getNodeType().equals(JsonNodeType.STRING)){
                 String ownerNodeString = ownerNode.textValue();
                 //remove connectionDetailsBlocks unless requested by owner or the system id
-                if( stripSensitiveData(user, ownerNodeString)){
+                if( stripSensitiveData(accessPolicy, ownerNodeString)){
                     JsonNode info = j.get("info");
                     if(info.getNodeType() == JsonNodeType.OBJECT){
                         ObjectNode infoObj = (ObjectNode)info;
@@ -144,13 +143,13 @@ public class MapRepository {
      * @return Complete information for the specified room/site
      * @throws DocumentNotFoundException for unknown room
      */
-    public Site getRoom(String user, String id) {
+    public Site getRoom(ResourceAccessPolicy accessPolicy, String id) {
         Log.log(Level.FINER, this, "Lookup site: {0}", id);
         Site result = sites.getSite(id);
 
         String owner = result.getOwner();
 
-        if( stripSensitiveData(user, owner) ){
+        if( stripSensitiveData(accessPolicy, owner) ){
             // Remove connection details block (except for owner or system id)
             if(result.getInfo()!=null && result.getInfo().getConnectionDetails()!=null){
                 result.getInfo().setConnectionDetails(null);
@@ -191,7 +190,7 @@ public class MapRepository {
         return mapper;
     }
 
-    private boolean stripSensitiveData(String user, String owner) {
-        return ( user==null || !(user.equals(owner)||user.equals(SYSTEM_ID)) );
+    private boolean stripSensitiveData(ResourceAccessPolicy accessPolicy, String owner) {
+        return !accessPolicy.isAuthorisedToView(owner, ConnectionDetails.class);
     }
 }

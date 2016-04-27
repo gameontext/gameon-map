@@ -26,7 +26,6 @@ import java.security.cert.CertificateException;
 import java.util.Calendar;
 import java.util.logging.Level;
 
-import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import javax.enterprise.context.ApplicationScoped;
 import javax.net.ssl.SSLContext;
@@ -71,7 +70,7 @@ public class PlayerClient {
      * The player URL injected from JNDI via CDI.
      *
      * @see {@code playerUrl} in
-     *      {@code /mediator-wlpcfg/servers/gameon-mediator/server.xml}
+     *      {@code /map-wlpcfg/servers/gameon-map/server.xml}
      */
     @Resource(lookup = "playerUrl")
     String playerLocation;
@@ -86,19 +85,6 @@ public class PlayerClient {
 
     /** The Key to Sign JWT's with (once it's loaded) */
     private static Key signingKey = null;
-
-
-    /**
-     * The {@code @PostConstruct} annotation indicates that this method should
-     * be called immediately after the {@code ConciergeClient} is instantiated
-     * with the default no-argument constructor.
-     *
-     * @see PostConstruct
-     * @see ApplicationScoped
-     */
-    @PostConstruct
-    public void initClient(){
-    }
 
     /**
      * Obtain the key we'll use to sign the jwts we use to talk to Player endpoints.
@@ -131,7 +117,7 @@ public class PlayerClient {
     /**
      * Obtain a JWT for the player id that can be used to invoke player REST services.
      *
-     * We can create this, because the concierge has access to the private certificate
+     * We can create this, because we have access to the private certificate
      * required to sign such a JWT.
      *
      * @param playerId The id to build the JWT for
