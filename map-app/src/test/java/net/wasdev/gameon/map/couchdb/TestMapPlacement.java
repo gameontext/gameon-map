@@ -15,6 +15,8 @@
  *******************************************************************************/
 package net.wasdev.gameon.map.couchdb;
 
+import static org.junit.Assert.*;
+
 import java.net.MalformedURLException;
 import java.util.Collection;
 import java.util.HashSet;
@@ -42,13 +44,15 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 
 import net.wasdev.gameon.map.MapModificationException;
 import net.wasdev.gameon.map.couchdb.auth.AccessOwnContentPolicy;
+import net.wasdev.gameon.map.couchdb.auth.NoAccessPolicy;
+import net.wasdev.gameon.map.couchdb.auth.ResourceAccessPolicyFactory;
 import net.wasdev.gameon.map.models.ConnectionDetails;
 import net.wasdev.gameon.map.models.Coordinates;
 import net.wasdev.gameon.map.models.Doors;
 import net.wasdev.gameon.map.models.RoomInfo;
 import net.wasdev.gameon.map.models.Site;
 
-@Ignore
+//@Ignore
 public class TestMapPlacement {
 
     protected static CouchDbInstance db;
@@ -59,9 +63,9 @@ public class TestMapPlacement {
     @BeforeClass
     public static void beforeClass() throws MalformedURLException {
         HttpClient httpClient = new StdHttpClient.Builder()
-                .url("http://192.168.99.100:5984/")
-                .username("mapUser")
-                .password("myCouchDBSecret")
+                .url("http://127.0.0.1:5984/")
+//                .username("mapUser")
+//                .password("myCouchDBSecret")
                 .build();
         db = new StdCouchDbInstance(httpClient);
 
@@ -88,7 +92,7 @@ public class TestMapPlacement {
     
     @Test
     public void testListRooms() throws JsonProcessingException {
-        List<JsonNode> sites = repo.listSites(null, null, null);
+        List<JsonNode> sites = repo.listSites(new NoAccessPolicy(), null, null);
         String fullString = debugWriter.writeValueAsString(sites);
         System.out.println(fullString);
 
@@ -96,6 +100,28 @@ public class TestMapPlacement {
         Assert.assertFalse("Exits should not be contained in summary list", fullString.contains("\"exits\""));
 
         // TODO: more things to tweak summary response
+    }
+    
+    @Test
+    public void testSwapRooms() {
+        String owner = "test";
+        String roomName1 = "room1";
+        String roomName2 = "room2";
+        Site room1Result = createRoom(owner, roomName1);
+        Site room2Result = createRoom(owner, roomName2);
+        String room1Id = room1Result.getId();
+        String room2Id = room2Result.getId();
+        Coordinates room1CoordPreMove = room1Result.getCoord();
+        Coordinates room2CoordPreMove = room2Result.getCoord();
+        assertFalse("The rooms should not have the same coordinates", room1CoordPreMove.equals(room2CoordPreMove));
+        System.out.println("Coordinates are: " + room1CoordPreMove + " " + room2CoordPreMove);
+        repo.swapRooms(room1Id, room2Id);
+        Site room1PostMove = repo.getRoom(new NoAccessPolicy(), room1Id);
+        Site room2PostMove = repo.getRoom(new NoAccessPolicy(), room2Id);
+        Coordinates room1CoordPostMove = room1PostMove.getCoord();
+        Coordinates room2CoordPostMove = room2PostMove.getCoord();
+        assertTrue("Room1 should now be where room2 was.", room1CoordPostMove.equals(room2CoordPreMove));
+        assertTrue("Room2 should now be where room1 was.", room2CoordPostMove.equals(room1CoordPreMove));
     }
 
     @Test
@@ -114,7 +140,7 @@ public class TestMapPlacement {
         Assert.assertEquals("Owner should be set: " + fullString,owner, result.getOwner());
 
         // List all the rooms ("" should be treated the same as null)
-        List<JsonNode> after = repo.listSites(null, "", "");
+        List<JsonNode> after = repo.listSites(new NoAccessPolicy(), "", "");
         fullString = debugWriter.writeValueAsString(after);
 
         Assert.assertTrue("List should contain our new room: " + fullString, fullString.contains(result.getId()));
@@ -181,7 +207,7 @@ public class TestMapPlacement {
     }
     
     private void testSitesFilteredByOwner(String owner, Site roomExpectedToBePresent, Site... roomsThatShouldBeMissing) throws JsonProcessingException {
-        List<JsonNode> allSitesForOwner = repo.listSites(null, owner, null);
+        List<JsonNode> allSitesForOwner = repo.listSites(new NoAccessPolicy(), owner, null);
         String fullString = debugWriter.writeValueAsString(allSitesForOwner);
         Assert.assertTrue("The expected site " + roomExpectedToBePresent + " is missing from the list: " + fullString, fullString.contains(roomExpectedToBePresent.getId()));
         if (roomsThatShouldBeMissing != null) {
@@ -203,10 +229,10 @@ public class TestMapPlacement {
         String room2Name = baseRoomName + "b";
         createRoom(owner, room1Name);
         createRoom(owner, room2Name);
-        List<JsonNode> sitesForName1 = repo.listSites(null, null, room1Name);
+        List<JsonNode> sitesForName1 = repo.listSites(new NoAccessPolicy(), null, room1Name);
         String fullString = debugWriter.writeValueAsString(sitesForName1);
         Assert.assertEquals("Only one site should have the name " + room1Name + " but got: " + fullString, 1, sitesForName1.size());
-        List<JsonNode> sitesForName2 = repo.listSites(null, null, room2Name);
+        List<JsonNode> sitesForName2 = repo.listSites(new NoAccessPolicy(), null, room2Name);
         fullString = debugWriter.writeValueAsString(sitesForName2);
         Assert.assertEquals("Only one site should have the name " + room2Name + " but got: " + fullString, 1, sitesForName2.size());
     }

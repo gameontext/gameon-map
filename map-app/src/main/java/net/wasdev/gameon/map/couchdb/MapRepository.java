@@ -174,6 +174,10 @@ public class MapRepository {
 
         return sites.updateRoom(authenticatedId, id, roomInfo);
     }
+    
+    public void swapRooms(String id1, String id2) {
+        //TODO
+    }
 
     /**
      * Delete site by id
