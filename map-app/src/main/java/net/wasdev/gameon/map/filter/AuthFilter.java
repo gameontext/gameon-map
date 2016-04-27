@@ -180,10 +180,10 @@ public class AuthFilter implements Filter {
      */
     private String getKeyForId(String id){
         //first.. handle our built-in key
-        if(SYSTEM_ID.equals(id)){
+        if (SYSTEM_ID.equals(id)) {
             return registrationSecret;
         } else if (sweepId.equals(id)) {
-        	return sweepSecret;
+            return sweepSecret;
         }
 
         TimestampedKey t = new TimestampedKey(EXPIRES_PLAYERID_MS);

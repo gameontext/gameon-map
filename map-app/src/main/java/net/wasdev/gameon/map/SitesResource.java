@@ -89,9 +89,9 @@ public class SitesResource {
     public Response listAll(
             @ApiParam(value = "filter by owner") @QueryParam("owner") String owner,
             @ApiParam(value = "filter by name") @QueryParam("name") String name) {
-    	String authenticatedId = getAuthenticatedId(AuthMode.UNAUTHENTICATED_OK);
-    	ResourceAccessPolicy auth = resourceAccessPolicyFactory.createPolicyForUser(authenticatedId);
-    	
+        String authenticatedId = getAuthenticatedId(AuthMode.UNAUTHENTICATED_OK);
+        ResourceAccessPolicy auth = resourceAccessPolicyFactory.createPolicyForUser(authenticatedId);
+
         // TODO: pagination,  fields to include in list (i.e. just Exits).
         List<JsonNode> sites = mapRepository.listSites(auth, owner, name);
 
@@ -138,9 +138,9 @@ public class SitesResource {
     @Produces(MediaType.APPLICATION_JSON)
     public Response getRoom(
             @ApiParam(value = "target room id", required = true) @PathParam("id") String roomId) {
-    	String authenticatedId = getAuthenticatedId(AuthMode.UNAUTHENTICATED_OK);
-    	ResourceAccessPolicy auth = resourceAccessPolicyFactory.createPolicyForUser(authenticatedId);
-    	
+        String authenticatedId = getAuthenticatedId(AuthMode.UNAUTHENTICATED_OK);
+        ResourceAccessPolicy auth = resourceAccessPolicyFactory.createPolicyForUser(authenticatedId);
+
         Site mappedRoom = mapRepository.getRoom(auth,roomId);
         return Response.ok(mappedRoom).build();
     }
