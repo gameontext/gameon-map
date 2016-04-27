@@ -15,10 +15,13 @@
  *******************************************************************************/
 package net.wasdev.gameon.map.couchdb;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.logging.Level;
 
+import javax.annotation.Resource;
 import javax.ws.rs.core.Response;
 
 import org.ektorp.ComplexKey;
@@ -74,6 +77,9 @@ import net.wasdev.gameon.map.models.Site;
  * </pre>
  */
 public class SiteDocuments {
+    
+    @Resource(lookup="sweepId")
+    String sweepId;
 
     protected static final String DESIGN_DOC = "_design/site";
 
@@ -257,6 +263,25 @@ public class SiteDocuments {
         Exits exits = getExits(site.getCoord());
         site.setExits(exits);
         return site;
+    }
+    
+    /**
+     * SWAP ROOMS
+     * @param site1 First site in swap
+     * @param site2 Second site in swap
+     */
+    public void swapRooms(Site site1, Site site2) {
+        //TODO: check user is sweep
+        site1.setExits(null);
+        site2.setExits(null);
+        Coordinates site1CoordsOld = site1.getCoord();
+        Coordinates site2CoordsOld = site2.getCoord();
+        site1.setCoord(site2CoordsOld);
+        site2.setCoord(site1CoordsOld);
+        Collection<Site> sites = new ArrayList<Site>();
+        sites.add(site1);
+        sites.add(site2);
+        db.executeAllOrNothing(sites);
     }
 
 

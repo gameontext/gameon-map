@@ -175,8 +175,15 @@ public class MapRepository {
         return sites.updateRoom(authenticatedId, id, roomInfo);
     }
     
-    public void swapRooms(String id1, String id2) {
-        //TODO
+    /**
+     * Swap to rooms around
+     * @param site1 First site in swap
+     * @param site2 Second site in swap
+     */
+    public void swapRooms(Site site1, Site site2) {
+        Log.log(Level.FINER, this, "Swap rooms: {0} {1}", site1, site2);
+        
+        sites.swapRooms(site1, site2);
     }
 
     /**
