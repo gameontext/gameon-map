@@ -109,4 +109,77 @@ public class Exits {
       sb.append("}\n");
       return sb.toString();
     }
+
+    /* (non-Javadoc)
+     * @see java.lang.Object#hashCode()
+     */
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ((d == null) ? 0 : d.hashCode());
+        result = prime * result + ((e == null) ? 0 : e.hashCode());
+        result = prime * result + ((n == null) ? 0 : n.hashCode());
+        result = prime * result + ((s == null) ? 0 : s.hashCode());
+        result = prime * result + ((u == null) ? 0 : u.hashCode());
+        result = prime * result + ((w == null) ? 0 : w.hashCode());
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        Exits other = (Exits) obj;
+        if (d == null) {
+            if (other.d != null) {
+                return false;
+            }
+        } else if (!d.equals(other.d)) {
+            return false;
+        }
+        if (e == null) {
+            if (other.e != null) {
+                return false;
+            }
+        } else if (!e.equals(other.e)) {
+            return false;
+        }
+        if (n == null) {
+            if (other.n != null) {
+                return false;
+            }
+        } else if (!n.equals(other.n)) {
+            return false;
+        }
+        if (s == null) {
+            if (other.s != null) {
+                return false;
+            }
+        } else if (!s.equals(other.s)) {
+            return false;
+        }
+        if (u == null) {
+            if (other.u != null) {
+                return false;
+            }
+        } else if (!u.equals(other.u)) {
+            return false;
+        }
+        if (w == null) {
+            if (other.w != null) {
+                return false;
+            }
+        } else if (!w.equals(other.w)) {
+            return false;
+        }
+        return true;
+    }
 }

@@ -177,13 +177,13 @@ public class MapRepository {
     
     /**
      * Swap to rooms around
-     * @param site1 First site in swap
-     * @param site2 Second site in swap
+     * @param room1Id First site in swap
+     * @param room2Id Second site in swap
      */
-    public void swapRooms(Site site1, Site site2) {
-        Log.log(Level.FINER, this, "Swap rooms: {0} {1}", site1, site2);
+    public void swapRooms(String authenticatedid, String room1Id, String room2Id) {
+        Log.log(Level.FINER, this, "Swap rooms: {0} {1}", room1Id, room2Id);
         
-        sites.swapRooms(site1, site2);
+        sites.swapRooms(authenticatedid, room1Id, room2Id);
     }
 
     /**

@@ -267,11 +267,13 @@ public class SiteDocuments {
     
     /**
      * SWAP ROOMS
-     * @param site1 First site in swap
-     * @param site2 Second site in swap
+     * @param id1 First site in swap
+     * @param id2 Second site in swap
+     * @param room2Id 
      */
-    public void swapRooms(Site site1, Site site2) {
-        //TODO: check user is sweep
+    public void swapRooms(String authenticatedId, String id1, String id2) {
+        Site site1 = db.get(Site.class, id1);
+        Site site2 = db.get(Site.class, id2);
         site1.setExits(null);
         site2.setExits(null);
         Coordinates site1CoordsOld = site1.getCoord();

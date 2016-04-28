@@ -167,4 +167,72 @@ public class Exit {
       sb.append("}\n");
       return sb.toString();
     }
+
+    /* (non-Javadoc)
+     * @see java.lang.Object#hashCode()
+     */
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ((connDetails == null) ? 0 : connDetails.hashCode());
+        result = prime * result + ((door == null) ? 0 : door.hashCode());
+        result = prime * result + ((fullName == null) ? 0 : fullName.hashCode());
+        result = prime * result + ((id == null) ? 0 : id.hashCode());
+        result = prime * result + ((name == null) ? 0 : name.hashCode());
+        return result;
+    }
+
+    /* (non-Javadoc)
+     * @see java.lang.Object#equals(java.lang.Object)
+     */
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        Exit other = (Exit) obj;
+        if (connDetails == null) {
+            if (other.connDetails != null) {
+                return false;
+            }
+        } else if (!connDetails.equals(other.connDetails)) {
+            return false;
+        }
+        if (door == null) {
+            if (other.door != null) {
+                return false;
+            }
+        } else if (!door.equals(other.door)) {
+            return false;
+        }
+        if (fullName == null) {
+            if (other.fullName != null) {
+                return false;
+            }
+        } else if (!fullName.equals(other.fullName)) {
+            return false;
+        }
+        if (id == null) {
+            if (other.id != null) {
+                return false;
+            }
+        } else if (!id.equals(other.id)) {
+            return false;
+        }
+        if (name == null) {
+            if (other.name != null) {
+                return false;
+            }
+        } else if (!name.equals(other.name)) {
+            return false;
+        }
+        return true;
+    }
 }
