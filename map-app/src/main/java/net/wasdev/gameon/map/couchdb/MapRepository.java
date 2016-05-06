@@ -15,6 +15,7 @@
  *******************************************************************************/
 package net.wasdev.gameon.map.couchdb;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.logging.Level;
 
@@ -35,7 +36,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import net.wasdev.gameon.map.Log;
 import net.wasdev.gameon.map.MapModificationException;
-import net.wasdev.gameon.map.couchdb.auth.FullAccessPolicy;
 import net.wasdev.gameon.map.couchdb.auth.ResourceAccessPolicy;
 import net.wasdev.gameon.map.models.ConnectionDetails;
 import net.wasdev.gameon.map.models.Coordinates;
@@ -182,15 +182,15 @@ public class MapRepository implements SiteSwapper {
      * @param room1Id First site in swap
      * @param room2Id Second site in swap
      */
-    public void swapRooms(ResourceAccessPolicy accessPolicy, String user, String room1Id, String room2Id) {
+    public Collection<Site> swapRooms(ResourceAccessPolicy accessPolicy, String user, String room1Id, String room2Id) {
         Log.log(Level.FINER, this, "Swap rooms: {0} {1}", room1Id, room2Id);
         
         if (accessPolicy == null || !accessPolicy.isAuthorisedToView(null, SiteSwapper.class)) {
             throw new MapModificationException(Response.Status.FORBIDDEN,
-                    "Rooms " + room1Id + " and " + room2Id + " cannot be swapped.",
-                    " User " + user + " does not have access to swap rooms.");
+                    "User " + user + " does not have permission to swap rooms.",
+                    "Rooms " + room1Id + " and " + room2Id + " have not been swapped.");
         }
-        sites.swapRooms(room1Id, room2Id);
+        return sites.swapRooms(room1Id, room2Id);
     }
 
     /**

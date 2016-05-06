@@ -21,13 +21,12 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import java.net.MalformedURLException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
+import java.util.Iterator;
 import java.util.function.BiPredicate;
-
-import javax.ws.rs.core.Response;
 
 import org.ektorp.CouchDbInstance;
 import org.ektorp.DocumentNotFoundException;
@@ -35,32 +34,26 @@ import org.ektorp.http.HttpClient;
 import org.ektorp.http.StdHttpClient;
 import org.ektorp.impl.StdCouchDbInstance;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectWriter;
 
 import net.wasdev.gameon.map.MapModificationException;
-import net.wasdev.gameon.map.couchdb.TestRoomSwap.RoomIdPair;
 import net.wasdev.gameon.map.couchdb.auth.AccessCertainResourcesPolicy;
-import net.wasdev.gameon.map.couchdb.auth.AccessOwnContentPolicy;
-import net.wasdev.gameon.map.couchdb.auth.FullAccessPolicy;
 import net.wasdev.gameon.map.couchdb.auth.NoAccessPolicy;
 import net.wasdev.gameon.map.models.ConnectionDetails;
 import net.wasdev.gameon.map.models.Coordinates;
 import net.wasdev.gameon.map.models.Doors;
-import net.wasdev.gameon.map.models.Exit;
 import net.wasdev.gameon.map.models.Exits;
 import net.wasdev.gameon.map.models.RoomInfo;
 import net.wasdev.gameon.map.models.Site;
 
-//@Ignore
+@Ignore
 public class TestRoomSwap {
 
     public class RoomIdPair {
@@ -89,7 +82,7 @@ public class TestRoomSwap {
     protected static MapRepository repo;
     protected static ObjectWriter debugWriter;
     private static Collection<OwnerSitePair> sitesToDelete;
-    private static AccessCertainResourcesPolicy policy;
+    private static AccessCertainResourcesPolicy swapRoomsAccessPolicy;
     private static String roomOwner;
 
     @BeforeClass
@@ -104,7 +97,7 @@ public class TestRoomSwap {
         repo.db = db;
         repo.postConstruct();
         debugWriter = repo.sites.mapper.writerWithDefaultPrettyPrinter();
-        policy = new AccessCertainResourcesPolicy(Collections.singleton(SiteSwapper.class));
+        swapRoomsAccessPolicy = new AccessCertainResourcesPolicy(Collections.singleton(SiteSwapper.class));
     }
 
     @Rule
@@ -140,7 +133,7 @@ public class TestRoomSwap {
         Site room1 = repo.getRoom(new NoAccessPolicy(), room1Id);
         System.out.println("-----------------------------\nAfter allRooms:\n"+room1);
         
-        repo.swapRooms(policy, roomOwner, room1Id, room2Id);
+        repo.swapRooms(swapRoomsAccessPolicy, roomOwner, room1Id, room2Id);
         
         
         room1 = repo.getRoom(new NoAccessPolicy(), room1Id);
@@ -167,13 +160,77 @@ public class TestRoomSwap {
         Exits room1ExitsPreMove = getExitsForRoomId(room1Id);
         Exits room2ExitsPreMove = getExitsForRoomId(room2Id);
         
-        repo.swapRooms(policy, null, room1Id, room2Id);
+        repo.swapRooms(swapRoomsAccessPolicy, null, room1Id, room2Id);
         
         Exits room1ExitsPostMove = getExitsForRoomId(room1Id);
         Exits room2ExitsPostMove = getExitsForRoomId(room2Id);
         
         assertEquals("The exits on Room 1 should be what was previously the exits on Room 2", room2ExitsPreMove, room1ExitsPostMove);
         assertEquals("The exits on Room 2 should be what was previously the exits on Room 1", room1ExitsPreMove, room2ExitsPostMove);
+    }
+    
+    @Test
+    public void testSwapAdjacentRoomsExits() {
+        String owner = "test";
+        Site room1Site = createRoom(owner, test.getMethodName() + "room1");
+        Coordinates room1Coords = room1Site.getCoord();
+        Site room2Site = null;
+        int creationCount = 0;
+        Coordinates roomToTheEastCoords = new Coordinates(room1Coords.getX() + 1, room1Coords.getY());
+        while (room2Site == null && creationCount <= 8) {
+            String roomName = test.getMethodName() + creationCount;
+            Site site = createRoom(owner, roomName);
+            Coordinates coord = site.getCoord();
+            creationCount++;
+            if (coord.equals(roomToTheEastCoords)) {
+                room2Site = site;
+            }
+        }
+
+        assertNotNull("Should have found a room that is directly to the East of room 1.", room2Site);
+
+        String room1Id = room1Site.getId();
+        String room2Id = room2Site.getId();
+        Exits room1ExitsPreMove = room1Site.getExits();
+        System.out.println("Room 1 Exits PreMove are " + room1ExitsPreMove);
+        Exits room2ExitsPreMove = room2Site.getExits();
+        System.out.println("Room 2 Exits PreMove are " + room2ExitsPreMove);
+        repo.swapRooms(swapRoomsAccessPolicy, null, room1Id, room2Id);
+        Site room1PostMove = repo.getRoom(new NoAccessPolicy(), room1Id);
+        Site room2PostMove = repo.getRoom(new NoAccessPolicy(), room2Id);
+        Exits room1ExitsPostMove = room1PostMove.getExits();
+        System.out.println("Room 1 Exits PostMove are " + room1ExitsPostMove);
+        Exits room2ExitsPostMove = room2PostMove.getExits();
+        System.out.println("Room 2 Exits PostMove are " + room2ExitsPostMove);
+
+    }
+    
+    @Test
+    public void testCorrectRoomsReturned() {
+        RoomIdPair pair = generateMap((Coordinates room1Coords, Coordinates coords) -> {
+            int xDiff = Math.abs(coords.getX() - room1Coords.getX());
+            int yDiff = Math.abs(coords.getY() - room1Coords.getY());
+            return xDiff > 1 || yDiff < -1;
+        });
+
+        String room1Id = pair.getRoom1Id();
+        String room2Id = pair.getRoom2Id();
+        
+        Collection<String> roomsPreMove = new ArrayList<String>();
+        roomsPreMove.add(room1Id);
+        roomsPreMove.add(room2Id);
+        
+        
+        Collection<Site> sitesReturned = repo.swapRooms(swapRoomsAccessPolicy, null, room1Id, room2Id);
+        assertEquals(sitesReturned.size(), 2);
+        
+        Collection<String> roomsPostMove = new ArrayList<String>();
+        Iterator<Site> itr = sitesReturned.iterator();
+        while (itr.hasNext()) {
+            roomsPostMove.add(itr.next().getId());
+        }
+        assertEquals(roomsPreMove, roomsPostMove);
+        
     }
     
     @Test
@@ -189,12 +246,12 @@ public class TestRoomSwap {
         
         MapModificationException e = null;
         try {
-            repo.swapRooms(null, null, room1Id, room2Id);
+            repo.swapRooms(null, roomOwner, room1Id, room2Id);
         } catch (MapModificationException ex){
             e = ex;
         }
         assertNotNull(e);
-        String expectedMessage = "Rooms " + room1Id + " and " + room2Id + " cannot be swapped.";
+        String expectedMessage = "User " + roomOwner + " does not have permission to swap rooms.";
         String actualMessage = e.getMessage();
         assertEquals(expectedMessage, actualMessage);
     }
@@ -212,14 +269,74 @@ public class TestRoomSwap {
         
         MapModificationException e = null;
         try {
-            repo.swapRooms(new NoAccessPolicy(), null, room1Id, room2Id);
+            repo.swapRooms(new NoAccessPolicy(), roomOwner, room1Id, room2Id);
         } catch (MapModificationException ex){
             e = ex;
         }
         assertNotNull("Swap request should result in MapModificationException.", e);
-        String expectedMessage = "Rooms " + room1Id + " and " + room2Id + " cannot be swapped.";
+        String expectedMessage = "User " + roomOwner + " does not have permission to swap rooms.";
         String actualMessage = e.getMessage();
         assertEquals(expectedMessage, actualMessage);
+    }
+    
+    @Test
+    public void testSwapRoomWithItself() {
+        String owner = "test";
+        String roomName = test.getMethodName() + "room1";
+
+        Site roomSite = createRoom(owner, roomName);
+
+        String roomId = roomSite.getId();
+        
+        MapModificationException e = null;
+        try {
+            repo.swapRooms(swapRoomsAccessPolicy, roomOwner, roomId, roomId);
+        } catch (MapModificationException ex){
+            e = ex;
+        }
+        assertNotNull("Swap request should result in MapModificationException.", e);
+        String expectedMessage = "Cannot swap a room with itself.";
+        String actualMessage = e.getMessage();
+        assertEquals(expectedMessage, actualMessage);
+    }
+    
+    @Test
+    public void testSwapRoomsNullRoom() {
+        MapModificationException e = null;
+        try {
+            repo.swapRooms(swapRoomsAccessPolicy, roomOwner, null, "roomId");
+        } catch (MapModificationException ex) {
+            e = ex;
+        }
+        assertNotNull("Swap request should result in MapModificationException.", e);
+        String expectedMessage = "Site id must be set.";
+        String actualMessage = e.getMessage();
+        assertEquals(expectedMessage, actualMessage);
+    }
+    
+    @Test
+    public void testSwapRoomsUnsetRoom() {
+        MapModificationException e = null;
+        try {
+            repo.swapRooms(swapRoomsAccessPolicy, roomOwner, "", "roomId");
+        } catch (MapModificationException ex) {
+            e = ex;
+        }
+        assertNotNull("Swap request should result in MapModificationException.", e);
+        String expectedMessage = "Site id must be set.";
+        String actualMessage = e.getMessage();
+        assertEquals(expectedMessage, actualMessage);
+    }
+    
+    @Test
+    public void testSwapRoomsNonExistentRoom() {
+        DocumentNotFoundException e = null;
+        try {
+            repo.swapRooms(swapRoomsAccessPolicy, roomOwner, "roomId1", "roomId2");
+        } catch (DocumentNotFoundException ex) {
+            e = ex;
+        }
+        assertNotNull("Swap request should result in DocumentNotFoundException.", e);
     }
 
     private Coordinates getCoordinatesForRoomId(String roomId) {
@@ -263,43 +380,6 @@ public class TestRoomSwap {
         RoomIdPair roomIdPair = new RoomIdPair(room1Id, room2Id);
         return roomIdPair;
     }
-
-//    @Test
-    public void testSwapAdjacentRoomsExits() {
-        String owner = "test";
-        Site room1Site = createRoom(owner, test.getMethodName() + "room1");
-        Coordinates room1Coords = room1Site.getCoord();
-        Site room2Site = null;
-        int creationCount = 0;
-        Coordinates roomToTheEastCoords = new Coordinates(room1Coords.getX() + 1, room1Coords.getY());
-        while (room2Site == null && creationCount <= 8) {
-            String roomName = test.getMethodName() + creationCount;
-            Site site = createRoom(owner, roomName);
-            Coordinates coord = site.getCoord();
-            creationCount++;
-            if (coord.equals(roomToTheEastCoords)) {
-                room2Site = site;
-            }
-        }
-
-        assertNotNull("Should have found a room that is directly to the East of room 1.", room2Site);
-
-        String room1Id = room1Site.getId();
-        String room2Id = room2Site.getId();
-        Exits room1ExitsPreMove = room1Site.getExits();
-        System.out.println("Room 1 Exits PreMove are " + room1ExitsPreMove);
-        Exits room2ExitsPreMove = room2Site.getExits();
-        System.out.println("Room 2 Exits PreMove are " + room2ExitsPreMove);
-        repo.swapRooms(null, null, room1Id, room2Id);
-        Site room1PostMove = repo.getRoom(new NoAccessPolicy(), room1Id);
-        Site room2PostMove = repo.getRoom(new NoAccessPolicy(), room2Id);
-        Exits room1ExitsPostMove = room1PostMove.getExits();
-        System.out.println("Room 1 Exits PostMove are " + room1ExitsPostMove);
-        Exits room2ExitsPostMove = room2PostMove.getExits();
-        System.out.println("Room 2 Exits PostMove are " + room2ExitsPostMove);
-
-    }
-
 
     private static Site createRoom(String owner, String roomName) {
         RoomInfo info = new RoomInfo();

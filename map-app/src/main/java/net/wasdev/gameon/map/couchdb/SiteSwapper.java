@@ -15,9 +15,12 @@
  *******************************************************************************/
 package net.wasdev.gameon.map.couchdb;
 
+import java.util.Collection;
+
 import net.wasdev.gameon.map.couchdb.auth.ResourceAccessPolicy;
+import net.wasdev.gameon.map.models.Site;
 
 public interface SiteSwapper {
     
-    public void swapRooms(ResourceAccessPolicy accessPolicy, String user, String id1, String id2);
+    public Collection<Site> swapRooms(ResourceAccessPolicy accessPolicy, String user, String id1, String id2);
 }

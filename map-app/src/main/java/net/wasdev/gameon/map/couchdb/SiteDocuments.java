@@ -212,13 +212,23 @@ public class SiteDocuments {
      * @throws DocumentNotFoundException for unknown room
      */
     public Site getSite(String id) throws DocumentNotFoundException {
-        // get the document from the DB
-        Site site = db.get(Site.class, id);
+        Site site = getSiteWithoutExits(id);
         if ( site != null ) {
             Exits exits = getExits(site.getCoord());
             site.setExits(exits);
         }
 
+        return site;
+    }
+    
+    private Site getSiteWithoutExits(String id) throws DocumentNotFoundException{
+        if (id == null || id.isEmpty()) {
+            throw new MapModificationException(Response.Status.BAD_REQUEST,
+                    "Site id must be set.",
+                    "Site id passed in is " + id);
+        }
+        // get the document from the DB
+        Site site = db.get(Site.class, id);
         return site;
     }
 
@@ -271,9 +281,15 @@ public class SiteDocuments {
      * @param id2 Second site in swap
      * @param room2Id 
      */
-    public void swapRooms(String id1, String id2) {
-        Site site1 = db.get(Site.class, id1);
-        Site site2 = db.get(Site.class, id2);
+    public Collection<Site> swapRooms(String id1, String id2) {
+        Site site1 = getSiteWithoutExits(id1);
+        Site site2 = getSiteWithoutExits(id2);
+        
+        if (id1.equals(id2)) {
+            throw new MapModificationException(Response.Status.BAD_REQUEST,
+                    "Cannot swap a room with itself.",
+                    "Room id provided is " + id1);
+        }
         site1.setExits(null);
         site2.setExits(null);
         Coordinates site1CoordsOld = site1.getCoord();
@@ -284,6 +300,7 @@ public class SiteDocuments {
         sites.add(site1);
         sites.add(site2);
         db.executeAllOrNothing(sites);
+        return sites;
     }
 
 

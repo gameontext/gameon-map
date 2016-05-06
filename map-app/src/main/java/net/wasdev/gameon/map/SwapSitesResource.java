@@ -16,42 +16,26 @@
 package net.wasdev.gameon.map;
 
 import java.net.HttpURLConnection;
-import java.net.URI;
-import java.util.Collections;
-import java.util.List;
+import java.util.Collection;
 
 import javax.inject.Inject;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.GET;
 import javax.ws.rs.POST;
-import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
 import net.wasdev.gameon.map.couchdb.MapRepository;
 import net.wasdev.gameon.map.couchdb.auth.ResourceAccessPolicy;
-import net.wasdev.gameon.map.couchdb.auth.NoAccessPolicy;
 import net.wasdev.gameon.map.couchdb.auth.ResourceAccessPolicyFactory;
-import net.wasdev.gameon.map.couchdb.auth.AccessCertainResourcesPolicy;
-import net.wasdev.gameon.map.couchdb.auth.FullAccessPolicy;
-import net.wasdev.gameon.map.couchdb.auth.AccessOwnContentPolicy;
-import net.wasdev.gameon.map.models.ConnectionDetails;
-import net.wasdev.gameon.map.models.RoomInfo;
 import net.wasdev.gameon.map.models.Site;
 
 /**
@@ -72,36 +56,6 @@ public class SwapSitesResource {
     protected HttpServletRequest httpRequest;
 
     private enum AuthMode { AUTHENTICATION_REQUIRED, UNAUTHENTICATED_OK };
-    
-//    /**
-//     * GET /map/v1/sites
-//     */
-//    @GET
-//    @ApiOperation(value = "List sites",
-//        notes = "Get a list of registered sites. Use link headers for pagination.",
-//        response = Site.class,
-//        responseContainer = "List")
-//    @ApiResponses(value = {
-//            @ApiResponse(code = 200, message = "Successful"),
-//            @ApiResponse(code = 204, message = "No results found")
-//        })
-//    @Produces(MediaType.APPLICATION_JSON)
-//    public Response listAll(
-//            @ApiParam(value = "filter by owner") @QueryParam("owner") String owner,
-//            @ApiParam(value = "filter by name") @QueryParam("name") String name) {
-//    	String authenticatedId = getAuthenticatedId(AuthMode.UNAUTHENTICATED_OK);
-//    	ResourceAccessPolicy auth = resourceAccessPolicyFactory.createPolicyForUser(authenticatedId);
-//    	
-//        // TODO: pagination,  fields to include in list (i.e. just Exits).
-//        List<JsonNode> sites = mapRepository.listSites(auth, owner, name);
-//
-//        if ( sites.isEmpty() )
-//            return Response.noContent().build();
-//        else {           
-//            // TODO -- this should be done better. Stream, something.
-//            return Response.ok().entity(sites.toString()).build();
-//        }
-//    }
 
 	/**
      * POST /map/v1/swapSites
@@ -115,71 +69,17 @@ public class SwapSitesResource {
         code = HttpURLConnection.HTTP_CREATED )
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response createRoom(
-            @ApiParam(value = "New room attributes", required = true) RoomInfo newRoom) {
+    public Response swapSites(
+            @ApiParam(value = "Id of first room to swap", required = true) String room1Id,
+            @ApiParam(value = "Id of second room to swap", required = true) String room2Id)
+    {
+        String authenticatedId = getAuthenticatedId(AuthMode.UNAUTHENTICATED_OK);
+        ResourceAccessPolicy auth = resourceAccessPolicyFactory.createPolicyForUser(authenticatedId);
+        
+        // NOTE: Thrown exceptions are mapped (see MapModificationException)
+        Collection<Site> mappedRooms = mapRepository.swapRooms(auth, authenticatedId, room1Id, room2Id);
 
-        // NOTE: Thrown exeptions are mapped (see MapModificationException)
-        Site mappedRoom = mapRepository.connectRoom(getAuthenticatedId(AuthMode.AUTHENTICATION_REQUIRED), newRoom);
-
-        return Response.created(URI.create("/map/v1/sites/" + mappedRoom.getId())).entity(mappedRoom).build();
-    }
-
-    /**
-     * GET /map/v1/sites/:id
-     * @throws JsonProcessingException
-     */
-    @GET
-    @Path("{id}")
-    @ApiOperation(value = "Get a specific room",
-        notes = "",
-        response = Site.class )
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response getRoom(
-            @ApiParam(value = "target room id", required = true) @PathParam("id") String roomId) {
-    	String authenticatedId = getAuthenticatedId(AuthMode.UNAUTHENTICATED_OK);
-    	ResourceAccessPolicy auth = resourceAccessPolicyFactory.createPolicyForUser(authenticatedId);
-    	
-        Site mappedRoom = mapRepository.getRoom(auth,roomId);
-        return Response.ok(mappedRoom).build();
-    }
-
-
-    /**
-     * PUT /map/v1/sites/:id
-     * @throws JsonProcessingException
-     */
-    @PUT
-    @Path("{id}")
-    @ApiOperation(value = "Update a specific room",
-        notes = "",
-        response = Site.class )
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response updateRoom(
-            @ApiParam(value = "target room id", required = true) @PathParam("id") String roomId,
-            @ApiParam(value = "Updated room attributes", required = true) RoomInfo roomInfo) {
-
-        Site mappedRoom = mapRepository.updateRoom(getAuthenticatedId(AuthMode.AUTHENTICATION_REQUIRED), roomId, roomInfo);
-        return Response.ok(mappedRoom).build();
-    }
-
-
-    /**
-     * DELETE /map/v1/sites/:id
-     */
-    @DELETE
-    @Path("{id}")
-    @ApiOperation(value = "Delete a specific room",
-        notes = "",
-        code = 204 )
-    @ApiResponses(value = {
-        @ApiResponse(code = 204, message = "Delete successful")
-    })
-    public Response deleteRoom(
-            @ApiParam(value = "target room id", required = true) @PathParam("id") String roomId) {
-
-        mapRepository.deleteSite(getAuthenticatedId(AuthMode.AUTHENTICATION_REQUIRED), roomId);
-        return Response.noContent().build();
+        return Response.ok(mappedRooms).build();
     }
     
     private String getAuthenticatedId(AuthMode mode){
