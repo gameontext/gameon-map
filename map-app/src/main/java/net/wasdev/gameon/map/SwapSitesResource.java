@@ -24,6 +24,7 @@ import javax.ws.rs.Consumes;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -59,26 +60,23 @@ public class SwapSitesResource {
 
 	/**
      * POST /map/v1/swapSites
-     * @throws JsonProcessingException
      */
     @POST
     @ApiOperation(value = "Swap two sites over",
         notes = "When two sites are swapped the contents of the room and any people in the "
-                + "room will move with the site. The 'exits' then get re-assigned. ",
-        response = Site.class,
-        code = HttpURLConnection.HTTP_CREATED )
-    @Consumes(MediaType.APPLICATION_JSON)
+                + "room will move with the site. The 'exits' then get re-assigned.",
+        response = Collection.class,
+        code = HttpURLConnection.HTTP_OK )
     @Produces(MediaType.APPLICATION_JSON)
     public Response swapSites(
-            @ApiParam(value = "Id of first room to swap", required = true) String room1Id,
-            @ApiParam(value = "Id of second room to swap", required = true) String room2Id)
+            @ApiParam(value = "Id of first room to swap", required = true) @QueryParam("room1Id") String room1Id,
+            @ApiParam(value = "Id of second room to swap", required = true) @QueryParam("room2Id") String room2Id)
     {
-        String authenticatedId = getAuthenticatedId(AuthMode.UNAUTHENTICATED_OK);
+        String authenticatedId = getAuthenticatedId(AuthMode.AUTHENTICATION_REQUIRED);
         ResourceAccessPolicy auth = resourceAccessPolicyFactory.createPolicyForUser(authenticatedId);
         
         // NOTE: Thrown exceptions are mapped (see MapModificationException)
         Collection<Site> mappedRooms = mapRepository.swapRooms(auth, authenticatedId, room1Id, room2Id);
-
         return Response.ok(mappedRooms).build();
     }
     

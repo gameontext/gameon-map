@@ -39,7 +39,7 @@ public class HeaderAuthUtility {
         this.userId = userId;
     }
 
-    protected String buildHmac(List<String> stuffToHash, String key)
+    public String buildHmac(List<String> stuffToHash, String key)
             throws NoSuchAlgorithmException, InvalidKeyException, UnsupportedEncodingException {
                 Mac mac = Mac.getInstance(HMAC_ALGORITHM);
                 mac.init(new SecretKeySpec(key.getBytes(CHAR_SET), HMAC_ALGORITHM));
@@ -52,7 +52,7 @@ public class HeaderAuthUtility {
                 return Base64.getEncoder().encodeToString( mac.doFinal(hashData.toString().getBytes(CHAR_SET)) );
             }
 
-    protected String buildHash(byte[] data) throws NoSuchAlgorithmException, UnsupportedEncodingException {
+    public String buildHash(byte[] data) throws NoSuchAlgorithmException, UnsupportedEncodingException {
         MessageDigest md = MessageDigest.getInstance(HASH_ALGORITHM);
         md.update(data); 
         byte[] digest = md.digest();

@@ -16,6 +16,11 @@
 package net.wasdev.gameon.map;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.time.Instant;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 
@@ -27,6 +32,12 @@ import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -43,7 +54,7 @@ import net.wasdev.gameon.map.models.Doors;
 import net.wasdev.gameon.map.models.RoomInfo;
 import net.wasdev.gameon.map.models.Site;
 
-@Ignore
+//@Ignore
 public class TestRoomSwap {
 
     private static Collection<String> sitesToDelete;
@@ -66,7 +77,7 @@ public class TestRoomSwap {
     }
     
     @Test
-    public void testSwapRooms() throws JsonParseException, JsonMappingException, IOException {
+    public void testSwapRooms() throws JsonParseException, JsonMappingException, IOException, InvalidKeyException, NoSuchAlgorithmException {
         String owner = "TestOwner";
         String room1Name = "room1" + System.currentTimeMillis();
         String room2Name = "room2" + System.currentTimeMillis();;
@@ -76,9 +87,16 @@ public class TestRoomSwap {
         String room2Id = site2.getId();
         Coordinates site1Coords = site1.getCoord();
         Coordinates site2Coords = site2.getCoord();
-        Response response = swapRooms(room1Id, room2Id);
-        String jsonArray = response.readEntity(String.class);
-        System.out.println("Swap rooms response has entity:" + jsonArray);
+        HttpResponse response = swapRooms(room1Id, room2Id);
+        System.out.println("Swap rooms response has entity:");
+        InputStream is = response.getEntity().getContent();
+        byte [] ba = new byte[100];
+        int read = 0;
+        while((read = is.read(ba, 0, ba.length)) != -1) {
+            System.out.print(new String(ba, 0, read));
+        }
+        is.close();
+//        String jsonArray = response.readEntity(String.class);
         //TODO: the message returned was: Swap rooms response has entity:Error 403: Request made to unknown url pattern. /map/v1/swapSites
     }
     
@@ -109,10 +127,54 @@ public class TestRoomSwap {
         return site;
     }
     
-    private Response swapRooms(String room1, String room2) {
-        Invocation.Builder invoBuild = createSweepInvoBuilder("swapSites?room1Id=" + room1 + "&room2Id=" + room2);
-        Response response = invoBuild.accept(MediaType.APPLICATION_JSON_TYPE).post(null);
-        System.out.println("SwapRooms returned:" + response);
+    private HttpResponse swapRooms(String room1, String room2) throws ClientProtocolException, IOException, NoSuchAlgorithmException, InvalidKeyException {
+//        Invocation.Builder invoBuild = createGameOnInvoBuilder("swapSites?room1Id=" + room1 + "&room2Id=" + room2);
+        HttpClient client = HttpClientBuilder.create().build();
+//        String roomName = "room1" + System.currentTimeMillis();
+//        RoomInfo info = new RoomInfo();
+//        info.setName(roomName);
+//        info.setDescription("Boring description for " + roomName);
+//        info.setFullName("Room for " + roomName);
+//        info.setDoors(new Doors(roomName));
+//
+//        ConnectionDetails details = new ConnectionDetails();
+//        details.setTarget("test-socket-for-"+roomName);
+//        details.setType("test");
+//        info.setConnectionDetails(details);
+        String url = mapEndpoint + "swapSites?room1Id=" + room1 + "&room2Id=" + room2;
+        System.out.println("Creating post request to url " + url);
+        HttpPost request = new HttpPost(url);
+//        HttpPost request = new HttpPost(mapEndpoint + "sites");
+//        HttpGet request = new HttpGet(mapEndpoint + "sites/50942f91badba9fc1cb9dda64b0210d3");
+        String userId = "sweep";
+        String secret = "sweepSecret";
+        HeaderAuthUtility utility = new HeaderAuthUtility(userId, secret);
+        
+        // Hash the body
+        byte[] body = new byte[] {};
+        String bodyHash = utility.buildHash(body);
+        
+        //create the timestamp
+        Instant now = Instant.now();
+        String dateValue = now.toString();
+        
+        //create the signature
+        String hmac = utility.buildHmac(Arrays.asList(new String[] {
+                                   userId,
+                                   dateValue,
+                                   ""
+                               }),secret);
+        
+        request.addHeader("gameon-id", userId);
+        request.addHeader("gameon-date", dateValue);
+        request.addHeader("gameon-sig-body", "");
+        request.addHeader("gameon-signature", hmac);
+        
+//        request.setEntity((HttpEntity) info);
+        
+        HttpResponse response = client.execute(request);
+//        Response response = invoBuild.accept(MediaType.APPLICATION_JSON_TYPE).post(null);
+        System.out.println("SwapRooms returned:" + response.getStatusLine());
         return response;
     }
     

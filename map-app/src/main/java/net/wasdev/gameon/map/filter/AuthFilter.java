@@ -253,7 +253,7 @@ public class AuthFilter implements Filter {
                 return;
             }
 
-            if(requestUri.startsWith("/map/v1/sites")){
+            if(requestUri.startsWith("/map/v1/sites") || requestUri.startsWith("/map/v1/swapSites")){
 
                 //auth needed for sites endpoints.
                 ServletAuthWrapper saw = new ServletAuthWrapper(httpRequest);
@@ -279,7 +279,11 @@ public class AuthFilter implements Filter {
                             break;
                         }
                         case "POST":{
-                            if(!validateHeaderBasedAuth(response, saw, id, gameonDate, true, mapID)) {
+                            boolean postData = true;
+                            if (requestUri.startsWith("/map/v1/swapSites")) {
+                                postData = false;
+                            }
+                            if(!validateHeaderBasedAuth(response, saw, id, gameonDate, postData, mapID)) {
                                 return;
                             }
                             break;
@@ -314,6 +318,7 @@ public class AuthFilter implements Filter {
                 chain.doFilter(saw, response);
                 return;
             }
+            
             ((HttpServletResponse)response).sendError(HttpServletResponse.SC_FORBIDDEN, "Request made to unknown url pattern. "+httpRequest.getRequestURI());
         }else{
             ((HttpServletResponse)response).sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Only supports http servlet requests");
