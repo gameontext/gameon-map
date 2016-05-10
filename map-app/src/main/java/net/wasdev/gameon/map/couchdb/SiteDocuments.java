@@ -271,7 +271,7 @@ public class SiteDocuments {
      * @param id2 Second site in swap
      * @param room2Id 
      */
-    public void swapRooms(String authenticatedId, String id1, String id2) {
+    public void swapRooms(String id1, String id2) {
         Site site1 = db.get(Site.class, id1);
         Site site2 = db.get(Site.class, id2);
         site1.setExits(null);
