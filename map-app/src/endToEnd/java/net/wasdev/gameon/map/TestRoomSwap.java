@@ -43,6 +43,7 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import com.fasterxml.jackson.core.JsonParseException;
@@ -57,7 +58,7 @@ import net.wasdev.gameon.map.models.Doors;
 import net.wasdev.gameon.map.models.RoomInfo;
 import net.wasdev.gameon.map.models.Site;
 
-//@Ignore
+@Ignore
 public class TestRoomSwap {
 
     private static Collection<String> sitesToDelete;

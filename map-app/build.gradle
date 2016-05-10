@@ -36,11 +36,23 @@ dependencies {
     testCompile 'junit:junit:4.12'
 }
 
+sourceSets {
+  endToEndTest {
+    java.srcDir file('/src/endToEnd/java')
+  }
+}
+
+task endToEndTest(type: Test) {
+  testClassesDir = sourceSets.endToEndTest.output.classesDir
+  classpath = sourceSets.endToEndTest.runtimeClasspath
+}
+
 task exportLibs(type: Copy) {
   into "$buildDir/libs/"
   from configurations.couchdb
 }
 
+check.dependsOn(endToEndTest)
 build.dependsOn(exportLibs)
 
 // Set the Eclipse facets to use 3.1 of the Dynamic Web Module which requires Java 1.7 by default.
