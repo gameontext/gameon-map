@@ -15,15 +15,17 @@
  *******************************************************************************/
 package net.wasdev.gameon.map.couchdb.auth;
 
-import org.junit.Before;
-import org.junit.Test;
-import static org.hamcrest.CoreMatchers.*;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
+import org.junit.Before;
+import org.junit.Test;
 
+import net.wasdev.gameon.map.couchdb.SiteSwapper;
 import net.wasdev.gameon.map.models.ConnectionDetails;
 
 /**
@@ -46,6 +48,12 @@ public class ResourceAccessPolicyTest {
 	public void sweepCanAccessConnectionDetails() {
 		ResourceAccessPolicy policy = factory.createPolicyForUser(TEST_SWEEP_ID);
 		assertThat(policy, is(ableToViewResource(ConnectionDetails.class)));
+	}
+	
+	@Test
+	public void sweepCanAccessSiteSwapper() {
+	    ResourceAccessPolicy policy = factory.createPolicyForUser(TEST_SWEEP_ID);
+	    assertThat(policy, is(ableToViewResource(SiteSwapper.class)));
 	}
 
 	@Test

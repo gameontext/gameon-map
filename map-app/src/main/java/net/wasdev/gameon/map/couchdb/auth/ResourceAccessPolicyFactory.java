@@ -15,11 +15,13 @@
  *******************************************************************************/
 package net.wasdev.gameon.map.couchdb.auth;
 
-import java.util.Collections;
+import java.util.ArrayList;
+import java.util.Collection;
 
 import javax.annotation.Resource;
 import javax.enterprise.context.ApplicationScoped;
 
+import net.wasdev.gameon.map.couchdb.SiteSwapper;
 import net.wasdev.gameon.map.models.ConnectionDetails;
 
 @ApplicationScoped
@@ -44,10 +46,12 @@ public class ResourceAccessPolicyFactory {
         } else if (systemId.equals(user)) {
             return new FullAccessPolicy();
         } else if (sweepId.equals(user)) {
-            return new AccessCertainResourcesPolicy(Collections.singleton(ConnectionDetails.class));
+     	    Collection<Class<?>> collection = new ArrayList<>();
+    	    collection.add(ConnectionDetails.class);
+    	    collection.add(SiteSwapper.class);
+	    return new AccessCertainResourcesPolicy(collection);
         } else {
             return new AccessOwnContentPolicy(user);
         }
     }
-
 }

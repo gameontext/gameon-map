@@ -15,12 +15,14 @@
  *******************************************************************************/
 package net.wasdev.gameon.map.couchdb;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.logging.Level;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import javax.enterprise.context.ApplicationScoped;
+import javax.ws.rs.core.Response;
 
 import org.ektorp.CouchDbConnector;
 import org.ektorp.CouchDbInstance;
@@ -42,7 +44,7 @@ import net.wasdev.gameon.map.models.RoomInfo;
 import net.wasdev.gameon.map.models.Site;
 
 @ApplicationScoped
-public class MapRepository {
+public class MapRepository implements SiteSwapper {
 
     @Resource(lookup="couchdb/connector")
     protected CouchDbInstance db;
@@ -173,6 +175,22 @@ public class MapRepository {
         Log.log(Level.FINER, this, "Update site: {0} {1}", id, roomInfo);
 
         return sites.updateRoom(authenticatedId, id, roomInfo);
+    }
+    
+    /**
+     * Swap to rooms around
+     * @param room1Id First site in swap
+     * @param room2Id Second site in swap
+     */
+    public Collection<Site> swapRooms(ResourceAccessPolicy accessPolicy, String user, String room1Id, String room2Id) {
+        Log.log(Level.FINER, this, "Swap rooms: {0} {1}", room1Id, room2Id);
+        
+        if (accessPolicy == null || !accessPolicy.isAuthorisedToView(null, SiteSwapper.class)) {
+            throw new MapModificationException(Response.Status.FORBIDDEN,
+                    "User " + user + " does not have permission to swap rooms.",
+                    "Rooms " + room1Id + " and " + room2Id + " have not been swapped.");
+        }
+        return sites.swapRooms(room1Id, room2Id);
     }
 
     /**
