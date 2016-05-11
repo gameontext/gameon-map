@@ -20,6 +20,11 @@ import java.util.Collection;
 import net.wasdev.gameon.map.couchdb.auth.ResourceAccessPolicy;
 import net.wasdev.gameon.map.models.Site;
 
+/*
+* This interface is being implemented by MapRepository
+* It is used for authentication. Any user that has a ResourceAccessPolicy that includes this 
+* class has permission to swap sites.
+*/
 public interface SiteSwapper {
     
     public Collection<Site> swapRooms(ResourceAccessPolicy accessPolicy, String user, String id1, String id2);
