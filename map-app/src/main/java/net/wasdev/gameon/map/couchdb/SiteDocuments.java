@@ -77,9 +77,6 @@ import net.wasdev.gameon.map.models.Site;
  * </pre>
  */
 public class SiteDocuments {
-    
-    @Resource(lookup="sweepId")
-    String sweepId;
 
     protected static final String DESIGN_DOC = "_design/site";
 
