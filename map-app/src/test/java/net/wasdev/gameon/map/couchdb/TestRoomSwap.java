@@ -49,7 +49,6 @@ import net.wasdev.gameon.map.couchdb.auth.NoAccessPolicy;
 import net.wasdev.gameon.map.models.ConnectionDetails;
 import net.wasdev.gameon.map.models.Coordinates;
 import net.wasdev.gameon.map.models.Doors;
-import net.wasdev.gameon.map.models.Exits;
 import net.wasdev.gameon.map.models.RoomInfo;
 import net.wasdev.gameon.map.models.Site;
 
@@ -75,8 +74,6 @@ public class TestRoomSwap {
         }
 
     }
-
-    private static final int ROOM_COUNT = 50;
 
     protected static CouchDbInstance db;
     protected static MapRepository repo;
@@ -144,65 +141,6 @@ public class TestRoomSwap {
         
         assertTrue("Room1 should now be where room2 was.", room1CoordPostMove.equals(room2CoordPreMove));
         assertTrue("Room2 should now be where room1 was.", room2CoordPostMove.equals(room1CoordPreMove));
-    }
-
-    @Test
-    public void testSwapDistantRoomsExits() {
-        RoomIdPair pair = generateMap((Coordinates room1Coords, Coordinates coords) -> {
-            int xDiff = Math.abs(coords.getX() - room1Coords.getX());
-            int yDiff = Math.abs(coords.getY() - room1Coords.getY());
-            return xDiff > 1 || yDiff < -1;
-        });
-
-        String room1Id = pair.getRoom1Id();
-        String room2Id = pair.getRoom2Id();
-        
-        Exits room1ExitsPreMove = getExitsForRoomId(room1Id);
-        Exits room2ExitsPreMove = getExitsForRoomId(room2Id);
-        
-        repo.swapRooms(swapRoomsAccessPolicy, null, room1Id, room2Id);
-        
-        Exits room1ExitsPostMove = getExitsForRoomId(room1Id);
-        Exits room2ExitsPostMove = getExitsForRoomId(room2Id);
-        
-        assertEquals("The exits on Room 1 should be what was previously the exits on Room 2", room2ExitsPreMove, room1ExitsPostMove);
-        assertEquals("The exits on Room 2 should be what was previously the exits on Room 1", room1ExitsPreMove, room2ExitsPostMove);
-    }
-    
-    @Test
-    public void testSwapAdjacentRoomsExits() {
-        String owner = "test";
-        Site room1Site = createRoom(owner, test.getMethodName() + "room1");
-        Coordinates room1Coords = room1Site.getCoord();
-        Site room2Site = null;
-        int creationCount = 0;
-        Coordinates roomToTheEastCoords = new Coordinates(room1Coords.getX() + 1, room1Coords.getY());
-        while (room2Site == null && creationCount <= 8) {
-            String roomName = test.getMethodName() + creationCount;
-            Site site = createRoom(owner, roomName);
-            Coordinates coord = site.getCoord();
-            creationCount++;
-            if (coord.equals(roomToTheEastCoords)) {
-                room2Site = site;
-            }
-        }
-
-        assertNotNull("Should have found a room that is directly to the East of room 1.", room2Site);
-
-        String room1Id = room1Site.getId();
-        String room2Id = room2Site.getId();
-        Exits room1ExitsPreMove = room1Site.getExits();
-        System.out.println("Room 1 Exits PreMove are " + room1ExitsPreMove);
-        Exits room2ExitsPreMove = room2Site.getExits();
-        System.out.println("Room 2 Exits PreMove are " + room2ExitsPreMove);
-        repo.swapRooms(swapRoomsAccessPolicy, null, room1Id, room2Id);
-        Site room1PostMove = repo.getRoom(new NoAccessPolicy(), room1Id);
-        Site room2PostMove = repo.getRoom(new NoAccessPolicy(), room2Id);
-        Exits room1ExitsPostMove = room1PostMove.getExits();
-        System.out.println("Room 1 Exits PostMove are " + room1ExitsPostMove);
-        Exits room2ExitsPostMove = room2PostMove.getExits();
-        System.out.println("Room 2 Exits PostMove are " + room2ExitsPostMove);
-
     }
     
     @Test
@@ -345,15 +283,6 @@ public class TestRoomSwap {
         Coordinates coords = room.getCoord();
         assertNotNull("The room " + roomId + " should have a Coordinates object", coords);
         return coords;
-    }
-
-
-    private Exits getExitsForRoomId(String roomId) {
-        Site room = repo.getRoom(new NoAccessPolicy(), roomId);
-        assertNotNull("Should have found room " + roomId, room);
-        Exits exits = room.getExits();
-        assertNotNull("The room " + roomId + " should have an Exits object", exits);
-        return exits;
     }
     
     private RoomIdPair generateMap(BiPredicate<Coordinates, Coordinates> compareStrategy) {

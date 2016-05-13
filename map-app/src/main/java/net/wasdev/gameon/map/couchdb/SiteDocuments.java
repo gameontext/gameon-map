@@ -296,7 +296,7 @@ public class SiteDocuments {
         Collection<Site> sites = new ArrayList<Site>();
         sites.add(site1);
         sites.add(site2);
-        db.executeAllOrNothing(sites);
+        db.executeBulk(sites);
         return sites;
     }
 
