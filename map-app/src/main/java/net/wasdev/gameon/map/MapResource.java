@@ -19,9 +19,10 @@ import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.Status;
 
 import io.swagger.annotations.Api;
-import net.wasdev.gameon.map.couchdb.MapRepository;
+import net.wasdev.gameon.map.db.MapRepository;
 
 @Path("/")
 @Api( value = "map")
@@ -46,9 +47,9 @@ public class MapResource {
         if ( mapRepository != null && mapRepository.connectionReady() ) {
             return Response.ok().build();
         } else {
-            return Response.serverError().build();
+            return Response.status(Status.SERVICE_UNAVAILABLE).build();
         }
     }
-    
+
 
 }

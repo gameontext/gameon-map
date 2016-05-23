@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *******************************************************************************/
-package net.wasdev.gameon.map.couchdb;
+package net.wasdev.gameon.map.db;
 
 import java.net.MalformedURLException;
 import java.util.Collection;
@@ -22,6 +22,7 @@ import java.util.List;
 
 import javax.ws.rs.core.Response;
 
+import org.ektorp.CouchDbConnector;
 import org.ektorp.CouchDbInstance;
 import org.ektorp.DocumentNotFoundException;
 import org.ektorp.http.HttpClient;
@@ -41,7 +42,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectWriter;
 
 import net.wasdev.gameon.map.MapModificationException;
-import net.wasdev.gameon.map.couchdb.auth.AccessOwnContentPolicy;
+import net.wasdev.gameon.map.auth.AccessOwnContentPolicy;
 import net.wasdev.gameon.map.models.ConnectionDetails;
 import net.wasdev.gameon.map.models.Coordinates;
 import net.wasdev.gameon.map.models.Doors;
@@ -51,7 +52,7 @@ import net.wasdev.gameon.map.models.Site;
 @Ignore
 public class TestMapPlacement {
 
-    protected static CouchDbInstance db;
+    protected static CouchDbInstance dbi;
     protected static MapRepository repo;
     protected static ObjectWriter debugWriter;
     private Collection<OwnerSitePair> sitesToDelete;
@@ -63,10 +64,12 @@ public class TestMapPlacement {
                 .username("mapUser")
                 .password("myCouchDBSecret")
                 .build();
-        db = new StdCouchDbInstance(httpClient);
+
+        dbi = new StdCouchDbInstance(httpClient);
+        CouchDbConnector dbc = dbi.createConnector(CouchInjector.DB_NAME, false);
 
         repo = new MapRepository();
-        repo.db = db;
+        repo.db = dbc;
         repo.postConstruct();
         debugWriter = repo.sites.mapper.writerWithDefaultPrettyPrinter();
     }
@@ -78,14 +81,14 @@ public class TestMapPlacement {
     public void initialiseIdsToDelete() {
         sitesToDelete = new HashSet<>();
     }
-    
+
     @After
     public void removeSitesCreatedForTest() {
         for (OwnerSitePair siteToDelete : sitesToDelete) {
             repo.deleteSite(siteToDelete.owner, siteToDelete.siteId);
         }
     }
-    
+
     @Test
     public void testListRooms() throws JsonProcessingException {
         List<JsonNode> sites = repo.listSites(null, null, null);
@@ -174,12 +177,12 @@ public class TestMapPlacement {
         Site room1 = createRoom(owner1, baseRoomName + "a");
         Site room2 = createRoom(owner2, baseRoomName + "b");
         Site room3 = createRoom(owner3, baseRoomName + "c");
-        
+
         testSitesFilteredByOwner(owner1, room1, room2, room3);
         testSitesFilteredByOwner(owner2, room2, room1, room3);
         testSitesFilteredByOwner(owner3, room3, room1, room2);
     }
-    
+
     private void testSitesFilteredByOwner(String owner, Site roomExpectedToBePresent, Site... roomsThatShouldBeMissing) throws JsonProcessingException {
         List<JsonNode> allSitesForOwner = repo.listSites(null, owner, null);
         String fullString = debugWriter.writeValueAsString(allSitesForOwner);
@@ -190,7 +193,7 @@ public class TestMapPlacement {
             }
         }
     }
-    
+
     @Test
     public void testFilterByName() throws JsonProcessingException {
         /*
@@ -303,7 +306,7 @@ public class TestMapPlacement {
         // attempt to delete the replacement
         repo.sites.db.delete(xy_replace.get(0));
     }
-    
+
     private static class OwnerSitePair {
         private final String owner;
         private final String siteId;

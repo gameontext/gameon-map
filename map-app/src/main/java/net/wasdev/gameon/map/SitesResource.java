@@ -17,7 +17,6 @@ package net.wasdev.gameon.map;
 
 import java.net.HttpURLConnection;
 import java.net.URI;
-import java.util.Collections;
 import java.util.List;
 
 import javax.inject.Inject;
@@ -43,14 +42,10 @@ import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
-import net.wasdev.gameon.map.couchdb.MapRepository;
-import net.wasdev.gameon.map.couchdb.auth.ResourceAccessPolicy;
-import net.wasdev.gameon.map.couchdb.auth.NoAccessPolicy;
-import net.wasdev.gameon.map.couchdb.auth.ResourceAccessPolicyFactory;
-import net.wasdev.gameon.map.couchdb.auth.AccessCertainResourcesPolicy;
-import net.wasdev.gameon.map.couchdb.auth.FullAccessPolicy;
-import net.wasdev.gameon.map.couchdb.auth.AccessOwnContentPolicy;
-import net.wasdev.gameon.map.models.ConnectionDetails;
+import net.wasdev.gameon.map.auth.ResourceAccessPolicy;
+import net.wasdev.gameon.map.auth.ResourceAccessPolicyFactory;
+import net.wasdev.gameon.map.auth.SignedRequest;
+import net.wasdev.gameon.map.db.MapRepository;
 import net.wasdev.gameon.map.models.RoomInfo;
 import net.wasdev.gameon.map.models.Site;
 
@@ -61,7 +56,7 @@ import net.wasdev.gameon.map.models.Site;
 @Api( tags = {"map"})
 @Produces(MediaType.APPLICATION_JSON)
 public class SitesResource {
-	
+
     @Inject
     private ResourceAccessPolicyFactory resourceAccessPolicyFactory;
 
@@ -72,7 +67,7 @@ public class SitesResource {
     protected HttpServletRequest httpRequest;
 
     private enum AuthMode { AUTHENTICATION_REQUIRED, UNAUTHENTICATED_OK };
-    
+
     /**
      * GET /map/v1/sites
      */
@@ -97,7 +92,7 @@ public class SitesResource {
 
         if ( sites.isEmpty() )
             return Response.noContent().build();
-        else {           
+        else {
             // TODO -- this should be done better. Stream, something.
             return Response.ok().entity(sites.toString()).build();
         }
@@ -108,6 +103,7 @@ public class SitesResource {
      * @throws JsonProcessingException
      */
     @POST
+    @SignedRequest
     @ApiOperation(value = "Create a room",
         notes = "When a room is registered, the map will generate the appropriate paths to "
                 + "place the room into the map. The map wll only generate links using standard 2-d "
@@ -131,6 +127,7 @@ public class SitesResource {
      * @throws JsonProcessingException
      */
     @GET
+    @SignedRequest
     @Path("{id}")
     @ApiOperation(value = "Get a specific room",
         notes = "",
@@ -151,6 +148,7 @@ public class SitesResource {
      * @throws JsonProcessingException
      */
     @PUT
+    @SignedRequest
     @Path("{id}")
     @ApiOperation(value = "Update a specific room",
         notes = "",
@@ -170,6 +168,7 @@ public class SitesResource {
      * DELETE /map/v1/sites/:id
      */
     @DELETE
+    @SignedRequest
     @Path("{id}")
     @ApiOperation(value = "Delete a specific room",
         notes = "",
@@ -183,10 +182,10 @@ public class SitesResource {
         mapRepository.deleteSite(getAuthenticatedId(AuthMode.AUTHENTICATION_REQUIRED), roomId);
         return Response.noContent().build();
     }
-    
+
     private String getAuthenticatedId(AuthMode mode){
         // This attribute will be set by the auth filter when a user has made
-        // an authenticated request. 
+        // an authenticated request.
         String authedId = (String) httpRequest.getAttribute("player.id");
         switch(mode){
             case AUTHENTICATION_REQUIRED:{
@@ -207,7 +206,7 @@ public class SitesResource {
             }
         }
         return authedId;
-        
+
     }
 
 }

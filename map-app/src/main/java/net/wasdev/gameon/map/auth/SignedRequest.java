@@ -13,13 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *******************************************************************************/
-package net.wasdev.gameon.map.couchdb.auth;
+package net.wasdev.gameon.map.auth;
 
-public class NoAccessPolicy implements ResourceAccessPolicy {
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-    @Override
-    public boolean isAuthorisedToView(String resourceOwnedBy, Class<?> resourceType) {
-        return false;
-    }
-
-}
+/**
+ * Method-level annotations for methods that use a signed
+ * request.
+ */
+@Target({ElementType.METHOD, ElementType.TYPE})
+@Retention(value = RetentionPolicy.RUNTIME)
+public @interface SignedRequest { }

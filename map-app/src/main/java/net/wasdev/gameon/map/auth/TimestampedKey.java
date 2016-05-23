@@ -13,8 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *******************************************************************************/
-package net.wasdev.gameon.map.filter;
+package net.wasdev.gameon.map.auth;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.logging.Level;
 
 import net.wasdev.gameon.map.Log;
@@ -24,16 +26,16 @@ import net.wasdev.gameon.map.Log;
  * Equality / Hashcode is determined by key string alone.
  * Sort order is provided by key timestamp.
  */
-final class TimestampedKey implements Comparable<TimestampedKey> {
+public final class TimestampedKey implements Comparable<TimestampedKey> {
     private String key;
-    private final Long time = System.currentTimeMillis();
-    private final Long expiresAfter;
+    private final Instant time = Instant.now();
+    private final Duration expiresAfter;
 
-    public TimestampedKey(Long expiresAfter){
+    public TimestampedKey(Duration expiresAfter){
         this.expiresAfter = expiresAfter;
     }
 
-    public TimestampedKey(String a, Long expiresAfter){
+    public TimestampedKey(String a, Duration expiresAfter){
         this.key=a;
         this.expiresAfter = expiresAfter;
     }
@@ -70,18 +72,20 @@ final class TimestampedKey implements Comparable<TimestampedKey> {
 
     public boolean hasExpired() {
         //cache hit, but is the key still valid?
-        long current = System.currentTimeMillis();
-        long delta = current - time;
-        Log.log(Level.FINER, this, "comparing key with stamp {0} with current time delta {1}",time,current);
+        Instant now = Instant.now();
+
+        Log.log(Level.FINEST, this, "EXPIRED? Testing request expiry, then={0}, now={1}, duration={2}, against={3}, result={4}",
+                time, now, Duration.between(time, now), expiresAfter,
+                Duration.between(time,now).compareTo(expiresAfter) > 0);
+
         //if the key is older than this time period.. we'll consider it dead.
-        return delta > expiresAfter;
+        return Duration.between(time,now).compareTo(expiresAfter) > 0;
     }
+
     public String getKey() {
         return key;
     }
     public void setKey(String key) {
         this.key = key;
     }
-
-
 }
