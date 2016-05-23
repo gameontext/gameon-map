@@ -10,6 +10,7 @@
         <feature>cdi-1.2</feature>
         <feature>ssl-1.0</feature>
         <feature>couchdb-1.0</feature>
+        <feature>concurrent-1.0</feature>
     </featureManager>
 
     <httpEndpoint host="*" httpPort="9080" httpsPort="9443" id="defaultHttpEndpoint">

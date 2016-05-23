@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *******************************************************************************/
-package net.wasdev.gameon.map.couchdb.auth;
+package net.wasdev.gameon.map.auth;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
@@ -25,7 +25,6 @@ import org.hamcrest.Matcher;
 import org.junit.Before;
 import org.junit.Test;
 
-import net.wasdev.gameon.map.couchdb.SiteSwapper;
 import net.wasdev.gameon.map.models.ConnectionDetails;
 
 /**
@@ -49,11 +48,11 @@ public class ResourceAccessPolicyTest {
 		ResourceAccessPolicy policy = factory.createPolicyForUser(TEST_SWEEP_ID);
 		assertThat(policy, is(ableToViewResource(ConnectionDetails.class)));
 	}
-	
+
 	@Test
 	public void sweepCanAccessSiteSwapper() {
 	    ResourceAccessPolicy policy = factory.createPolicyForUser(TEST_SWEEP_ID);
-	    assertThat(policy, is(ableToViewResource(SiteSwapper.class)));
+	    assertThat(policy, is(ableToViewResource(SiteSwapPermission.class)));
 	}
 
 	@Test
@@ -89,20 +88,20 @@ public class ResourceAccessPolicyTest {
 		ResourceAccessPolicy policy = factory.createPolicyForUser(TEST_USER);
 		assertThat(policy, not(ableToViewResourceOwnedBy(TEST_OTHER_OWNER)));
 	}
-	
+
 	private static Matcher<ResourceAccessPolicy> ableToViewResourceOwnedBy(String owner) {
 		return new AuthorisedToViewMatcher(owner, null);
 	}
-	
+
 	private static Matcher<ResourceAccessPolicy> ableToViewResource(Class<?> resource) {
 		return new AuthorisedToViewMatcher(null, resource);
 	}
-	
+
 	private static class AuthorisedToViewMatcher extends BaseMatcher<ResourceAccessPolicy> {
 
 		private final String owner;
 		private final Class<?> resourceType;
-		
+
 		public AuthorisedToViewMatcher(String owner, Class<?> resourceType) {
 			this.owner = owner;
 			this.resourceType = resourceType;
@@ -111,7 +110,7 @@ public class ResourceAccessPolicyTest {
 		@Override
 		public boolean matches(Object item) {
 			ResourceAccessPolicy policy = (ResourceAccessPolicy) item;
-			return policy.isAuthorisedToView(owner, resourceType);
+			return policy.isAuthorized(owner, resourceType);
 		}
 
 		@Override
@@ -121,14 +120,14 @@ public class ResourceAccessPolicyTest {
 						.appendText(" owned by ")
 						.appendText(owner);
 		}
-		
+
 		@Override
 		public void describeMismatch(Object item, Description description) {
 			description.appendText("the policy ");
 			description.appendValue(item);
 			description.appendText(" was unable to");
 		}
-		
+
 	}
 
 }

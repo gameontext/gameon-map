@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *******************************************************************************/
-package net.wasdev.gameon.map.filter;
+package net.wasdev.gameon.map.auth;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -23,7 +23,11 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
-import java.util.Calendar;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Date;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Level;
 
 import javax.annotation.Resource;
@@ -64,7 +68,16 @@ import net.wasdev.gameon.map.Log;
  *
  * @see ApplicationScoped
  */
+@ApplicationScoped
 public class PlayerClient {
+
+    private static final Duration hours24 = Duration.ofHours(24);
+
+    /** The Key to Sign JWT's with (once it's loaded) */
+    private static Key signingKey = null;
+
+    /** Cache of player API keys */
+    private static ConcurrentMap<String,TimestampedKey> playerSecrets = new ConcurrentHashMap<>();
 
     /**
      * The player URL injected from JNDI via CDI.
@@ -78,13 +91,24 @@ public class PlayerClient {
     // Keystore info for jwt parsing / creation.
     @Resource(lookup = "jwtKeyStore")
     String keyStore;
+
     @Resource(lookup = "jwtKeyStorePassword")
     String keyStorePW;
+
     @Resource(lookup = "jwtKeyStoreAlias")
     String keyStoreAlias;
 
-    /** The Key to Sign JWT's with (once it's loaded) */
-    private static Key signingKey = null;
+    @Resource(lookup="registrationSecret")
+    String registrationSecret;
+
+    @Resource(lookup="systemId")
+    String SYSTEM_ID;
+
+    @Resource(lookup="sweepId")
+    String sweepId;
+
+    @Resource(lookup="sweepSecret")
+    String sweepSecret;
 
     /**
      * Obtain the key we'll use to sign the jwts we use to talk to Player endpoints.
@@ -92,7 +116,7 @@ public class PlayerClient {
      * @throws IOException
      *             if there are any issues with the keystore processing.
      */
-    private synchronized void getKeyStoreInfo() throws IOException {
+    private synchronized void getKeyStoreInfo() {
         try {
             // load up the keystore..
             FileInputStream is = new FileInputStream(keyStore);
@@ -102,16 +126,13 @@ public class PlayerClient {
             // grab the key we'll use to sign
             signingKey = signingKeystore.getKey(keyStoreAlias, keyStorePW.toCharArray());
 
-        } catch (KeyStoreException e) {
-            throw new IOException(e);
-        } catch (NoSuchAlgorithmException e) {
-            throw new IOException(e);
-        } catch (CertificateException e) {
-            throw new IOException(e);
-        } catch (UnrecoverableKeyException e) {
-            throw new IOException(e);
+        } catch (KeyStoreException |
+                NoSuchAlgorithmException |
+                CertificateException |
+                UnrecoverableKeyException |
+                IOException e) {
+            throw new IllegalStateException("Unable to get required keystore", e);
         }
-
     }
 
     /**
@@ -137,30 +158,65 @@ public class PlayerClient {
         // We'll use this claim to know this is a user token
         onwardsClaims.setAudience("client");
 
-        // we set creation time to 24hrs ago, to avoid timezone issues in the
-        // browser
-        // verification of the jwt.
-        Calendar calendar1 = Calendar.getInstance();
-        calendar1.add(Calendar.HOUR, -24);
-        onwardsClaims.setIssuedAt(calendar1.getTime());
-
+        // we set creation time to 24hrs ago, to avoid timezone issues
         // client JWT has 24 hrs validity from now.
-        Calendar calendar2 = Calendar.getInstance();
-        calendar2.add(Calendar.HOUR, 24);
-        onwardsClaims.setExpiration(calendar2.getTime());
+        Instant timePoint = Instant.now();
+        onwardsClaims.setIssuedAt(Date.from(timePoint.minus(hours24)));
+        onwardsClaims.setExpiration(Date.from(timePoint.plus(hours24)));
 
         // finally build the new jwt, using the claims we just built, signing it
         // with our signing key, and adding a key hint as kid to the encryption
         // header, which is optional, but can be used by the receivers of the
         // jwt to know which key they should verifiy it with.
-        String newJwt = Jwts.builder().setHeaderParam("kid", "playerssl").setClaims(onwardsClaims)
-                .signWith(SignatureAlgorithm.RS256, signingKey).compact();
+        String newJwt = Jwts.builder()
+                .setHeaderParam("kid", "playerssl")
+                .setClaims(onwardsClaims)
+                .signWith(SignatureAlgorithm.RS256, signingKey)
+                .compact();
 
 
         return newJwt;
     }
 
+    /**
+     * Obtain the apiKey for the given id, using a local cache to avoid hitting couchdb too much.
+     */
+    public String getSecretForId(String id){
+        //first.. handle our built-in key
+        if (SYSTEM_ID.equals(id)) {
+            return registrationSecret;
+        } else if (sweepId.equals(id)) {
+            return sweepSecret;
+        }
 
+        // TODO: hystrix around player.
+
+        TimestampedKey timedKey =  playerSecrets.get(id);
+        if ( timedKey != null && !timedKey.hasExpired() ) {
+            // the id has been seen, and hasn't expired. Shortcut!
+            Log.log(Level.FINER,"Map using cached key for {0}",id);
+            return timedKey.getKey();
+        }
+
+        String playerSecret;
+        TimestampedKey newKey = new TimestampedKey(hours24);
+
+        Log.log(Level.FINER,"Map asking player service for key for id {0}",id);
+        try {
+            playerSecret = getPlayerSecret(id);
+            newKey.setKey(playerSecret);
+        } catch (Exception e) {
+            // TODO: Fallback if Player is unreachable?
+            Log.log(Level.SEVERE, this, "Map unable to get key for id "+id, e);
+            return null;
+        }
+
+        // replace expired timedKey with newKey always.
+        playerSecrets.put(id, newKey);
+
+        // return fetched playerSecret
+        return playerSecret;
+    }
 
     /**
      * Obtain apiKey for player id.
@@ -169,7 +225,7 @@ public class PlayerClient {
      *            The player id
      * @return The apiKey for the player
      */
-    public String getApiKey(String playerId) throws IOException {
+    private String getPlayerSecret(String playerId) throws IOException {
     	String jwt = getClientJwtForId(playerId);
 
     	HttpClient client = null;
@@ -215,20 +271,16 @@ public class PlayerClient {
 
             return jn.get("apiKey").textValue();
         } catch (HttpResponseException hre) {
-        	System.out.println("Error communicating with player service: "+hre.getStatusCode()+" "+hre.getMessage());
+            System.out.println("Error communicating with player service: "+hre.getStatusCode()+" "+hre.getMessage());
             throw hre;
         } catch (ResponseProcessingException rpe) {
-        	System.out.println("Error processing response "+rpe.getResponse().toString());
-            throw new IOException(rpe);
-        } catch (ProcessingException | WebApplicationException ex) {
-        	//bad stuff.
-        	System.out.println("Hmm.. "+ex.getMessage());
-        	throw new IOException(ex);
-        } catch(IOException io){
-        	System.out.println("Utoh.. "+io.getMessage());
-        	throw new IOException(io);
+            System.out.println("Error processing response "+rpe.getResponse().toString());
+            throw rpe;
+        } catch (ProcessingException | WebApplicationException | IOException ex) {
+            //bad stuff.
+            System.out.println("Hmm.. "+ex.getMessage());
+            throw ex;
         }
-
     }
 
 }

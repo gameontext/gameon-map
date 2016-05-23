@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *******************************************************************************/
-package net.wasdev.gameon.map.couchdb.auth;
+package net.wasdev.gameon.map.auth;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -21,7 +21,6 @@ import java.util.Collection;
 import javax.annotation.Resource;
 import javax.enterprise.context.ApplicationScoped;
 
-import net.wasdev.gameon.map.couchdb.SiteSwapper;
 import net.wasdev.gameon.map.models.ConnectionDetails;
 
 @ApplicationScoped
@@ -29,6 +28,7 @@ public class ResourceAccessPolicyFactory {
 
     @Resource(lookup = "systemId")
     private String systemId;
+
     @Resource(lookup = "sweepId")
     private String sweepId;
 
@@ -46,10 +46,10 @@ public class ResourceAccessPolicyFactory {
         } else if (systemId.equals(user)) {
             return new FullAccessPolicy();
         } else if (sweepId.equals(user)) {
-     	    Collection<Class<?>> collection = new ArrayList<>();
-    	    collection.add(ConnectionDetails.class);
-    	    collection.add(SiteSwapper.class);
-	    return new AccessCertainResourcesPolicy(collection);
+            Collection<Class<?>> collection = new ArrayList<>();
+            collection.add(ConnectionDetails.class);
+            collection.add(SiteSwapPermission.class);
+            return new AccessCertainResourcesPolicy(collection);
         } else {
             return new AccessOwnContentPolicy(user);
         }

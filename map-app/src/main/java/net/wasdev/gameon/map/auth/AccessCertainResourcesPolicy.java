@@ -13,10 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *******************************************************************************/
-package net.wasdev.gameon.map.couchdb.auth;
+package net.wasdev.gameon.map.auth;
 
-public interface ResourceAccessPolicy {
+import java.util.Collection;
+import java.util.HashSet;
 
-    public boolean isAuthorisedToView(String resourceOwnedBy, Class<?> resourceType);
+public class AccessCertainResourcesPolicy implements ResourceAccessPolicy {
+
+    private final Collection<Class<?>> authorisedToView;
+
+    public AccessCertainResourcesPolicy(Collection<Class<?>> authorisedToView) {
+        this.authorisedToView = new HashSet<Class<?>>(authorisedToView);
+    }
+
+    @Override
+    public boolean isAuthorized(String resourceOwnedBy, Class<?> resourceType) {
+        return authorisedToView.contains(resourceType);
+    }
 
 }
