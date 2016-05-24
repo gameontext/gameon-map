@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *******************************************************************************/
-package net.wasdev.gameon.map.auth;
+package org.gameontext.signed;
 
 import java.time.Duration;
 import java.util.Map.Entry;
@@ -24,8 +24,6 @@ import java.util.logging.Level;
 import javax.annotation.Resource;
 import javax.enterprise.concurrent.ManagedExecutorService;
 import javax.enterprise.context.ApplicationScoped;
-
-import net.wasdev.gameon.map.Log;
 
 @ApplicationScoped
 public class SignedRequestTimedCache implements Runnable {
@@ -59,7 +57,7 @@ public class SignedRequestTimedCache implements Runnable {
 
     @Override
     public void run() {
-        Log.log(Level.INFO,this,"Clearing expired hmacs");
+        SignedRequestFeature.writeLog(Level.INFO,this,"Clearing expired hmacs");
 
         for ( Entry<String, TimestampedKey> request : requests.entrySet() ) {
             if ( request.getValue().hasExpired() ) {

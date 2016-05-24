@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *******************************************************************************/
-package net.wasdev.gameon.map.auth;
+package org.gameontext.signed;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
@@ -86,7 +86,7 @@ public class SignedRequestHmac {
 
     /**
      * Validation of an incoming client request. This is created in the
-     * {@link SignedRequestFilter}, when we still have easy access to
+     * {@link SignedContainerRequestFilter}, when we still have easy access to
      * the request context. Signature validation is done in two steps:
      * a pre-check, which can always be done in the filter, and then
      * the extra validation that includes a hash of the body. If the
@@ -94,12 +94,12 @@ public class SignedRequestHmac {
      * interceptor.
      *
      * @param context
-     * @see #precheck(PlayerClient)
+     * @see #precheck(SignedRequestSecretProvider)
      * @see #validate()
      * @see #readRequestBody(InputStream)
      * @see #getBodyInputStream()
-     * @see SignedRequestFilter
-     * @see SignedRequestInterceptor
+     * @see SignedContainerRequestFilter
+     * @see SignedReaderInterceptor
      */
     public SignedRequestHmac(ContainerRequestContext context) {
         this.userId = context.getHeaderString(GAMEON_ID);
@@ -123,22 +123,25 @@ public class SignedRequestHmac {
      * for an outbound message.
      *
      * @param userId
+     * @param secret TODO
      * @param context
      * @see #setRequestBody(byte[])
-     * @see #prepareForSigning(PlayerClient, MultivaluedMap)
-     * @see #prepareForSigning(PlayerClient, MultivaluedMap, List)
-     * @see #prepareForSigning(PlayerClient, MultivaluedMap, List, MultivaluedMap, List)
+     * @see #prepareForSigning(String, MultivaluedMap)
+     * @see #prepareForSigning(String, MultivaluedMap, List)
+     * @see #prepareForSigning(String, MultivaluedMap, List, MultivaluedMap, List)
      * @see #signRequest(MultivaluedMap)
      */
-    public SignedRequestHmac(String userId, ClientRequestContext context) {
+    public SignedRequestHmac(String userId, String secret, ClientRequestContext context) {
         this(userId,
+             secret,
              DateTimeFormatter.RFC_1123_DATE_TIME.format(ZonedDateTime.now()),
              context.getMethod(),
              context.getUri().getPath());
     }
 
-    public SignedRequestHmac(String userId, String dateString, String method, String baseUri) {
+    public SignedRequestHmac(String userId, String secret, String dateString, String method, String baseUri) {
         this.userId = userId;
+        this.secret = secret;
         this.method = method;
         this.baseUri = baseUri;
         this.dateString = dateString;
@@ -177,7 +180,7 @@ public class SignedRequestHmac {
      * @param playerClient
      * @return WebApplicationException if request fails tests, null if ok
      */
-    public void precheck(PlayerClient playerClient) throws WebApplicationException {
+    public void precheck(SignedRequestSecretProvider playerClient) throws WebApplicationException {
         if ( userId == null || userId.isEmpty() )
             throw new WebApplicationException("Request requires a Game On! ID", Status.FORBIDDEN);
 
@@ -280,46 +283,43 @@ public class SignedRequestHmac {
     /**
      * Prepare a request for signing, when no extra headers or parameters
      * are required
-     * @param playerClient
+     * @param secret
      * @param headers Message headers, always present
      * @return WebApplicationException if badness ensues, null if all is well
      */
-    public void prepareForSigning(PlayerClient playerClient,
-                                  MultivaluedMap<String, String> headers) throws WebApplicationException {
-        prepareForSigning(playerClient, headers, null, null, null);
+    public void prepareForSigning(String secret,
+                                  MultivaluedMap<String, Object> headers) throws WebApplicationException {
+        prepareForSigning(secret, headers, null, null, null);
     }
 
     /**
      * Prepare a request for signing when extra headers are required
-     * @param playerClient
+     * @param secret
      * @param headers Message headers, always present
      * @param header_names Names of extra required headers (optional)
      * @return WebApplicationException if badness ensues, null if all is well
      */
-    public void prepareForSigning(PlayerClient playerClient,
-                                  MultivaluedMap<String, String> headers,
+    public void prepareForSigning(String secret,
+                                  MultivaluedMap<String, Object> headers,
                                   List<String> header_names) throws WebApplicationException{
 
-        prepareForSigning(playerClient, headers, header_names, null, null);
+        prepareForSigning(secret, headers, header_names, null, null);
     }
 
     /**
      * Prepare a request for signing when extra headers and/or parameters are required
-     * @param playerClient
+     * @param secret
      * @param headers Message headers, always present
      * @param header_names Names of extra required headers (optional)
      * @param parameters Query parameters (optional)
      * @param parameter_names Names of extra required parameters (optional)
      * @return WebApplicationException if badness ensues, null if all is well
      */
-    public void prepareForSigning(PlayerClient playerClient,
-                                  MultivaluedMap<String, String> headers,
+    public void prepareForSigning(String secret,
+                                  MultivaluedMap<String, Object> headers,
                                   List<String> header_names,
-                                  MultivaluedMap<String, String> parameters,
+                                  MultivaluedMap<String, Object> parameters,
                                   List<String> parameter_names) throws WebApplicationException {
-
-        // Get the secret for later.
-        secret = playerClient.getSecretForId(userId);
 
         try {
             if ( header_names != null && !header_names.isEmpty() ) {
@@ -343,13 +343,12 @@ public class SignedRequestHmac {
      * @param headers Message headers, always present
      * @return WebApplicationException if badness ensues, null if all is well
      */
-    public void signRequest(MultivaluedMap<String, String> headers) throws WebApplicationException {
+    public void signRequest(MultivaluedMap<String,Object> headers) throws WebApplicationException {
         if ( userId == null || userId.isEmpty() )
             throw new WebApplicationException("Request requires a Game On! ID", Status.INTERNAL_SERVER_ERROR);
 
         if ( secret == null || secret.isEmpty() )
             throw new WebApplicationException("Request requires a Secret", Status.INTERNAL_SERVER_ERROR);
-
 
         List<String> stuffToHash = new ArrayList<String>();
 
@@ -385,7 +384,7 @@ public class SignedRequestHmac {
         }
     }
 
-    protected String hashOfNamedValues(List<String> names, MultivaluedMap<String, String> map)
+    protected String hashOfNamedValues(List<String> names, MultivaluedMap<String, Object> map)
             throws NoSuchAlgorithmException, UnsupportedEncodingException {
 
         List<String> values = new ArrayList<String>();
@@ -400,9 +399,14 @@ public class SignedRequestHmac {
                 continue;
             }
 
-            List<String> keyValues = map.get(key);
-            if ( keyValues != null )
-                values.add(String.join("", keyValues));
+            List<Object> keyValues = map.get(key);
+            if ( keyValues != null ) {
+                StringBuilder builder = new StringBuilder();
+                for ( Object value : keyValues ) {
+                    builder.append(value);
+                }
+                values.add(builder.toString());
+            }
         }
 
         // Create a hash of the gathered values

@@ -13,13 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *******************************************************************************/
-package net.wasdev.gameon.map.auth;
+package org.gameontext.signed;
 
 import java.time.Duration;
 import java.time.Instant;
 import java.util.logging.Level;
-
-import net.wasdev.gameon.map.Log;
 
 /**
  * Timestamped Key
@@ -74,7 +72,8 @@ public final class TimestampedKey implements Comparable<TimestampedKey> {
         //cache hit, but is the key still valid?
         Instant now = Instant.now();
 
-        Log.log(Level.FINEST, this, "EXPIRED? Testing request expiry, then={0}, now={1}, duration={2}, against={3}, result={4}",
+        SignedRequestFeature.writeLog(Level.FINEST, this,
+                "EXPIRED? Testing request expiry, then={0}, now={1}, duration={2}, against={3}, result={4}",
                 time, now, Duration.between(time, now), expiresAfter,
                 Duration.between(time,now).compareTo(expiresAfter) > 0);
 
