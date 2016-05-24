@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *******************************************************************************/
-package net.wasdev.gameon.map.auth;
+package org.gameontext.signed;
 
 import java.io.IOException;
 import java.util.logging.Level;
@@ -23,26 +23,26 @@ import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerRequestFilter;
 import javax.ws.rs.core.Response;
 
-import net.wasdev.gameon.map.Log;
+public class SignedContainerRequestFilter implements ContainerRequestFilter {
 
-public class SignedRequestFilter implements ContainerRequestFilter {
-
-    private final PlayerClient playerClient;
+    private final SignedRequestPlayerClient playerClient;
     private final SignedRequestTimedCache timedCache;
 
-    public SignedRequestFilter(PlayerClient playerClient, SignedRequestTimedCache timedCache) {
+    public SignedContainerRequestFilter(SignedRequestPlayerClient playerClient, SignedRequestTimedCache timedCache) {
         this.playerClient = playerClient;
         this.timedCache = timedCache;
 
         if ( playerClient == null || timedCache == null ) {
-            Log.log(Level.SEVERE, this, "Required resources are not available: playerClient={0}, timedCache={1}", playerClient, timedCache);
+            SignedRequestFeature.writeLog(Level.SEVERE, this,
+                    "Required resources are not available: playerClient={0}, timedCache={1}",
+                    playerClient, timedCache);
             throw new IllegalStateException("Required resources are not available");
         }
     }
 
     /* (non-Javadoc)
      * @see javax.ws.rs.container.ContainerRequestFilter#filter(javax.ws.rs.container.ContainerRequestContext)
-     * @see SignedRequestInterceptor
+     * @see SignedReaderInterceptor
      * @see SignedRequestFeature
      */
     @Override
@@ -56,7 +56,7 @@ public class SignedRequestFilter implements ContainerRequestFilter {
         if ( hmac.getUserId() == null && "GET".equals(method) ) {
             // no validation required for GET requests. If an ID isn't provided,
             // then we won't do validation and will just return.
-            Log.log(Level.FINEST, this, "FILTER: NO ID-- NO VERIFICATION, {0}", hmac);
+            SignedRequestFeature.writeLog(Level.FINEST, this, "FILTER: NO ID-- NO VERIFICATION, {0}", hmac);
             return;
         }
 
@@ -70,7 +70,7 @@ public class SignedRequestFilter implements ContainerRequestFilter {
             if ( hmac.requestBodyRequired() ) {
                 // set this as a property on the request context, and wait for the
                 // signed request interceptor to catch the request
-                // @see SignedRequestInterceptor as assigned by SignedRequestFeature
+                // @see SignedReaderInterceptor as assigned by SignedRequestFeature
                 requestContext.setProperty("SignedRequestHmac", hmac);
             } else {
                 hmac.validate();
@@ -83,7 +83,7 @@ public class SignedRequestFilter implements ContainerRequestFilter {
                     Response.Status.INTERNAL_SERVER_ERROR);
         }
 
-        Log.log(Level.FINEST, this, "FILTER: {0} {1}", invalidHmacEx, hmac);
+        SignedRequestFeature.writeLog(Level.FINEST, this, "FILTER: {0} {1}", invalidHmacEx, hmac);
 
         if ( invalidHmacEx != null ) {
             // STOP!! turn this right around with the bad response

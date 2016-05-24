@@ -34,6 +34,8 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
+import org.gameontext.signed.SignedRequest;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -44,7 +46,6 @@ import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import net.wasdev.gameon.map.auth.ResourceAccessPolicy;
 import net.wasdev.gameon.map.auth.ResourceAccessPolicyFactory;
-import net.wasdev.gameon.map.auth.SignedRequest;
 import net.wasdev.gameon.map.db.MapRepository;
 import net.wasdev.gameon.map.models.RoomInfo;
 import net.wasdev.gameon.map.models.Site;

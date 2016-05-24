@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *******************************************************************************/
-package net.wasdev.gameon.map.auth;
+package org.gameontext.signed;
 
 import java.time.Instant;
 import java.util.Arrays;
@@ -33,12 +33,13 @@ import org.junit.rules.TestName;
 
 import mockit.Expectations;
 import mockit.Mocked;
+import net.wasdev.gameon.map.auth.PlayerClient;
 
 public class SignedRequestHmacTest {
     static final String id = "MyUserId";
     static final String secret = "fish";
 
-    MultivaluedHashMap<String, String> headers = new MultivaluedHashMap<>();
+    MultivaluedHashMap<String, Object> headers = new MultivaluedHashMap<>();
     String dateString = "Sat, 21 May 2016 19:14:54 GMT";
 
     @Rule
@@ -63,15 +64,11 @@ public class SignedRequestHmacTest {
         String method = "GET";
         String path = "/map/v1/sites/aRoomId";
 
-        new Expectations() {{
-            playerClient.getSecretForId(id); returns(secret);
-        }};
-
         // --- create the hmac signature ----
 
-        SignedRequestHmac clientHmac = new SignedRequestHmac(id, dateString, method, path);
+        SignedRequestHmac clientHmac = new SignedRequestHmac(id, secret, dateString, method, path);
 
-        clientHmac.prepareForSigning(playerClient, headers);
+        clientHmac.prepareForSigning(secret, headers);
         System.out.println(headers);
         assertHeaders(
                 Collections.emptyList(),
@@ -101,6 +98,7 @@ public class SignedRequestHmacTest {
         // --- now validate the hmac signature ----
 
         new Expectations() {{
+            playerClient.getSecretForId(id); returns(secret);
             containerContext.getMethod(); returns(method);
             containerContext.getUriInfo().getAbsolutePath().getPath(); returns(path);
             containerContext.getHeaderString(SignedRequestHmac.GAMEON_ID); returns(headers.getFirst(SignedRequestHmac.GAMEON_ID));
@@ -142,15 +140,11 @@ public class SignedRequestHmacTest {
         String path = "/map/v1/sites";
         String content = "{id: 'test'}";
 
-        new Expectations() {{
-            playerClient.getSecretForId(id); returns(secret);
-        }};
-
         // --- create the hmac signature ----
 
-        SignedRequestHmac clientHmac = new SignedRequestHmac(id, dateString, method, path);
+        SignedRequestHmac clientHmac = new SignedRequestHmac(id, secret, dateString, method, path);
 
-        clientHmac.prepareForSigning(playerClient, headers);
+        clientHmac.prepareForSigning(secret, headers);
         System.out.println(headers);
 
         assertHeaders(
@@ -186,6 +180,7 @@ public class SignedRequestHmacTest {
         // --- now validate the hmac signature ----
 
         new Expectations() {{
+            playerClient.getSecretForId(id); returns(secret);
             containerContext.getMethod(); returns(method);
             containerContext.getUriInfo().getAbsolutePath().getPath(); returns(path);
             containerContext.getHeaderString(SignedRequestHmac.GAMEON_ID); returns(headers.getFirst(SignedRequestHmac.GAMEON_ID));
@@ -232,17 +227,13 @@ public class SignedRequestHmacTest {
         String path = "/map/v1/sites";
         String content = "{id: 'test'}";
 
-        new Expectations() {{
-            playerClient.getSecretForId(id); returns(secret);
-        }};
-
         // --- create the hmac signature ----
 
-        SignedRequestHmac clientHmac = new SignedRequestHmac(id,  dateString, method, path);
+        SignedRequestHmac clientHmac = new SignedRequestHmac(id,  secret, dateString, method, path);
 
-        clientHmac.prepareForSigning(playerClient,
-                                          headers,
-                                          Arrays.asList("Content-Type", "Content-Length"));
+        clientHmac.prepareForSigning(secret,
+                                     headers,
+                                     Arrays.asList("Content-Type", "Content-Length"));
         System.out.println(headers);
         assertHeaders(
                 Arrays.asList(SignedRequestHmac.GAMEON_HEADERS
@@ -277,6 +268,7 @@ public class SignedRequestHmacTest {
         // --- now validate the hmac signature ----
 
         new Expectations() {{
+            playerClient.getSecretForId(id); returns(secret);
             containerContext.getMethod(); returns(method);
             containerContext.getUriInfo().getAbsolutePath().getPath(); returns(path);
             containerContext.getHeaderString(SignedRequestHmac.GAMEON_ID); returns(headers.getFirst(SignedRequestHmac.GAMEON_ID));
@@ -318,22 +310,18 @@ public class SignedRequestHmacTest {
         String method = "GET";
         String path = "/map/v1/sites";
 
-        new Expectations() {{
-            playerClient.getSecretForId(id); returns(secret);
-        }};
-
-        MultivaluedHashMap<String, String> parameters = new MultivaluedHashMap<>();
+        MultivaluedHashMap<String, Object> parameters = new MultivaluedHashMap<>();
         parameters.add("owner", "MyUserId");
 
         // --- create the hmac signature ----
 
-        SignedRequestHmac clientHmac = new SignedRequestHmac(id, dateString, method, path);
+        SignedRequestHmac clientHmac = new SignedRequestHmac(id, secret, dateString, method, path);
 
-        clientHmac.prepareForSigning(playerClient,
-                                          headers,
-                                          null,
-                                          parameters,
-                                          Arrays.asList("owner"));
+        clientHmac.prepareForSigning(secret,
+                                     headers,
+                                     null,
+                                     parameters,
+                                     Arrays.asList("owner"));
 
         assertHeaders(
                 Arrays.asList(SignedRequestHmac.GAMEON_PARAMETERS
@@ -362,6 +350,7 @@ public class SignedRequestHmacTest {
         // --- now validate the hmac signature ----
 
         new Expectations() {{
+            playerClient.getSecretForId(id); returns(secret);
             containerContext.getMethod(); returns(method);
             containerContext.getHeaderString(SignedRequestHmac.GAMEON_ID); returns(headers.getFirst(SignedRequestHmac.GAMEON_ID));
             containerContext.getHeaderString(SignedRequestHmac.GAMEON_DATE); returns(headers.getFirst(SignedRequestHmac.GAMEON_DATE));
@@ -401,7 +390,7 @@ public class SignedRequestHmacTest {
         String path = "/map/v1/sites";
         String dateString = Instant.now().toString(); // OLD Date format
 
-        SignedRequestHmac tmpHmac = new SignedRequestHmac(id, dateString, method, path);
+        SignedRequestHmac tmpHmac = new SignedRequestHmac(id, secret, dateString, method, path);
         String hmac = tmpHmac.buildHmac(Arrays.asList(id, dateString), secret);
 
         new Expectations() {{

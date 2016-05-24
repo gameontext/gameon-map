@@ -13,7 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *******************************************************************************/
-package net.wasdev.gameon.map.auth;
+package org.gameontext.signed;
+
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.spi.CDI;
@@ -28,13 +31,27 @@ import javax.ws.rs.ext.Provider;
 @ApplicationScoped
 public class SignedRequestFeature implements DynamicFeature {
 
-    PlayerClient playerClient;
+    final static Logger logger = Logger.getLogger("org.gameontext.signed");
+
+    final static void writeLog(Level level, Object source, String message, Object... args) {
+        if (logger.isLoggable(level)) {
+            logger.logp(level, source.getClass().getName(), "", message, args);
+        }
+    }
+
+    final static void writeLog(Level level, Object source, String message, Throwable thrown) {
+        if (logger.isLoggable(level)) {
+            logger.logp(level, source.getClass().getName(), "", message, thrown);
+        }
+    }
+
+    SignedRequestPlayerClient playerClient;
     SignedRequestTimedCache timedCache;
 
     public SignedRequestFeature() {
         // TODO: Bug in Liberty: @Inject does not work (jax-rs creates its own instance)
         // work-around is to lookup the CDI beans directly
-        playerClient = CDI.current().select(PlayerClient.class).get();
+        playerClient = CDI.current().select(SignedRequestPlayerClient.class).get();
         timedCache = CDI.current().select(SignedRequestTimedCache.class).get();
     }
 
@@ -47,14 +64,14 @@ public class SignedRequestFeature implements DynamicFeature {
         if ( sr == null )
             return;
 
-        context.register(new SignedRequestFilter(playerClient, timedCache));
+        context.register(new SignedContainerRequestFilter(playerClient, timedCache));
 
         GET get = resourceInfo.getResourceMethod().getAnnotation(GET.class);
         DELETE delete = resourceInfo.getResourceMethod().getAnnotation(DELETE.class);
 
         if ( get == null && delete == null ) {
             // Signed requests only for messages with bodies!
-            context.register(new SignedRequestInterceptor());
+            context.register(new SignedReaderInterceptor());
         }
     }
 }
