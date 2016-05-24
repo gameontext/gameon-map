@@ -82,7 +82,7 @@ public class SignedRequestHmac {
     MultivaluedMap<String, String> parameters = null;
 
     // Temporary: cope with sigs that don't have method/uri path in them
-    boolean includeMethodUri = true;
+    boolean oldStyle = true;
 
     /**
      * Validation of an incoming client request. This is created in the
@@ -102,7 +102,7 @@ public class SignedRequestHmac {
      * @see SignedRequestInterceptor
      */
     public SignedRequestHmac(ContainerRequestContext context) {
-        this.userId = context.getHeaderString(GAMEON_ID).trim();
+        this.userId = context.getHeaderString(GAMEON_ID);
         this.dateString = context.getHeaderString(GAMEON_DATE);
         this.hmacHeader = context.getHeaderString(GAMEON_SIGNATURE);
         this.sigHeadersHeader = context.getHeaderString(GAMEON_HEADERS);
@@ -110,8 +110,7 @@ public class SignedRequestHmac {
         this.bodyHashHeader = context.getHeaderString(GAMEON_SIG_BODY);
         this.requestHasBody = context.getLength() >= 0;
         this.method = context.getMethod();
-        this.baseUri = context.getUriInfo().getPath();
-        System.out.println("HEYLA!! BASE URI = " +  baseUri);
+        this.baseUri = context.getUriInfo().getAbsolutePath().getPath();
 
         if ( sigHeadersHeader != null )
             headers = context.getHeaders();
@@ -178,34 +177,32 @@ public class SignedRequestHmac {
      * @param playerClient
      * @return WebApplicationException if request fails tests, null if ok
      */
-    public WebApplicationException precheck(PlayerClient playerClient) {
+    public void precheck(PlayerClient playerClient) throws WebApplicationException {
         if ( userId == null || userId.isEmpty() )
-            return new WebApplicationException("Request requires a Game On! ID", Status.FORBIDDEN);
+            throw new WebApplicationException("Request requires a Game On! ID", Status.FORBIDDEN);
 
         if ( hmacHeader == null || hmacHeader.isEmpty() ) {
-            return new WebApplicationException("Invalid signature (hmac)", Status.FORBIDDEN);
+            throw new WebApplicationException("Invalid signature (hmac)", Status.FORBIDDEN);
         }
 
         if ( bodyHashHeader != null && !requestHasBody ) {
-            return new WebApplicationException("Invalid signature (body)", Status.FORBIDDEN);
+            throw new WebApplicationException("Invalid signature (body)", Status.FORBIDDEN);
         }
 
         try {
             if ( sigHeadersHeader != null && mismatchedHashOfNamedValues(sigHeadersHeader, headers) ) {
-                return new WebApplicationException("Invalid signature (headers)", Status.FORBIDDEN);
+                throw new WebApplicationException("Invalid signature (headers)", Status.FORBIDDEN);
             }
 
             if ( sigParamsHeader != null && mismatchedHashOfNamedValues(sigParamsHeader, parameters) ) {
-                return new WebApplicationException("Invalid signature (parameters)", Status.FORBIDDEN);
+                throw new WebApplicationException("Invalid signature (parameters)", Status.FORBIDDEN);
             }
         } catch (NoSuchAlgorithmException | UnsupportedEncodingException e) {
-            return new WebApplicationException("Invalid signature", Status.FORBIDDEN);
+            throw new WebApplicationException("Invalid signature", Status.FORBIDDEN);
         }
 
         // Get the secret for later.
         secret = playerClient.getSecretForId(userId);
-
-        return null;
     }
 
     /**
@@ -216,30 +213,27 @@ public class SignedRequestHmac {
      * @param timedCache
      * @return WebApplicationException if request is a duplicate, null if ok
      */
-    public WebApplicationException checkDuplicate(String method, SignedRequestTimedCache timedCache) {
+    public void checkDuplicate(String method, SignedRequestTimedCache timedCache) throws WebApplicationException {
 
         if ( "POST".equals(method) && timedCache.isDuplicate(hmacHeader, EXPIRES_REPLAY_MS) ) {
-            return new WebApplicationException("Duplicate request", Status.FORBIDDEN);
+            throw new WebApplicationException("Duplicate request", Status.FORBIDDEN);
         }
 
-        return null;
     }
 
     /**
      * Ensure request has been made within the last 5 minutes UTC
      * @return WebApplicationException if request has expired, null if ok
      */
-    public WebApplicationException checkExpiry() {
+    public void checkExpiry() throws WebApplicationException {
         Instant now = Instant.now();
         Instant then = parseValue(dateString);
 
         if (then == null) {
-            return new WebApplicationException("Invalid signature (date)", Status.FORBIDDEN);
+            throw new WebApplicationException("Invalid signature (date)", Status.FORBIDDEN);
         } else if( Duration.between(then,now).compareTo(EXPIRES_REQUEST_MS) > 0) {
-            return new WebApplicationException("Signature expired", Status.FORBIDDEN);
+            throw new WebApplicationException("Signature expired", Status.FORBIDDEN);
         }
-
-        return null;
     }
 
     /**
@@ -247,15 +241,15 @@ public class SignedRequestHmac {
      * Return an error response if the hmac isn't valid.
      * @return WebApplicationException if request fails hash validation, null if ok
      */
-    public WebApplicationException validate() {
+    public void validate() throws WebApplicationException {
         if ( secret == null || secret.isEmpty() ) {
-            return new WebApplicationException("Invalid or unretrievable shared secret", Status.FORBIDDEN);
+            throw new WebApplicationException("Invalid or unretrievable shared secret", Status.FORBIDDEN);
         }
 
         try {
             List<String> stuffToHash = new ArrayList<String>();
 
-            if ( includeMethodUri ) {
+            if ( oldStyle ) {
                 stuffToHash.add(method); // (1)
                 stuffToHash.add(baseUri);// (2)
             }
@@ -267,22 +261,19 @@ public class SignedRequestHmac {
             if ( bodyHashHeader != null ) {
                 String h_bodyHash = buildHash(body);
                 if ( !bodyHashHeader.equals(h_bodyHash) ) {
-                    return new WebApplicationException("Invalid signature (bodyHash)", Status.FORBIDDEN);
+                    throw new WebApplicationException("Invalid signature (bodyHash)", Status.FORBIDDEN);
                 }
                 stuffToHash.add(bodyHashHeader); // (7)
             }
 
-            System.out.println("PARSE to hash: " + stuffToHash);
             String h_hmac = buildHmac(stuffToHash, secret);
             if ( !hmacHeader.equals(h_hmac) ) {
-                return new WebApplicationException("Invalid signature (hmacCompare)", Status.FORBIDDEN);
+                throw new WebApplicationException("Invalid signature (hmacCompare)", Status.FORBIDDEN);
             }
 
         } catch (NoSuchAlgorithmException | UnsupportedEncodingException | InvalidKeyException e) {
-            return new WebApplicationException("Invalid signature", Status.FORBIDDEN);
+            throw new WebApplicationException("Invalid signature", Status.FORBIDDEN);
         }
-
-        return null;
     }
 
 
@@ -293,9 +284,9 @@ public class SignedRequestHmac {
      * @param headers Message headers, always present
      * @return WebApplicationException if badness ensues, null if all is well
      */
-    public WebApplicationException prepareForSigning(PlayerClient playerClient,
-                                  MultivaluedMap<String, String> headers) {
-        return prepareForSigning(playerClient, headers, null, null, null);
+    public void prepareForSigning(PlayerClient playerClient,
+                                  MultivaluedMap<String, String> headers) throws WebApplicationException {
+        prepareForSigning(playerClient, headers, null, null, null);
     }
 
     /**
@@ -305,11 +296,11 @@ public class SignedRequestHmac {
      * @param header_names Names of extra required headers (optional)
      * @return WebApplicationException if badness ensues, null if all is well
      */
-    public WebApplicationException prepareForSigning(PlayerClient playerClient,
-            MultivaluedMap<String, String> headers,
-            List<String> header_names) {
+    public void prepareForSigning(PlayerClient playerClient,
+                                  MultivaluedMap<String, String> headers,
+                                  List<String> header_names) throws WebApplicationException{
 
-        return prepareForSigning(playerClient, headers, header_names, null, null);
+        prepareForSigning(playerClient, headers, header_names, null, null);
     }
 
     /**
@@ -321,11 +312,11 @@ public class SignedRequestHmac {
      * @param parameter_names Names of extra required parameters (optional)
      * @return WebApplicationException if badness ensues, null if all is well
      */
-    public WebApplicationException prepareForSigning(PlayerClient playerClient,
-            MultivaluedMap<String, String> headers,
-            List<String> header_names,
-            MultivaluedMap<String, String> parameters,
-            List<String> parameter_names) {
+    public void prepareForSigning(PlayerClient playerClient,
+                                  MultivaluedMap<String, String> headers,
+                                  List<String> header_names,
+                                  MultivaluedMap<String, String> parameters,
+                                  List<String> parameter_names) throws WebApplicationException {
 
         // Get the secret for later.
         secret = playerClient.getSecretForId(userId);
@@ -343,10 +334,8 @@ public class SignedRequestHmac {
 
         } catch (NoSuchAlgorithmException | UnsupportedEncodingException e) {
             // this is our fault.
-            return new WebApplicationException("Unable to generate signature", Status.INTERNAL_SERVER_ERROR);
+            throw new WebApplicationException("Unable to generate signature", Status.INTERNAL_SERVER_ERROR);
         }
-
-        return null;
     }
 
     /**
@@ -354,12 +343,12 @@ public class SignedRequestHmac {
      * @param headers Message headers, always present
      * @return WebApplicationException if badness ensues, null if all is well
      */
-    public WebApplicationException signRequest(MultivaluedMap<String, String> headers) {
+    public void signRequest(MultivaluedMap<String, String> headers) throws WebApplicationException {
         if ( userId == null || userId.isEmpty() )
-            return new WebApplicationException("Request requires a Game On! ID", Status.INTERNAL_SERVER_ERROR);
+            throw new WebApplicationException("Request requires a Game On! ID", Status.INTERNAL_SERVER_ERROR);
 
         if ( secret == null || secret.isEmpty() )
-            return new WebApplicationException("Request requires a Secret", Status.INTERNAL_SERVER_ERROR);
+            throw new WebApplicationException("Request requires a Secret", Status.INTERNAL_SERVER_ERROR);
 
 
         List<String> stuffToHash = new ArrayList<String>();
@@ -387,16 +376,13 @@ public class SignedRequestHmac {
                 stuffToHash.add(bodyHashHeader);                 // (7)
             }
 
-            System.out.println("SIGN: to hash: " + stuffToHash);
             // Finally, the HMAC!
             hmacHeader = buildHmac(stuffToHash, secret);
             headers.add(GAMEON_SIGNATURE, hmacHeader);
         } catch (NoSuchAlgorithmException | UnsupportedEncodingException | InvalidKeyException e) {
             // this is our fault.
-            return new WebApplicationException("Unable to generate signature", Status.INTERNAL_SERVER_ERROR);
+            throw new WebApplicationException("Unable to generate signature", Status.INTERNAL_SERVER_ERROR);
         }
-
-        return null;
     }
 
     protected String hashOfNamedValues(List<String> names, MultivaluedMap<String, String> map)
@@ -447,8 +433,16 @@ public class SignedRequestHmac {
         Mac mac = Mac.getInstance(HMAC_ALGORITHM);
         mac.init(new SecretKeySpec(key.getBytes(UTF8), HMAC_ALGORITHM));
 
-        for(String s: stuffToHash){
-            mac.update(s.getBytes(UTF8));
+        if ( oldStyle ) {
+            StringBuilder hashData = new StringBuilder();
+            for(String s: stuffToHash){
+                hashData.append(s);
+            }
+            mac.update(hashData.toString().getBytes(UTF8));
+        } else {
+            for(String s: stuffToHash){
+                mac.update(s.getBytes(UTF8));
+            }
         }
 
         return Base64.getEncoder().encodeToString( mac.doFinal() );
@@ -480,11 +474,33 @@ public class SignedRequestHmac {
         } catch(DateTimeParseException e) {
             try {
                 Instant then = Instant.parse(dateString);
-                includeMethodUri = false; // TEMPORARY: skip method and URI when parsing signature
+                oldStyle = false; // TEMPORARY: skip method and URI when parsing signature
                 return then;
             } catch(DateTimeParseException ne) {
                 return null;
             }
         }
     }
+
+    @Override
+    public String toString() {
+        StringBuilder builder = new StringBuilder();
+        builder.append("SignedRequestHmac [userId=").append(userId)
+            .append(", dateString=").append(dateString)
+            .append(", method=").append(method)
+            .append(", baseUri=").append(baseUri)
+            .append(", hmacHeader=").append(hmacHeader)
+            .append(", bodyHashHeader=").append(bodyHashHeader)
+            .append(", sigHeadersHeader=").append(sigHeadersHeader)
+            .append(", sigParamsHeader=").append(sigParamsHeader)
+            .append(", body=").append(body)
+            .append(", bodyBytes=").append(Arrays.toString(bodyBytes))
+            .append(", requestHasBody=").append(requestHasBody)
+            .append(", headers=").append(headers)
+            .append(", parameters=").append(parameters)
+            .append(", oldStyle=").append(oldStyle).append("]");
+        return builder.toString();
+    }
+
+
 }

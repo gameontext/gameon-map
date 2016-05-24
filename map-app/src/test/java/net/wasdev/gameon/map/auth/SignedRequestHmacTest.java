@@ -71,9 +71,8 @@ public class SignedRequestHmacTest {
 
         SignedRequestHmac clientHmac = new SignedRequestHmac(id, dateString, method, path);
 
-        ex = clientHmac.prepareForSigning(playerClient, headers);
+        clientHmac.prepareForSigning(playerClient, headers);
         System.out.println(headers);
-        Assert.assertNull(ex);
         assertHeaders(
                 Collections.emptyList(),
                 Arrays.asList(SignedRequestHmac.GAMEON_ID,
@@ -84,10 +83,9 @@ public class SignedRequestHmacTest {
                               SignedRequestHmac.GAMEON_SIG_BODY
                               ));
 
-        ex = clientHmac.signRequest(headers);
+        clientHmac.signRequest(headers);
         printMessage(clientHmac);
 
-        Assert.assertNull(ex);
         assertHeaders(
                 Arrays.asList(SignedRequestHmac.GAMEON_ID,
                               SignedRequestHmac.GAMEON_DATE,
@@ -104,7 +102,7 @@ public class SignedRequestHmacTest {
 
         new Expectations() {{
             containerContext.getMethod(); returns(method);
-            containerContext.getUriInfo().getPath(); returns(path);
+            containerContext.getUriInfo().getAbsolutePath().getPath(); returns(path);
             containerContext.getHeaderString(SignedRequestHmac.GAMEON_ID); returns(headers.getFirst(SignedRequestHmac.GAMEON_ID));
             containerContext.getHeaderString(SignedRequestHmac.GAMEON_DATE); returns(headers.getFirst(SignedRequestHmac.GAMEON_DATE));
             containerContext.getHeaderString(SignedRequestHmac.GAMEON_SIGNATURE); returns(headers.getFirst(SignedRequestHmac.GAMEON_SIGNATURE));
@@ -112,15 +110,16 @@ public class SignedRequestHmacTest {
 
         SignedRequestHmac serverHmac = new SignedRequestHmac(containerContext);
 
-        ex = serverHmac.precheck(playerClient);
-        Assert.assertNull(ex);
+        serverHmac.precheck(playerClient);
 
-        ex = serverHmac.checkExpiry();
-        Assert.assertNotNull(ex);
-        Assert.assertTrue("Exception should indicate token expired", ex.getMessage().contains("expire"));
+        try {
+            serverHmac.checkExpiry();
+            Assert.fail("Expiry check should have failed");
+        } catch(WebApplicationException e) {
+            Assert.assertTrue("Exception should indicate token expired", e.getMessage().contains("expire"));
+        }
 
-        ex = serverHmac.validate();
-        Assert.assertNull(ex);
+        serverHmac.validate();
     }
 
     @Test
@@ -151,10 +150,9 @@ public class SignedRequestHmacTest {
 
         SignedRequestHmac clientHmac = new SignedRequestHmac(id, dateString, method, path);
 
-        ex = clientHmac.prepareForSigning(playerClient, headers);
+        clientHmac.prepareForSigning(playerClient, headers);
         System.out.println(headers);
 
-        Assert.assertNull(ex);
         assertHeaders(
                 Collections.emptyList(),
                 Arrays.asList(SignedRequestHmac.GAMEON_ID,
@@ -166,10 +164,9 @@ public class SignedRequestHmacTest {
                               ));
 
         clientHmac.setRequestBody(content.getBytes(SignedRequestHmac.UTF8));
-        ex = clientHmac.signRequest(headers);
+        clientHmac.signRequest(headers);
         printMessage(clientHmac);
 
-        Assert.assertNull(ex);
         assertHeaders(
                 Arrays.asList(SignedRequestHmac.GAMEON_ID,
                               SignedRequestHmac.GAMEON_DATE,
@@ -186,12 +183,11 @@ public class SignedRequestHmacTest {
         Assert.assertEquals("jblpGaN8bjd4SmhsK341EP1x7e2w8sZ3L1T64YB+mrQ=",
                 headers.getFirst(SignedRequestHmac.GAMEON_SIGNATURE));
 
-
         // --- now validate the hmac signature ----
 
         new Expectations() {{
             containerContext.getMethod(); returns(method);
-            containerContext.getUriInfo().getPath(); returns(path);
+            containerContext.getUriInfo().getAbsolutePath().getPath(); returns(path);
             containerContext.getHeaderString(SignedRequestHmac.GAMEON_ID); returns(headers.getFirst(SignedRequestHmac.GAMEON_ID));
             containerContext.getHeaderString(SignedRequestHmac.GAMEON_DATE); returns(headers.getFirst(SignedRequestHmac.GAMEON_DATE));
             containerContext.getHeaderString(SignedRequestHmac.GAMEON_SIG_BODY); returns(headers.getFirst(SignedRequestHmac.GAMEON_SIG_BODY));
@@ -203,15 +199,16 @@ public class SignedRequestHmacTest {
         // transfer the request body...
         serverHmac.readRequestBody(clientHmac.getBodyInputStream());
 
-        ex = serverHmac.precheck(playerClient);
-        Assert.assertNull(ex);
+        serverHmac.precheck(playerClient);
 
-        ex = serverHmac.checkExpiry();
-        Assert.assertNotNull(ex);
-        Assert.assertTrue("Exception should indicate token expired", ex.getMessage().contains("expire"));
+        try {
+            serverHmac.checkExpiry();
+            Assert.fail("Expiry check should have failed");
+        } catch(WebApplicationException e) {
+            Assert.assertTrue("Exception should indicate token expired", e.getMessage().contains("expire"));
+        }
 
-        ex = serverHmac.validate();
-        Assert.assertNull(ex);
+        serverHmac.validate();
      }
 
     @Test
@@ -243,11 +240,10 @@ public class SignedRequestHmacTest {
 
         SignedRequestHmac clientHmac = new SignedRequestHmac(id,  dateString, method, path);
 
-        ex = clientHmac.prepareForSigning(playerClient,
+        clientHmac.prepareForSigning(playerClient,
                                           headers,
                                           Arrays.asList("Content-Type", "Content-Length"));
         System.out.println(headers);
-        Assert.assertNull(ex);
         assertHeaders(
                 Arrays.asList(SignedRequestHmac.GAMEON_HEADERS
                               ),
@@ -259,10 +255,9 @@ public class SignedRequestHmacTest {
                               ));
 
         clientHmac.setRequestBody(content.getBytes(SignedRequestHmac.UTF8));
-        ex = clientHmac.signRequest(headers);
+        clientHmac.signRequest(headers);
         printMessage(clientHmac);
 
-        Assert.assertNull(ex);
         assertHeaders(
                 Arrays.asList(SignedRequestHmac.GAMEON_ID,
                               SignedRequestHmac.GAMEON_DATE,
@@ -283,7 +278,7 @@ public class SignedRequestHmacTest {
 
         new Expectations() {{
             containerContext.getMethod(); returns(method);
-            containerContext.getUriInfo().getPath(); returns(path);
+            containerContext.getUriInfo().getAbsolutePath().getPath(); returns(path);
             containerContext.getHeaderString(SignedRequestHmac.GAMEON_ID); returns(headers.getFirst(SignedRequestHmac.GAMEON_ID));
             containerContext.getHeaderString(SignedRequestHmac.GAMEON_DATE); returns(headers.getFirst(SignedRequestHmac.GAMEON_DATE));
             containerContext.getHeaderString(SignedRequestHmac.GAMEON_HEADERS); returns(headers.getFirst(SignedRequestHmac.GAMEON_HEADERS));
@@ -296,15 +291,16 @@ public class SignedRequestHmacTest {
         // transfer the request body...
         serverHmac.readRequestBody(clientHmac.getBodyInputStream());
 
-        ex = serverHmac.precheck(playerClient);
-        Assert.assertNull(ex);
+        serverHmac.precheck(playerClient);
 
-        ex = serverHmac.checkExpiry();
-        Assert.assertNotNull(ex);
-        Assert.assertTrue("Exception should indicate token expired", ex.getMessage().contains("expire"));
+        try {
+            serverHmac.checkExpiry();
+            Assert.fail("Expiry check should have failed");
+        } catch(WebApplicationException e) {
+            Assert.assertTrue("Exception should indicate token expired", e.getMessage().contains("expire"));
+        }
 
-        ex = serverHmac.validate();
-        Assert.assertNull(ex);
+        serverHmac.validate();
     }
 
     @Test
@@ -333,12 +329,12 @@ public class SignedRequestHmacTest {
 
         SignedRequestHmac clientHmac = new SignedRequestHmac(id, dateString, method, path);
 
-        ex = clientHmac.prepareForSigning(playerClient,
+        clientHmac.prepareForSigning(playerClient,
                                           headers,
                                           null,
                                           parameters,
                                           Arrays.asList("owner"));
-        Assert.assertNull(ex);
+
         assertHeaders(
                 Arrays.asList(SignedRequestHmac.GAMEON_PARAMETERS
                               ),
@@ -349,10 +345,9 @@ public class SignedRequestHmacTest {
                               SignedRequestHmac.GAMEON_SIG_BODY
                               ));
 
-        ex = clientHmac.signRequest(headers);
+        clientHmac.signRequest(headers);
         printMessage(clientHmac, "?owner=MyUserId");
 
-        Assert.assertNull(ex);
         assertHeaders(
                 Arrays.asList(SignedRequestHmac.GAMEON_ID,
                               SignedRequestHmac.GAMEON_DATE,
@@ -376,7 +371,7 @@ public class SignedRequestHmacTest {
             containerContext.getHeaderString(SignedRequestHmac.GAMEON_SIGNATURE); returns(headers.getFirst(SignedRequestHmac.GAMEON_SIGNATURE));
             containerContext.getUriInfo(); returns(uriInfo);
             uriInfo.getQueryParameters(); returns(parameters);
-            uriInfo.getPath(); returns(path);
+            uriInfo.getAbsolutePath().getPath(); returns(path);
         }};
 
         SignedRequestHmac serverHmac = new SignedRequestHmac(containerContext);
@@ -384,22 +379,22 @@ public class SignedRequestHmacTest {
         // transfer the request body...
         serverHmac.readRequestBody(clientHmac.getBodyInputStream());
 
-        ex = serverHmac.precheck(playerClient);
-        Assert.assertNull(ex);
+        serverHmac.precheck(playerClient);
 
-        ex = serverHmac.checkExpiry();
-        Assert.assertNotNull(ex);
-        Assert.assertTrue("Exception should indicate token expired", ex.getMessage().contains("expire"));
+        try {
+            serverHmac.checkExpiry();
+            Assert.fail("Expiry check should have failed");
+        } catch(WebApplicationException e) {
+            Assert.assertTrue("Exception should indicate token expired", e.getMessage().contains("expire"));
+        }
 
-        ex = serverHmac.validate();
-        Assert.assertNull(ex);
+        serverHmac.validate();
     }
 
     @Test
     public void testOldHmac(@Mocked ContainerRequestContext containerContext,
                      @Mocked PlayerClient playerClient,
-                     @Mocked SignedRequestTimedCache timedCache,
-                     @Mocked UriInfo uriInfo) throws Exception {
+                     @Mocked SignedRequestTimedCache timedCache) throws Exception {
 
         WebApplicationException ex;
         String method = "GET";
@@ -412,7 +407,7 @@ public class SignedRequestHmacTest {
         new Expectations() {{
             playerClient.getSecretForId(id); returns(secret);
             containerContext.getMethod(); returns(method);
-            containerContext.getUriInfo().getPath(); returns(path);
+            containerContext.getUriInfo().getAbsolutePath().getPath(); returns(path);
             containerContext.getHeaderString(SignedRequestHmac.GAMEON_ID); returns(id);
             containerContext.getHeaderString(SignedRequestHmac.GAMEON_DATE); returns(dateString);
             containerContext.getHeaderString(SignedRequestHmac.GAMEON_SIGNATURE); returns(hmac);
@@ -420,14 +415,9 @@ public class SignedRequestHmacTest {
 
         SignedRequestHmac serverHmac = new SignedRequestHmac(containerContext);
 
-        ex = serverHmac.precheck(playerClient);
-        Assert.assertNull(ex);
-
-        ex = serverHmac.checkExpiry();
-        Assert.assertNull(ex);
-
-        ex = serverHmac.validate();
-        Assert.assertNull(ex);
+        serverHmac.precheck(playerClient);
+        serverHmac.checkExpiry();
+        serverHmac.validate();
 
     }
 

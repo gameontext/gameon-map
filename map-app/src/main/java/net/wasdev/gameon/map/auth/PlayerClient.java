@@ -33,9 +33,8 @@ import java.util.logging.Level;
 import javax.annotation.Resource;
 import javax.enterprise.context.ApplicationScoped;
 import javax.net.ssl.SSLContext;
-import javax.ws.rs.ProcessingException;
 import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.client.ResponseProcessingException;
+import javax.ws.rs.core.Response;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
@@ -74,10 +73,10 @@ public class PlayerClient {
     private static final Duration hours24 = Duration.ofHours(24);
 
     /** The Key to Sign JWT's with (once it's loaded) */
-    private static Key signingKey = null;
+    private Key signingKey = null;
 
     /** Cache of player API keys */
-    private static ConcurrentMap<String,TimestampedKey> playerSecrets = new ConcurrentHashMap<>();
+    private ConcurrentMap<String,TimestampedKey> playerSecrets = new ConcurrentHashMap<>();
 
     /**
      * The player URL injected from JNDI via CDI.
@@ -131,7 +130,7 @@ public class PlayerClient {
                 CertificateException |
                 UnrecoverableKeyException |
                 IOException e) {
-            throw new IllegalStateException("Unable to get required keystore", e);
+            throw new IllegalStateException("Unable to get required keystore: " + keyStore, e);
         }
     }
 
@@ -181,7 +180,7 @@ public class PlayerClient {
     /**
      * Obtain the apiKey for the given id, using a local cache to avoid hitting couchdb too much.
      */
-    public String getSecretForId(String id){
+    public String getSecretForId(String id) {
         //first.. handle our built-in key
         if (SYSTEM_ID.equals(id)) {
             return registrationSecret;
@@ -191,24 +190,32 @@ public class PlayerClient {
 
         // TODO: hystrix around player.
 
+        String playerSecret = null;
+
         TimestampedKey timedKey =  playerSecrets.get(id);
-        if ( timedKey != null && !timedKey.hasExpired() ) {
-            // the id has been seen, and hasn't expired. Shortcut!
-            Log.log(Level.FINER,"Map using cached key for {0}",id);
-            return timedKey.getKey();
+        if ( timedKey != null ) {
+            playerSecret = timedKey.getKey();
+            if ( !timedKey.hasExpired() ) {
+                // CACHED VALUE! the id has been seen, and hasn't expired. Shortcut!
+                Log.log(Level.FINER,"Map using cached key for {0}",id);
+                return playerSecret;
+            }
         }
 
-        String playerSecret;
         TimestampedKey newKey = new TimestampedKey(hours24);
-
         Log.log(Level.FINER,"Map asking player service for key for id {0}",id);
+
         try {
             playerSecret = getPlayerSecret(id);
             newKey.setKey(playerSecret);
-        } catch (Exception e) {
-            // TODO: Fallback if Player is unreachable?
-            Log.log(Level.SEVERE, this, "Map unable to get key for id "+id, e);
-            return null;
+        } catch (WebApplicationException e) {
+            if ( playerSecret != null ) {
+                // we have a stale value, return it
+                return playerSecret;
+            }
+
+            // no dice at all, rethrow
+            throw e;
         }
 
         // replace expired timedKey with newKey always.
@@ -225,43 +232,41 @@ public class PlayerClient {
      *            The player id
      * @return The apiKey for the player
      */
-    private String getPlayerSecret(String playerId) throws IOException {
-    	String jwt = getClientJwtForId(playerId);
-
-    	HttpClient client = null;
-    	if("development".equals(System.getenv("MAP_PLAYER_MODE"))){
-    		System.out.println("Using development mode player connection. (DefaultSSL,NoHostNameValidation)");
-    		try{
-	    		HttpClientBuilder b = HttpClientBuilder.create();
-
-	    		//use the default ssl context, we have a trust store configured for player cert.
-	    		SSLContext sslContext = SSLContext.getDefault();
-
-	    		//use a very trusting truststore.. (not needed..)
-	    		//SSLContext sslContext = new SSLContextBuilder().loadTrustMaterial(null, new TrustSelfSignedStrategy()).build();
-
-	    		b.setSSLContext( sslContext);
-
-	    		//disable hostname validation, because we'll need to access the cert via a different hostname.
-	    		b.setSSLHostnameVerifier(NoopHostnameVerifier.INSTANCE);
-
-	    		client = b.build();
-    		}catch(Exception e){
-    			throw new IOException(e);
-    		}
-    	}else{
-    		client = HttpClientBuilder.create().build();
-    	}
-    	HttpGet hg = new HttpGet(playerLocation+"/"+playerId);
-    	hg.addHeader("gameon-jwt", jwt);
-
-    	System.out.println("Building web target "+hg.getURI().toString());
+    private String getPlayerSecret(String playerId) throws WebApplicationException {
 
         try {
+            String jwt = getClientJwtForId(playerId);
+
+            HttpClient client = null;
+            if("development".equals(System.getenv("MAP_PLAYER_MODE"))){
+                System.out.println("Using development mode player connection. (DefaultSSL,NoHostNameValidation)");
+                HttpClientBuilder b = HttpClientBuilder.create();
+
+                //use the default ssl context, we have a trust store configured for player cert.
+                SSLContext sslContext = SSLContext.getDefault();
+
+                //use a very trusting truststore.. (not needed..)
+                //SSLContext sslContext = new SSLContextBuilder().loadTrustMaterial(null, new TrustSelfSignedStrategy()).build();
+
+                b.setSSLContext( sslContext);
+
+                //disable hostname validation, because we'll need to access the cert via a different hostname.
+                b.setSSLHostnameVerifier(NoopHostnameVerifier.INSTANCE);
+
+                client = b.build();
+            }else{
+                client = HttpClientBuilder.create().build();
+            }
+
+            HttpGet hg = new HttpGet(playerLocation+"/"+playerId);
+            hg.addHeader("gameon-jwt", jwt);
+
+            Log.log(Level.FINEST, this, "Building web target: {0}", hg.getURI().toString());
+
             // Make GET request using the specified target, get result as a
             // string containing JSON
-        	HttpResponse r = client.execute(hg);
-        	String result = new BasicResponseHandler().handleResponse(r);
+            HttpResponse r = client.execute(hg);
+            String result = new BasicResponseHandler().handleResponse(r);
 
             // Parse the JSON response, and retrieve the apiKey field value.
             ObjectMapper om = new ObjectMapper();
@@ -270,16 +275,16 @@ public class PlayerClient {
             Log.log(Level.FINER, this, "Got player record for {0} from player service", playerId);
 
             return jn.get("apiKey").textValue();
+
         } catch (HttpResponseException hre) {
-            System.out.println("Error communicating with player service: "+hre.getStatusCode()+" "+hre.getMessage());
-            throw hre;
-        } catch (ResponseProcessingException rpe) {
-            System.out.println("Error processing response "+rpe.getResponse().toString());
-            throw rpe;
-        } catch (ProcessingException | WebApplicationException | IOException ex) {
-            //bad stuff.
-            System.out.println("Hmm.. "+ex.getMessage());
-            throw ex;
+            Log.log(Level.FINEST, this, "Error communicating with player service: {0} {1}", hre.getStatusCode(), hre.getMessage());
+            throw new WebApplicationException("Error communicating with Player service", Response.Status.INTERNAL_SERVER_ERROR);
+        } catch ( IOException | NoSuchAlgorithmException e ) {
+            Log.log(Level.FINEST, this, "Unexpected exception getting secret from playerService: {0}", e);
+            throw new WebApplicationException("Error communicating with Player service", Response.Status.INTERNAL_SERVER_ERROR);
+        } catch (WebApplicationException wae) {
+            Log.log(Level.FINEST, this, "Error processing response: {0}", wae.getResponse());
+            throw wae;
         }
     }
 

@@ -46,9 +46,7 @@
     <jndiEntry jndiName="sweepId" value="${env.SWEEP_ID}"/>
     <jndiEntry jndiName="sweepSecret" value="${env.SWEEP_SECRET}"/>
 
-    <!-- <logging traceSpecification="*=info:net.wasdev.gameon.*=all" copySystemStreams="false"/> -->
-    <!-- <logging traceSpecification="*=info:net.wasdev.gameon.*=all" /> -->
-    <logging consoleLogLevel="INFO" traceSpecification="*=info:net.wasdev.gameon.*=all"/>
+    <logging consoleLogLevel="INFO" traceSpecification="*=info:net.wasdev.gameon.*=all:org.gameontext.*=all"/>
     
     <jndiEntry jndiName="serverName" value="${wlp.server.name}"/>
     <jndiEntry jndiName="serverOutputDir" value="${server.output.dir}"/>

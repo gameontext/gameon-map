@@ -21,6 +21,7 @@ import java.util.logging.Level;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerRequestFilter;
+import javax.ws.rs.core.Response;
 
 import net.wasdev.gameon.map.Log;
 
@@ -32,6 +33,11 @@ public class SignedRequestFilter implements ContainerRequestFilter {
     public SignedRequestFilter(PlayerClient playerClient, SignedRequestTimedCache timedCache) {
         this.playerClient = playerClient;
         this.timedCache = timedCache;
+
+        if ( playerClient == null || timedCache == null ) {
+            Log.log(Level.SEVERE, this, "Required resources are not available: playerClient={0}, timedCache={1}", playerClient, timedCache);
+            throw new IllegalStateException("Required resources are not available");
+        }
     }
 
     /* (non-Javadoc)
@@ -41,6 +47,8 @@ public class SignedRequestFilter implements ContainerRequestFilter {
      */
     @Override
     public void filter(ContainerRequestContext requestContext) throws IOException {
+        WebApplicationException invalidHmacEx = null;
+
         SignedRequestHmac hmac = new SignedRequestHmac(requestContext);
 
         String method = requestContext.getMethod();
@@ -48,51 +56,34 @@ public class SignedRequestFilter implements ContainerRequestFilter {
         if ( hmac.getUserId() == null && "GET".equals(method) ) {
             // no validation required for GET requests. If an ID isn't provided,
             // then we won't do validation and will just return.
-            Log.log(Level.FINEST, this, "FILTER: path={0}, method={1}, NO ID-- NO VERIFICATION",
-                    requestContext.getUriInfo().getPath(),
-                    requestContext.getMethod());
+            Log.log(Level.FINEST, this, "FILTER: NO ID-- NO VERIFICATION, {0}", hmac);
             return;
         }
 
-        WebApplicationException invalidHmacEx = null;
-
         requestContext.setProperty("player.id", hmac.getUserId());
 
-        invalidHmacEx = hmac.checkDuplicate(method, timedCache);
+        try {
+            hmac.checkDuplicate(method, timedCache);
+            hmac.checkExpiry();
+            hmac.precheck(playerClient);
 
-        if ( invalidHmacEx == null )
-            invalidHmacEx = hmac.checkExpiry();
-
-        if ( invalidHmacEx == null )
-            invalidHmacEx = hmac.precheck(playerClient);
-
-        if ( invalidHmacEx == null ) {
             if ( hmac.requestBodyRequired() ) {
                 // set this as a property on the request context, and wait for the
                 // signed request interceptor to catch the request
                 // @see SignedRequestInterceptor as assigned by SignedRequestFeature
                 requestContext.setProperty("SignedRequestHmac", hmac);
             } else {
-                invalidHmacEx = hmac.validate();
+                hmac.validate();
             }
+        } catch(WebApplicationException ex) {
+            invalidHmacEx = ex;
+        } catch(Exception e) {
+            invalidHmacEx = new WebApplicationException("Unexpected exception validating signature",
+                    e,
+                    Response.Status.INTERNAL_SERVER_ERROR);
         }
 
-        Log.log(Level.FINEST, this, "FILTER: path={0}"
-                + ", method={1}"
-                + ", id={2}"
-                + ", date={3}"
-                + ", hash={4}"
-                + ", bodyHash={5}"
-                + ", exception={6}"
-                + ", bodyRequired={7}",
-                requestContext.getUriInfo().getPath(),
-                requestContext.getMethod(),
-                hmac.getUserId(),
-                hmac.dateString,
-                hmac.hmacHeader,
-                hmac.bodyHashHeader,
-                invalidHmacEx,
-                hmac.requestBodyRequired());
+        Log.log(Level.FINEST, this, "FILTER: {0} {1}", invalidHmacEx, hmac);
 
         if ( invalidHmacEx != null ) {
             // STOP!! turn this right around with the bad response

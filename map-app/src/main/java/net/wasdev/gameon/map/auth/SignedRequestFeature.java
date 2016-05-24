@@ -15,7 +15,8 @@
  *******************************************************************************/
 package net.wasdev.gameon.map.auth;
 
-import javax.inject.Inject;
+import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.inject.spi.CDI;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.container.DynamicFeature;
@@ -24,15 +25,18 @@ import javax.ws.rs.core.FeatureContext;
 import javax.ws.rs.ext.Provider;
 
 @Provider
+@ApplicationScoped
 public class SignedRequestFeature implements DynamicFeature {
 
-    /** CDI injection of client for Player CRUD operations */
-    @Inject
     PlayerClient playerClient;
-
-    /** CDI injection of client for Player CRUD operations */
-    @Inject
     SignedRequestTimedCache timedCache;
+
+    public SignedRequestFeature() {
+        // TODO: Bug in Liberty: @Inject does not work (jax-rs creates its own instance)
+        // work-around is to lookup the CDI beans directly
+        playerClient = CDI.current().select(PlayerClient.class).get();
+        timedCache = CDI.current().select(SignedRequestTimedCache.class).get();
+    }
 
     @Override
     public void configure(ResourceInfo resourceInfo, FeatureContext context) {

@@ -42,7 +42,14 @@ public class SignedRequestInterceptor implements ReaderInterceptor {
             hmac.readRequestBody(context.getInputStream());
 
             // Validate HMAC signature (including body hash)
-            WebApplicationException invalidHmacEx = hmac.validate();
+            WebApplicationException invalidHmacEx = null;
+
+            try {
+                hmac.validate();
+            } catch(WebApplicationException ex) {
+                invalidHmacEx = ex;
+            }
+
             Log.log(Level.FINEST, this, "INTERCEPTOR: id={0}"
                     + ", date={1}"
                     + ", hash={2}"
