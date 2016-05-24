@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *******************************************************************************/
-package net.wasdev.gameon.map.auth;
+package org.gameontext.signed;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

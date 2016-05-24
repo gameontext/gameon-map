@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *******************************************************************************/
-package net.wasdev.gameon.map.auth;
+package org.gameontext.signed;
 
 import java.io.IOException;
 import java.util.logging.Level;
@@ -22,11 +22,9 @@ import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.ext.ReaderInterceptor;
 import javax.ws.rs.ext.ReaderInterceptorContext;
 
-import net.wasdev.gameon.map.Log;
+public class SignedReaderInterceptor implements ReaderInterceptor {
 
-public class SignedRequestInterceptor implements ReaderInterceptor {
-
-    public SignedRequestInterceptor() {
+    public SignedReaderInterceptor() {
     }
 
     /* (non-Javadoc)
@@ -50,16 +48,7 @@ public class SignedRequestInterceptor implements ReaderInterceptor {
                 invalidHmacEx = ex;
             }
 
-            Log.log(Level.FINEST, this, "INTERCEPTOR: id={0}"
-                    + ", date={1}"
-                    + ", hash={2}"
-                    + ", bodyHash={3}"
-                    + ", exception={4}",
-                    hmac.getUserId(),
-                    hmac.dateString,
-                    hmac.hmacHeader,
-                    hmac.bodyHashHeader,
-                    invalidHmacEx);
+            SignedRequestFeature.writeLog(Level.FINEST, this, "INTERCEPTOR: {0} {1}", invalidHmacEx, hmac);
 
             if ( invalidHmacEx != null ) {
                 throw invalidHmacEx;

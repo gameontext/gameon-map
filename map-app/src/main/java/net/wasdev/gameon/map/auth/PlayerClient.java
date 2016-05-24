@@ -43,6 +43,8 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.impl.client.BasicResponseHandler;
 import org.apache.http.impl.client.HttpClientBuilder;
+import org.gameontext.signed.SignedRequestSecretProvider;
+import org.gameontext.signed.TimestampedKey;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -68,7 +70,7 @@ import net.wasdev.gameon.map.Log;
  * @see ApplicationScoped
  */
 @ApplicationScoped
-public class PlayerClient {
+public class PlayerClient implements SignedRequestSecretProvider {
 
     private static final Duration hours24 = Duration.ofHours(24);
 
@@ -180,6 +182,7 @@ public class PlayerClient {
     /**
      * Obtain the apiKey for the given id, using a local cache to avoid hitting couchdb too much.
      */
+    @Override
     public String getSecretForId(String id) {
         //first.. handle our built-in key
         if (SYSTEM_ID.equals(id)) {
