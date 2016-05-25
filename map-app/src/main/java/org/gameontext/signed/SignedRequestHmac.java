@@ -39,7 +39,7 @@ public class SignedRequestHmac {
 
     static final String HMAC_ALGORITHM = "HmacSHA256";
     static final String SHA_256 = "SHA-256";
-    static final String GAMEON_PFX = "gameon-";
+    static final String GAMEON_HEADER_PREFIX = "gameon-";
     static final String GAMEON_ID = "gameon-id";
     static final String GAMEON_DATE = "gameon-date";
     static final String GAMEON_HEADERS = "gameon-sig-headers";
@@ -180,12 +180,12 @@ public class SignedRequestHmac {
         try {
             if ( header_names != null && !header_names.isEmpty() ) {
                 sigHeaders = hashOfValues(header_names, headers);
-                headers.add(GAMEON_HEADERS, sigHeaders);
+                headers.putSingle(GAMEON_HEADERS, sigHeaders);
             }
 
             if ( parameter_names != null && !parameter_names.isEmpty() ) {
                  sigParameters = hashOfValues(parameter_names, query_parameters);
-                headers.add(GAMEON_PARAMETERS, sigParameters);
+                headers.putSingle(GAMEON_PARAMETERS, sigParameters);
             }
         } catch (NoSuchAlgorithmException | UnsupportedEncodingException e) {
             // this is our fault.
@@ -239,7 +239,7 @@ public class SignedRequestHmac {
     public SignedRequestHmac generateBodyHash(SignedRequestMap headers, byte[] body) {
         try {
             sigBody = buildHash(body);
-            headers.add(GAMEON_SIG_BODY, sigBody);
+            headers.putSingle(GAMEON_SIG_BODY, sigBody);
         } catch (NoSuchAlgorithmException | UnsupportedEncodingException e) {
             throw new WebApplicationException("Invalid signature", Status.FORBIDDEN);
         }
@@ -330,18 +330,18 @@ public class SignedRequestHmac {
 
             if ( !userId.isEmpty() ) {
                 stuffToHash.add(userId);                  // (3)
-                headers.add(GAMEON_ID, userId);
+                headers.putSingle(GAMEON_ID, userId);
             }
 
             stuffToHash.add(dateString);                  // (4)
-            headers.add(GAMEON_DATE, dateString);
+            headers.putSingle(GAMEON_DATE, dateString);
 
             stuffToHash.add(valueOrEmpty(sigHeaders));    // (5)
             stuffToHash.add(valueOrEmpty(sigParameters)); // (6)
             stuffToHash.add(valueOrEmpty(sigBody));       // (7)
 
             signature = buildHmac(stuffToHash);
-            headers.add(GAMEON_SIGNATURE, signature);
+            headers.putSingle(GAMEON_SIGNATURE, signature);
         } catch (NoSuchAlgorithmException | UnsupportedEncodingException | InvalidKeyException e) {
             // this is our fault.
             throw new WebApplicationException("Unable to generate signature", Status.INTERNAL_SERVER_ERROR);
@@ -378,10 +378,10 @@ public class SignedRequestHmac {
             }
 
             stuffToHash.add(0, dateString);               // (1) -- this should come first
-            headers.add(GAMEON_DATE, dateString);
+            headers.putSingle(GAMEON_DATE, dateString);
 
             signature = buildHmac(stuffToHash);
-            headers.add(GAMEON_SIGNATURE, signature);
+            headers.putSingle(GAMEON_SIGNATURE, signature);
         } catch (NoSuchAlgorithmException | UnsupportedEncodingException | InvalidKeyException e) {
             // this is our fault.
             throw new WebApplicationException("Unable to generate signature", Status.INTERNAL_SERVER_ERROR);
@@ -415,7 +415,7 @@ public class SignedRequestHmac {
         List<String> hashValues = new ArrayList<String>();
 
         for ( String key : names ) {
-            if ( key.startsWith(GAMEON_PFX) ) {
+            if ( key.startsWith(GAMEON_HEADER_PREFIX) ) {
                 continue;
             }
             String value = map.getAll(key, "");

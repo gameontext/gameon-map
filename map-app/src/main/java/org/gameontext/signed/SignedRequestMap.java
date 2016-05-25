@@ -15,16 +15,33 @@
  *******************************************************************************/
 package org.gameontext.signed;
 
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
 import javax.ws.rs.core.MultivaluedHashMap;
 import javax.ws.rs.core.MultivaluedMap;
 
+/**
+ * Interface and supporting wrapping implementations to deal with
+ * casting craziness.
+ *
+ * <ul>
+ *   <li>JAX-RS ClientRequestContext#getHeaders() uses <code>MultivaluedMap<String, Object</code>
+ *   <li>JAX-RS ContainerRequestContext#getHeaders() uses <code>MultivaluedMap<String, Object</code>
+ *   <li>WebSockets HeaderRequest#getHeaders() uses <code>Map<String, List<String>></code>
+ * </ul>
+ *
+ * This is a simple collection of wrappers with a common interface that does
+ * what our auth filters/interceptors need in a way that can be used across
+ * callers.
+ *
+ * Values in these maps (query parameters) are not decoded. We're validating what was sent
+ * with the message (we aren't interpreting or using it in any way other than to make signatures).
+ */
 public interface SignedRequestMap {
 
-    public void add(String key, String value);
+    public void putSingle(String key, String value);
 
     public String getFirst(String key);
 
@@ -43,9 +60,8 @@ public interface SignedRequestMap {
         }
 
         @Override
-        public void add(String key, String value) {
-            mvso.remove(key);
-            mvso.add(key, value);
+        public void putSingle(String key, String value) {
+            mvso.putSingle(key, value);
         }
 
         @Override
@@ -85,9 +101,8 @@ public interface SignedRequestMap {
         }
 
         @Override
-        public void add(String key, String value) {
-            mvss.remove(key);
-            mvss.add(key, value);
+        public void putSingle(String key, String value) {
+            mvss.putSingle(key, value);
         }
 
         @Override
@@ -123,7 +138,7 @@ public interface SignedRequestMap {
         }
 
         @Override
-        public void add(String key, String value) {
+        public void putSingle(String key, String value) {
             throw new IllegalStateException("Read-only map");
         }
 
@@ -143,10 +158,31 @@ public interface SignedRequestMap {
 
         private void unpack() {
             MultivaluedMap<String, String> internal = new MultivaluedHashMap<>();
+
+            // we do not decode the parameters
+            String[] pairs = queryString.split("&");
+            for (String pair : pairs) {
+                String key, value;
+                int idx = pair.indexOf("=");
+                if ( idx > 0 ) {
+                    key = pair.substring(0,idx);
+                    value = idx < pair.length() ? pair.substring(idx + 1 ) : null;
+                } else {
+                    key = pair;
+                    value = null;
+                }
+                internal.add(key, value);
+            }
+
             mvss = new MVSS_StringMap(internal);
         }
+
+        @Override
+        public String toString() {
+            return mvss.toString();
+        }
     }
-    
+
     /**
      * Wrap around a MultivaluedMap<String, String>
      */
@@ -159,13 +195,9 @@ public interface SignedRequestMap {
         }
 
         @Override
-        public void add(String key, String value) {
-            List<String> list = mls.get(key);
-            if( list == null ) {
-                list = new ArrayList<String>();
-                mls.put(key, list);
-            }
-            list.add(value);
+        public void putSingle(String key, String value) {
+            mls.remove(key);
+            mls.put(key, Arrays.asList(value));
         }
 
         @Override
@@ -173,7 +205,7 @@ public interface SignedRequestMap {
             List<String> value = mls.get(key);
             if ( value == null || value.isEmpty())
                 return null;
-            
+
             return value.get(0);
         }
 

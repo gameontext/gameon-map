@@ -189,12 +189,12 @@ public class MapRepository {
     }
 
     public List<Site> swapSites(ResourceAccessPolicy accessPolicy, String user, SiteSwap siteSwap) {
-        Log.log(Level.FINER, this, "Swap rooms: {0} {1}", siteSwap.getSite1().getId(), siteSwap.getSite2().getId());
+        Log.log(Level.FINER, this, "Swap sites: {0} {1}", siteSwap.getSite1().getId(), siteSwap.getSite2().getId());
 
         if (accessPolicy == null || !accessPolicy.isAuthorized(null, SiteSwapPermission.class)) {
             throw new MapModificationException(Response.Status.FORBIDDEN,
                     "User " + user + " does not have permission to swap rooms.",
-                    "Rooms " + siteSwap.getSite1().getId() + " and " + siteSwap.getSite2().getId() + " have not been swapped.");
+                    "Sites " + siteSwap.getSite1().getId() + " and " + siteSwap.getSite2().getId() + " have not been swapped.");
         }
         return sites.swapSites(siteSwap);
     }
