@@ -13,20 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *******************************************************************************/
-package net.wasdev.gameon.map;
+package net.wasdev.gameon.map.auth;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.ext.Provider;
+import java.util.Collection;
+import java.util.HashSet;
 
-import com.fasterxml.jackson.jaxrs.json.JacksonJaxbJsonProvider;
+public class AccessCertainResourcesPolicy implements ResourceAccessPolicy {
 
-@Provider
-@Consumes(MediaType.APPLICATION_JSON)
-@Produces(MediaType.APPLICATION_JSON)
-@ApplicationScoped
-public class JaxbJsonProvider extends JacksonJaxbJsonProvider {
+    private final Collection<Class<?>> authorisedToView;
+
+    public AccessCertainResourcesPolicy(Collection<Class<?>> authorisedToView) {
+        this.authorisedToView = new HashSet<Class<?>>(authorisedToView);
+    }
+
+    @Override
+    public boolean isAuthorized(String resourceOwnedBy, Class<?> resourceType) {
+        return authorisedToView.contains(resourceType);
+    }
 
 }

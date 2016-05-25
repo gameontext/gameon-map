@@ -17,9 +17,18 @@ package net.wasdev.gameon.map.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
+import io.swagger.annotations.ApiModelProperty;
+
 public class Coordinates {
 
+    @ApiModelProperty(
+            value = "X coordinate",
+            required = true)
     private int x;
+
+    @ApiModelProperty(
+            value = "Y coordinate",
+            required = true)
     private int y;
 
     public Coordinates() {}
