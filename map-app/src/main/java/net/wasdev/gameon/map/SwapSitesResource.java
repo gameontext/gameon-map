@@ -20,8 +20,8 @@ import java.util.Collection;
 
 import javax.inject.Inject;
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.Consumes;
 import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
@@ -29,15 +29,16 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
+import org.gameontext.signed.SignedRequest;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
-import net.wasdev.gameon.map.couchdb.MapRepository;
-import net.wasdev.gameon.map.couchdb.auth.ResourceAccessPolicy;
-import net.wasdev.gameon.map.couchdb.auth.ResourceAccessPolicyFactory;
+import net.wasdev.gameon.map.auth.ResourceAccessPolicy;
+import net.wasdev.gameon.map.auth.ResourceAccessPolicyFactory;
+import net.wasdev.gameon.map.db.MapRepository;
 import net.wasdev.gameon.map.models.Site;
+import net.wasdev.gameon.map.models.SiteSwap;
 
 /**
  * Root of CRUD operations on or with sites
@@ -46,7 +47,7 @@ import net.wasdev.gameon.map.models.Site;
 @Api( tags = {"map"})
 @Produces(MediaType.APPLICATION_JSON)
 public class SwapSitesResource {
-	
+
     @Inject
     private ResourceAccessPolicyFactory resourceAccessPolicyFactory;
 
@@ -59,30 +60,49 @@ public class SwapSitesResource {
     private enum AuthMode { AUTHENTICATION_REQUIRED, UNAUTHENTICATED_OK };
 
 	/**
+	 * Deprecated: prefer IDEMPOTENT @PUT
      * POST /map/v1/swapSites
      */
     @POST
-    @ApiOperation(value = "Swap two sites over",
-        notes = "When two sites are swapped the contents of the room and any people in the "
-                + "room will move with the site. The 'exits' then get re-assigned.",
-        response = Collection.class,
-        code = HttpURLConnection.HTTP_OK )
+    @SignedRequest
+    @ApiOperation(value="deprecated", hidden=true)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response swapSites(
-            @ApiParam(value = "Id of first room to swap", required = true) @QueryParam("room1Id") String room1Id,
-            @ApiParam(value = "Id of second room to swap", required = true) @QueryParam("room2Id") String room2Id)
-    {
+    public Response swapSites(@QueryParam("room1Id") String room1Id,
+            @QueryParam("room2Id") String room2Id) {
         String authenticatedId = getAuthenticatedId(AuthMode.AUTHENTICATION_REQUIRED);
         ResourceAccessPolicy auth = resourceAccessPolicyFactory.createPolicyForUser(authenticatedId);
-        
+
         // NOTE: Thrown exceptions are mapped (see MapModificationException)
         Collection<Site> mappedRooms = mapRepository.swapRooms(auth, authenticatedId, room1Id, room2Id);
         return Response.ok(mappedRooms).build();
     }
-    
+
+    /**
+     * PUT /map/v1/swapSites
+     */
+    @PUT
+    @SignedRequest
+    @ApiOperation(value = "Swap the coordinates of two sites",
+        notes = "Sites will exchange position in the map, but their contents (including connected players), "
+                + "will be undisturbed. The 'exits' be re-assigned.",
+        response = Site.class,
+        responseContainer = "List",
+        code = HttpURLConnection.HTTP_OK )
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response swapSites(
+            @ApiParam(value = "Sites to swap", required = true) SiteSwap siteSwap) {
+        String authenticatedId = getAuthenticatedId(AuthMode.AUTHENTICATION_REQUIRED);
+        ResourceAccessPolicy auth = resourceAccessPolicyFactory.createPolicyForUser(authenticatedId);
+
+        // NOTE: Thrown exceptions are mapped (see MapModificationException)
+        Collection<Site> mappedRooms = mapRepository.swapSites(auth, authenticatedId, siteSwap);
+        return Response.ok(mappedRooms).build();
+    }
+
+
     private String getAuthenticatedId(AuthMode mode){
         // This attribute will be set by the auth filter when a user has made
-        // an authenticated request. 
+        // an authenticated request.
         String authedId = (String) httpRequest.getAttribute("player.id");
         switch(mode){
             case AUTHENTICATION_REQUIRED:{
@@ -103,7 +123,7 @@ public class SwapSitesResource {
             }
         }
         return authedId;
-        
+
     }
 
 }

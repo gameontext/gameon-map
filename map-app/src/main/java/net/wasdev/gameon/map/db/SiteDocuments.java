@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *******************************************************************************/
-package net.wasdev.gameon.map.couchdb;
+package net.wasdev.gameon.map.db;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -21,7 +21,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.logging.Level;
 
-import javax.annotation.Resource;
 import javax.ws.rs.core.Response;
 
 import org.ektorp.ComplexKey;
@@ -42,6 +41,8 @@ import net.wasdev.gameon.map.models.Exit;
 import net.wasdev.gameon.map.models.Exits;
 import net.wasdev.gameon.map.models.RoomInfo;
 import net.wasdev.gameon.map.models.Site;
+import net.wasdev.gameon.map.models.SiteCoordinates;
+import net.wasdev.gameon.map.models.SiteSwap;
 
 /**
  * Repository tracking and working with Sites (sites) in the map
@@ -163,7 +164,7 @@ public class SiteDocuments {
      * @throws MapModificationException
      */
     public Site connectRoom(String owner, RoomInfo newRoom) {
-        Log.log(Level.INFO, this, "Add new room: {0}", newRoom);
+        Log.mapOperations(Level.FINE, this, "Add new room: {0}", newRoom);
 
         // TODO: Revisit this when we have groups/organizations.. *sigh*
 
@@ -217,7 +218,7 @@ public class SiteDocuments {
 
         return site;
     }
-    
+
     private Site getSiteWithoutExits(String id) throws DocumentNotFoundException{
         if (id == null || id.isEmpty()) {
             throw new MapModificationException(Response.Status.BAD_REQUEST,
@@ -237,6 +238,8 @@ public class SiteDocuments {
      * @return Wired site containing the room or Suite
      */
     public Site updateRoom(String user, String id, RoomInfo roomInfo) {
+        Log.mapOperations(Level.FINE, this, "Update room: {0} {1}", id, roomInfo);
+
         // Get the site (includes reconstructing the exits)
         Site site = getSite(id);
         RoomInfo oldInfo = site.getInfo();
@@ -261,7 +264,7 @@ public class SiteDocuments {
                 db.update(site);
 
                 throw new MapModificationException(Response.Status.CONFLICT,
-                        "Unable to update room " + site.getId(),
+                        "Room " + id + " could not be updated",
                         "A room with the modified name ("+roomInfo.getName()+") already exists for owner ("+user+")");
             }
         }
@@ -271,21 +274,23 @@ public class SiteDocuments {
         site.setExits(exits);
         return site;
     }
-    
+
     /**
      * SWAP ROOMS
      * @param id1 First site in swap
      * @param id2 Second site in swap
-     * @param room2Id 
+     * @param room2Id
      */
     public Collection<Site> swapRooms(String id1, String id2) {
+        Log.mapOperations(Level.FINE, this, "Swap rooms: {0} {1}", id1, id2);
+
         Site site1 = getSiteWithoutExits(id1);
         Site site2 = getSiteWithoutExits(id2);
-        
+
         if (id1.equals(id2)) {
             throw new MapModificationException(Response.Status.BAD_REQUEST,
-                    "Cannot swap a room with itself.",
-                    "Room id provided is " + id1);
+                    "Unable to swap rooms",
+                    "Cannot swap a room with itself. Room id provided is " + id1);
         }
         site1.setExits(null);
         site2.setExits(null);
@@ -300,6 +305,37 @@ public class SiteDocuments {
         return sites;
     }
 
+    public List<Site> swapSites(SiteSwap siteSwap) {
+        Log.mapOperations(Level.FINE, this, "Swap rooms: {0}", siteSwap);
+
+        SiteCoordinates sc1 = siteSwap.getSite1();
+        SiteCoordinates sc2 = siteSwap.getSite2();
+
+        if (sc1.getId().equals(sc2.getId())) {
+            throw new MapModificationException(Response.Status.BAD_REQUEST,
+                    "Unable to swap sites",
+                    "A site cannot be swapped with itself. Site id provided is " + sc1.getId());
+        }
+
+        Site site1 = getSiteWithoutExits(sc1.getId());
+        Site site2 = getSiteWithoutExits(sc2.getId());
+
+        if ( !sc1.getCoord().equals(site1.getCoord())
+                || !sc2.getCoord().equals(site2.getCoord()) ) {
+            throw new MapModificationException(Response.Status.CONFLICT,
+                    "Unable to swap sites",
+                    "One or both sites have moved");
+        }
+
+        site1.setCoord(sc2.getCoord());
+        site2.setCoord(sc1.getCoord());
+
+        List<Site> sites = new ArrayList<Site>();
+        sites.add(site1);
+        sites.add(site2);
+        db.executeBulk(sites);
+        return sites;
+    }
 
     /**
      * DELETE
@@ -365,7 +401,7 @@ public class SiteDocuments {
                 .endKey(ComplexKey.of(coord.getX(), coord.getY(), "Z"));
 
         ViewResult result = db.queryView(getNeighbors);
-        Log.log(Level.FINEST, this, "Found neighbors: {0}", result);
+        Log.mapOperations(Level.FINEST, this, "Found neighbors: {0}", result);
 
         Exits exits = new Exits();
 
@@ -388,9 +424,7 @@ public class SiteDocuments {
 
     /**
      * Assign information about a door from the targetSite into
-     * the exit information. Note that orientation will flip here:
-     * for the current room, the North Exit will be populated with
-     * information about the South door of the adjacent/target room.
+     * the exit information.
      *
      * @param exits Exits object to be populated with the new exit
      * @param key Direction of the exit
@@ -414,7 +448,7 @@ public class SiteDocuments {
                 break;
         }
 
-        Log.log(Level.FINEST, this, "Added exit: {0} {1} {2}",
+        Log.mapOperations(Level.FINEST, this, "Added exit: {0} {1} {2}",
                 mapper.valueToTree(targetSite.getCoord()),
                 mapper.valueToTree(exit),
                 mapper.valueToTree(exits));
@@ -424,7 +458,7 @@ public class SiteDocuments {
 
         // Get an unassigned empty site
         Site candidateSite = getEmptySite();
-        Log.log(Level.FINEST, this, "Found empty node: {0}", candidateSite);
+        Log.mapOperations(Level.FINEST, this, "Found empty node: {0}", candidateSite);
 
         candidateSite.setOwner(owner);
         candidateSite.setInfo(newRoom);
@@ -523,20 +557,19 @@ public class SiteDocuments {
 
         if ( exits.getN() == null && newRoom.getY() < Integer.MAX_VALUE ) {
             Site newSite = createEmptySite(newRoom.getX(), newRoom.getY()+1);
-            assignExit(exits, "N", newSite);
+            assignExit(exits, "n", newSite);
         }
         if ( exits.getS() == null && newRoom.getY() > Integer.MIN_VALUE  ) {
             Site newSite = createEmptySite(newRoom.getX(), newRoom.getY()-1);
-            assignExit(exits, "S", newSite);
+            assignExit(exits, "s", newSite);
         }
         if ( exits.getE() == null  && newRoom.getX() < Integer.MAX_VALUE ) {
             Site newSite = createEmptySite(newRoom.getX()+1, newRoom.getY());
-            assignExit(exits, "E", newSite);
+            assignExit(exits, "e", newSite);
         }
         if ( exits.getW() == null  && newRoom.getX() > Integer.MIN_VALUE ) {
             Site newSite = createEmptySite(newRoom.getX()-1, newRoom.getY());
-            assignExit(exits, "W", newSite);
+            assignExit(exits, "w", newSite);
         }
     }
-
 }

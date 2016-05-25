@@ -13,10 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *******************************************************************************/
-package net.wasdev.gameon.map.couchdb.auth;
+package org.gameontext.signed;
 
-public interface ResourceAccessPolicy {
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-    public boolean isAuthorisedToView(String resourceOwnedBy, Class<?> resourceType);
-
-}
+/**
+ * Method-level annotations for methods that use a signed
+ * request.
+ */
+@Target({ElementType.METHOD, ElementType.TYPE})
+@Retention(value = RetentionPolicy.RUNTIME)
+public @interface SignedRequest { }
