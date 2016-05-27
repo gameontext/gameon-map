@@ -13,19 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *******************************************************************************/
-package net.wasdev.gameon.map.couchdb;
+package net.wasdev.gameon.map.auth;
 
-import java.util.Collection;
+public class AccessOwnContentPolicy implements ResourceAccessPolicy {
 
-import net.wasdev.gameon.map.couchdb.auth.ResourceAccessPolicy;
-import net.wasdev.gameon.map.models.Site;
+    private String user;
 
-/*
-* This interface is being implemented by MapRepository
-* It is used for authentication. Any user that has a ResourceAccessPolicy that includes this 
-* class has permission to swap sites.
-*/
-public interface SiteSwapper {
-    
-    public Collection<Site> swapRooms(ResourceAccessPolicy accessPolicy, String user, String id1, String id2);
+    public AccessOwnContentPolicy(String user) {
+        this.user = user;
+    }
+
+    @Override
+    public boolean isAuthorized(String resourceOwnedBy, Class<?> resourceType) {
+        return user.equals(resourceOwnedBy);
+    }
+
 }

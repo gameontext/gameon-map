@@ -71,22 +71,18 @@ public class Exit {
         RoomInfo targetSiteInfo = targetSite.getInfo();
         Doors doors = targetSiteInfo != null ? targetSiteInfo.getDoors() : null;
         if (doors != null) {
-            // Note the direction flip. Assume we're in a room,
-            // and there is a room to the North:
-            // To build the North _EXIT_ (of the South room), we're
-            // getting the South _DOOR_ (of the North room).
-            switch(direction) {
-                case "N" :
-                    this.door = doors.getS();
-                    break;
-                case "S" :
+            switch(direction.toLowerCase()) {
+                case "n" :
                     this.door = doors.getN();
                     break;
-                case "E" :
-                    this.door = doors.getW();
+                case "s" :
+                    this.door = doors.getS();
                     break;
-                case "W" :
+                case "e" :
                     this.door = doors.getE();
+                    break;
+                case "w" :
+                    this.door = doors.getW();
                     break;
             }
         }
