@@ -69,13 +69,7 @@ public final class TimestampedKey implements Comparable<TimestampedKey> {
     }
 
     public boolean hasExpired() {
-        //cache hit, but is the key still valid?
         Instant now = Instant.now();
-
-        SignedRequestFeature.writeLog(Level.FINEST, this,
-                "EXPIRED? Testing request expiry, then={0}, now={1}, duration={2}, against={3}, result={4}",
-                time, now, Duration.between(time, now), expiresAfter,
-                Duration.between(time,now).compareTo(expiresAfter) > 0);
 
         //if the key is older than this time period.. we'll consider it dead.
         return Duration.between(time,now).compareTo(expiresAfter) > 0;
