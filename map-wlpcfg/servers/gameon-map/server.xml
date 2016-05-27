@@ -51,6 +51,8 @@
     
     <jndiEntry jndiName="serverName" value="${wlp.server.name}"/>
     <jndiEntry jndiName="serverOutputDir" value="${server.output.dir}"/>
+    
+    <jndiEntry jndiName="kafkaUrl" value="${env.KAFKA_URL}"/>
 
     <applicationMonitor dropinsEnabled="false" />
 
