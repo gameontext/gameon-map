@@ -23,6 +23,8 @@ import javax.ws.rs.core.Response;
  */
 public class MapModificationException extends RuntimeException {
 
+    private static final long serialVersionUID = 1L;
+
     private final Response.Status status;
     private final String moreInfo;
 

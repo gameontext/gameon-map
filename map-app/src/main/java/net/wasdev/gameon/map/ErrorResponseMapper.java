@@ -16,6 +16,7 @@
 package net.wasdev.gameon.map;
 
 import javax.annotation.PostConstruct;
+import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.ExceptionMapper;
@@ -29,12 +30,11 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
-import net.wasdev.gameon.map.couchdb.MapRepository;
+import net.wasdev.gameon.map.db.MapRepository;
 
 @Provider
+@ApplicationScoped
 public class ErrorResponseMapper implements ExceptionMapper<Exception> {
-
-    private static final long serialVersionUID = 1L;
 
     @Inject
     protected MapRepository mapRepository;

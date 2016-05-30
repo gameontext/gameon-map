@@ -13,20 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *******************************************************************************/
-package net.wasdev.gameon.map.couchdb;
+package net.wasdev.gameon.map.db;
 
 import java.util.Collection;
 import java.util.List;
 import java.util.logging.Level;
 
 import javax.annotation.PostConstruct;
-import javax.annotation.Resource;
-import javax.inject.Inject;
 import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Inject;
 import javax.ws.rs.core.Response;
 
 import org.ektorp.CouchDbConnector;
-import org.ektorp.CouchDbInstance;
 import org.ektorp.DocumentNotFoundException;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -39,18 +37,21 @@ import net.wasdev.gameon.map.Kafka;
 import net.wasdev.gameon.map.Kafka.SiteEvent;
 import net.wasdev.gameon.map.Log;
 import net.wasdev.gameon.map.MapModificationException;
-import net.wasdev.gameon.map.couchdb.auth.ResourceAccessPolicy;
+import net.wasdev.gameon.map.auth.ResourceAccessPolicy;
+import net.wasdev.gameon.map.auth.SiteSwapPermission;
 import net.wasdev.gameon.map.models.ConnectionDetails;
 import net.wasdev.gameon.map.models.Coordinates;
 import net.wasdev.gameon.map.models.Exits;
 import net.wasdev.gameon.map.models.RoomInfo;
 import net.wasdev.gameon.map.models.Site;
+import net.wasdev.gameon.map.models.SiteSwap;
+
 
 @ApplicationScoped
-public class MapRepository implements SiteSwapper {
+public class MapRepository {
 
-    @Resource(lookup="couchdb/connector")
-    protected CouchDbInstance db;
+    @Inject
+    protected CouchDbConnector db;
 
     protected SiteDocuments sites;
 
@@ -61,23 +62,16 @@ public class MapRepository implements SiteSwapper {
 
     @PostConstruct
     protected void postConstruct() {
-        String dbname = "map_repository";
-
         // Create an ObjectMapper for marshalling responses back to REST clients
         mapper = new ObjectMapper();
 
         try {
-            // Connect to the database with the specified
-            CouchDbConnector dbc = db.createConnector(dbname, false);
-            Log.log(Level.FINER, this, "Connected to {0}", dbname);
-
             // Ensure required views exist
-            sites = new SiteDocuments(dbc);
+            sites = new SiteDocuments(db);
 
             // Make sure that first room has neighbors (should always do, but.. )
             Exits exits = new Exits();
             sites.createEmptyNeighbors(new Coordinates(0, 0), exits);
-
         } catch (Exception e) {
             // Log the warning, and then re-throw to prevent this class from going into service,
             // which will prevent injection to the Health check, which will make the app stay down.
@@ -136,7 +130,7 @@ public class MapRepository implements SiteSwapper {
      * @throws MapModificationException if something goes awry creating the room
      */
     public Site connectRoom(String user, RoomInfo newRoom) {
-        Log.log(Level.FINER, this, "Add new site: {0}", newRoom);
+        Log.log(Level.FINER, this, "Add new site: {0} by {1}", newRoom.getName(), user);
 
         // TODO: Input validation for connection details (most important)
 
@@ -192,7 +186,7 @@ public class MapRepository implements SiteSwapper {
         
         return result;
     }
-
+    
     /**
      * Swap to rooms around
      * @param room1Id First site in swap
@@ -201,12 +195,28 @@ public class MapRepository implements SiteSwapper {
     public Collection<Site> swapRooms(ResourceAccessPolicy accessPolicy, String user, String room1Id, String room2Id) {
         Log.log(Level.FINER, this, "Swap rooms: {0} {1}", room1Id, room2Id);
 
-        if (accessPolicy == null || !accessPolicy.isAuthorisedToView(null, SiteSwapper.class)) {
+        if (accessPolicy == null || !accessPolicy.isAuthorized(null, SiteSwapPermission.class)) {
             throw new MapModificationException(Response.Status.FORBIDDEN,
                     "User " + user + " does not have permission to swap rooms.",
                     "Rooms " + room1Id + " and " + room2Id + " have not been swapped.");
         }
         Collection<Site> results = sites.swapRooms(room1Id, room2Id);
+        
+        //publish events
+        results.forEach(site -> kafka.publishSiteEvent(SiteEvent.UPDATE, site));
+        
+        return results;
+    }
+
+    public List<Site> swapSites(ResourceAccessPolicy accessPolicy, String user, SiteSwap siteSwap) {
+        Log.log(Level.FINER, this, "Swap sites: {0} {1}", siteSwap.getSite1().getId(), siteSwap.getSite2().getId());
+
+        if (accessPolicy == null || !accessPolicy.isAuthorized(null, SiteSwapPermission.class)) {
+            throw new MapModificationException(Response.Status.FORBIDDEN,
+                    "User " + user + " does not have permission to swap rooms.",
+                    "Sites " + siteSwap.getSite1().getId() + " and " + siteSwap.getSite2().getId() + " have not been swapped.");
+        }
+        Collection<Site> results = sites.swapSites(siteSwap);
         
         //publish events
         results.forEach(site -> kafka.publishSiteEvent(SiteEvent.UPDATE, site));
@@ -237,6 +247,7 @@ public class MapRepository implements SiteSwapper {
     }
 
     private boolean stripSensitiveData(ResourceAccessPolicy accessPolicy, String owner) {
-        return !accessPolicy.isAuthorisedToView(owner, ConnectionDetails.class);
+        return !accessPolicy.isAuthorized(owner, ConnectionDetails.class);
     }
+
 }

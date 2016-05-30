@@ -5,6 +5,8 @@ sourceCompatibility = 1.8
 
 configurations {
     couchdb
+    jmockit
+    testCompile.extendsFrom jmockit
 }
 
 
@@ -15,28 +17,40 @@ dependencies {
     providedCompile 'javax.servlet:javax.servlet-api:3.1.0'
     providedCompile 'javax.annotation:javax.annotation-api:1.2'
     providedCompile 'javax.inject:javax.inject:1'
+    providedCompile 'javax.enterprise.concurrent:javax.enterprise.concurrent-api:1.0'
     providedCompile 'javax.enterprise:cdi-api:1.2'
     providedCompile 'io.swagger:swagger-annotations:1.5.0'
-	testRuntime 'org.apache.cxf:cxf-rt-rs-client:3.1.1'
-	testRuntime 'org.apache.httpcomponents:httpclient:4.5.2'
 
-    //httpclient for making the request (temporary)
-    compile ('org.apache.httpcomponents:httpclient:4.5.1') {
-    	exclude group: 'com.fasterxml.jackson'
-    }
-    
+     //httpclient for making the request (temporary)
+     compile ('org.apache.httpcomponents:httpclient:4.5.2') {
+        exclude group: 'com.fasterxml.jackson'
+     }
+
     // couchdb dependencies
-    couchdb 'org.ektorp:org.ektorp:1.4.2'
+    couchdb ('org.ektorp:org.ektorp:1.4.2') {
+        exclude group: 'org.slf4j'
+    }
+    couchdb ('io.jsonwebtoken:jjwt:0.5.1') {
+        exclude group: 'org.slf4j'
+    }
     couchdb 'com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider:2.2.2'
-    couchdb 'io.jsonwebtoken:jjwt:0.5.1' 
-    runtime 'org.slf4j:slf4j-jdk14:1.7.13'
+    couchdb 'org.slf4j:slf4j-jdk14:1.7.13'
+    couchdb 'org.slf4j:jcl-over-slf4j:1.7.13'
 
     providedCompile configurations.couchdb
     
     // kafka client =)
     compile 'org.apache.kafka:kafka-clients:0.9.0.1'
 
+    jmockit 'org.jmockit:jmockit:1.22'
     testCompile 'junit:junit:4.12'
+    testCompile 'org.glassfish:javax.json:1.0.4'
+	testRuntime 'org.apache.cxf:cxf-rt-rs-client:3.1.1'
+	testRuntime 'org.apache.httpcomponents:httpclient:4.5.2'
+}
+
+test {
+   jvmArgs "-javaagent:${configurations.jmockit.singleFile.absolutePath}"
 }
 
 sourceSets {
@@ -58,8 +72,22 @@ task exportLibs(type: Copy) {
 check.dependsOn(endToEndTest)
 build.dependsOn(exportLibs)
 
-// Set the Eclipse facets to use 3.1 of the Dynamic Web Module which requires Java 1.7 by default.
-// Also include the JAX-RS and javascript
+
+// Keep test and application binaries separate
+eclipse.classpath.file {
+	withXml { xml ->
+    	def node = xml.asNode()
+
+    	Node src = node.find {it.@path == "src/main/java"}
+  		src.@output ="bin/main"
+
+    	Node testSrc = node.find {it.@path == "src/test/java"}
+  		testSrc.@output ="bin/test"
+	}
+}
+
+// Set the Eclipse facets to use 3.1 of the Dynamic Web Module which requires Java 1.7 (at least)
+// And JAX-RS 2.0, and JavaScript
 eclipse.wtp.facet {
     // Clear default facets to work around bug where you get duplicates including wst 2.4
     facets = []
@@ -80,5 +108,6 @@ eclipse.jdt.file {
       it['org.eclipse.jdt.core.formatter.tabulation.char'] = 'space'
       it['org.eclipse.jdt.core.formatter.indent_switchstatements_compare_to_cases'] = 'true'
       it['org.eclipse.jdt.core.formatter.indent_switchstatements_compare_to_switch'] = 'true'
+      it['org.eclipse.jdt.core.formatter.alignment_for_arguments_in_annotation'] = '18'
     }
 }

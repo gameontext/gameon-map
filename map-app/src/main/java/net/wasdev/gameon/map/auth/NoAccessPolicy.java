@@ -13,10 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *******************************************************************************/
-package net.wasdev.gameon.map.couchdb.auth;
+package net.wasdev.gameon.map.auth;
 
-public interface ResourceAccessPolicy {
+public class NoAccessPolicy implements ResourceAccessPolicy {
 
-    public boolean isAuthorisedToView(String resourceOwnedBy, Class<?> resourceType);
+    @Override
+    public boolean isAuthorized(String resourceOwnedBy, Class<?> resourceType) {
+        return false;
+    }
 
 }
