@@ -28,8 +28,10 @@ import org.junit.rules.TestName;
 import com.fasterxml.jackson.databind.ObjectWriter;
 
 import mockit.Expectations;
+import mockit.Injectable;
 import mockit.Mocked;
 import mockit.Verifications;
+import net.wasdev.gameon.map.Kafka;
 import net.wasdev.gameon.map.MapModificationException;
 import net.wasdev.gameon.map.auth.AccessCertainResourcesPolicy;
 import net.wasdev.gameon.map.auth.SiteSwapPermission;
@@ -45,6 +47,9 @@ public class TestMockedRoomSwap {
 
     @Mocked
     CouchDbConnector dbc;
+    
+    @Mocked
+    Kafka kafka;
 
     MapRepository repo;
     ObjectWriter debugWriter;
@@ -61,6 +66,7 @@ public class TestMockedRoomSwap {
 
         repo = new MapRepository();
         repo.db = dbc;
+        repo.kafka = kafka;
         repo.postConstruct();
         debugWriter = repo.mapper.writerWithDefaultPrettyPrinter();
 

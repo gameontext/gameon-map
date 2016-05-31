@@ -216,7 +216,7 @@ public class MapRepository {
                     "User " + user + " does not have permission to swap rooms.",
                     "Sites " + siteSwap.getSite1().getId() + " and " + siteSwap.getSite2().getId() + " have not been swapped.");
         }
-        Collection<Site> results = sites.swapSites(siteSwap);
+        List<Site> results = sites.swapSites(siteSwap);
         
         //publish events
         results.forEach(site -> kafka.publishSiteEvent(SiteEvent.UPDATE, site));
