@@ -33,6 +33,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeType;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import net.wasdev.gameon.map.Kafka;
+import net.wasdev.gameon.map.Kafka.SiteEvent;
 import net.wasdev.gameon.map.Log;
 import net.wasdev.gameon.map.MapModificationException;
 import net.wasdev.gameon.map.auth.ResourceAccessPolicy;
@@ -54,6 +56,9 @@ public class MapRepository {
     protected SiteDocuments sites;
 
     protected ObjectMapper mapper;
+
+    @Inject
+    Kafka kafka;
 
     @PostConstruct
     protected void postConstruct() {
@@ -129,7 +134,12 @@ public class MapRepository {
 
         // TODO: Input validation for connection details (most important)
 
-        return sites.connectRoom(user, newRoom);
+        Site result = sites.connectRoom(user, newRoom);
+        
+        //publish event
+        kafka.publishSiteEvent(SiteEvent.CREATE, result);
+        
+        return result;
     }
 
     /**
@@ -169,9 +179,14 @@ public class MapRepository {
     public Site updateRoom(String authenticatedId, String id, RoomInfo roomInfo) {
         Log.log(Level.FINER, this, "Update site: {0} {1}", id, roomInfo);
 
-        return sites.updateRoom(authenticatedId, id, roomInfo);
+        Site result  = sites.updateRoom(authenticatedId, id, roomInfo);
+        
+        //publish event.
+        kafka.publishSiteEvent(SiteEvent.UPDATE, result);
+        
+        return result;
     }
-
+    
     /**
      * Swap to rooms around
      * @param room1Id First site in swap
@@ -185,7 +200,12 @@ public class MapRepository {
                     "User " + user + " does not have permission to swap rooms.",
                     "Rooms " + room1Id + " and " + room2Id + " have not been swapped.");
         }
-        return sites.swapRooms(room1Id, room2Id);
+        Collection<Site> results = sites.swapRooms(room1Id, room2Id);
+        
+        //publish events
+        results.forEach(site -> kafka.publishSiteEvent(SiteEvent.UPDATE, site));
+        
+        return results;
     }
 
     public List<Site> swapSites(ResourceAccessPolicy accessPolicy, String user, SiteSwap siteSwap) {
@@ -196,7 +216,12 @@ public class MapRepository {
                     "User " + user + " does not have permission to swap rooms.",
                     "Sites " + siteSwap.getSite1().getId() + " and " + siteSwap.getSite2().getId() + " have not been swapped.");
         }
-        return sites.swapSites(siteSwap);
+        List<Site> results = sites.swapSites(siteSwap);
+        
+        //publish events
+        results.forEach(site -> kafka.publishSiteEvent(SiteEvent.UPDATE, site));
+        
+        return results;
     }
 
     /**
@@ -208,6 +233,13 @@ public class MapRepository {
         Log.log(Level.FINER, this, "Delete site {0} by {1}", id, authenticatedId);
 
         sites.deleteSite(authenticatedId, id);
+        
+        //publish event.. 
+        //we don't have a full site to send, but notifying by id is fine.
+        Site deleted = new Site();
+        deleted.setId(id);
+        kafka.publishSiteEvent(SiteEvent.DELETE, deleted);
+        
     }
 
     public ObjectMapper mapper() {
