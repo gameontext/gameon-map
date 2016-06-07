@@ -291,24 +291,30 @@ public class SignedRequestHmacTest {
         MultivaluedMap<String, Object> m2 = new MultivaluedHashMap<>();
         SignedRequestMap map = new SignedRequestMap.MVSO_StringMap(m2);
 
-        // WS client: date, baseUri --> signature
+        System.out.println("Create and sign client request");
+        // WS client: baseUri, date --> signature
         SignedRequestHmac clientHmac = new SignedRequestHmac("", secret, "", "/ws/uri");
 
-        System.out.println(clientHmac);
         clientHmac.signRequest(headers);
+        System.out.println("client="+clientHmac);
+
+        System.out.println("\n==== Create server hmac and verify signature, client message: ");
         printMessage(clientHmac);
 
-        // WS server verify: date, baseUri --> signature (verify)
+        // WS server verify: baseUri, date --> signature (verify)
         SignedRequestHmac serverHmac = new SignedRequestHmac("", secret, "", "/ws/uri")
                 .checkHeaders(headers);
 
-        System.out.println(serverHmac);
         serverHmac.verifyFullSignature();
+        System.out.println("server="+serverHmac);
+
+        System.out.println("\n=== Resign outbound response, headers to resign");
         printMessage(serverHmac);
 
         // WS server sign: received signature, new date --> signing signature
         serverHmac.wsResignRequest(map);
-        printMessage(serverHmac);
+        System.out.println("server="+serverHmac);
+        System.out.println(map);
 
         assertHeaders(
                 Arrays.asList(SignedRequestHmac.GAMEON_DATE,
@@ -319,6 +325,15 @@ public class SignedRequestHmacTest {
                               SignedRequestHmac.GAMEON_HEADERS,
                               SignedRequestHmac.GAMEON_SIG_BODY
                               ));
+        Assert.assertEquals(serverHmac.dateString, map.getAll(SignedRequestHmac.GAMEON_DATE, ""));
+        Assert.assertEquals(serverHmac.signature, map.getAll(SignedRequestHmac.GAMEON_SIGNATURE, ""));
+
+        System.out.println("\n=== Client verify resigned signature, server message: ");
+        printMessage(serverHmac);
+
+        System.out.println("server="+serverHmac);
+        System.out.println("client="+clientHmac);
+        clientHmac.wsVerifySignature(map);
     }
 
     @Test
