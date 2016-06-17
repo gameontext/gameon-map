@@ -162,11 +162,12 @@ public interface SignedRequestMap {
             // we do not decode the parameters
             String[] pairs = queryString.split("&");
             for (String pair : pairs) {
-                String key, value;
-                int idx = pair.indexOf("=");
-                if ( idx > 0 ) {
-                    key = pair.substring(0,idx);
-                    value = idx < pair.length() ? pair.substring(idx + 1 ) : null;
+                String key;
+                String value;
+                int pos = pair.indexOf("=");
+                if ( pos > 0 ) {
+                    key = pair.substring(0,pos);
+                    value = pos < pair.length() ? pair.substring(pos + 1 ) : null;
                 } else {
                     key = pair;
                     value = null;

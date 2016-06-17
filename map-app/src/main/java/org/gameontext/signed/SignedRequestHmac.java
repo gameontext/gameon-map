@@ -386,10 +386,33 @@ public class SignedRequestHmac {
             // this is our fault.
             throw new WebApplicationException("Unable to generate signature", Status.INTERNAL_SERVER_ERROR);
         }
-        return this;
 
+        return this;
     }
 
+
+    public SignedRequestHmac wsVerifySignature(SignedRequestMap headers) {
+        if ( signature == null )
+            throw new NullPointerException("Must have a previous signature to verify with");
+
+        try {
+            List<String> stuffToHash = new ArrayList<String>();
+
+            stuffToHash.add(headers.getAll(GAMEON_DATE, "")); // (1) -- read date from headers
+            stuffToHash.add(signature);// (2) - what we sent
+
+            String h_hmac = buildHmac(stuffToHash);
+            String room_signature = headers.getAll(GAMEON_SIGNATURE, null);
+
+            if ( !room_signature.equals(h_hmac) ) {
+                throw new WebApplicationException("Invalid signature (hmacCompare)", Status.FORBIDDEN);
+            }
+        } catch (NoSuchAlgorithmException | UnsupportedEncodingException | InvalidKeyException e) {
+            throw new WebApplicationException("Invalid signature", Status.FORBIDDEN);
+        }
+
+        return this;
+    }
 
 //------------------------------------------------------------
 
@@ -536,5 +559,4 @@ public class SignedRequestHmac {
             .append(", oldStyle=").append(oldStyle).append("]");
         return builder.toString();
     }
-
 }
