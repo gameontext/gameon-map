@@ -229,7 +229,7 @@ public class PlayerClient implements SignedRequestSecretProvider {
     }
 
     /**
-     * Obtain apiKey for player id.
+     * Obtain sharedSecret for player id.
      *
      * @param playerId
      *            The player id
@@ -277,7 +277,8 @@ public class PlayerClient implements SignedRequestSecretProvider {
 
             Log.log(Level.FINER, this, "Got player record for {0} from player service", playerId);
 
-            return jn.get("apiKey").textValue();
+            JsonNode creds = jn.get("credentials").get("sharedSecret");
+            return creds.textValue();
 
         } catch (HttpResponseException hre) {
             Log.log(Level.FINEST, this, "Error communicating with player service: {0} {1}", hre.getStatusCode(), hre.getMessage());

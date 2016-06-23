@@ -15,6 +15,8 @@
  *******************************************************************************/
 package net.wasdev.gameon.map;
 
+import java.util.logging.Level;
+
 import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
@@ -78,6 +80,10 @@ public class ErrorResponseMapper implements ExceptionMapper<Exception> {
 
         } else if ( exception instanceof JsonMappingException ) {
             status = Response.Status.BAD_REQUEST;
+        } else {
+            //if we're going to handle every unknown type, lets log them so we 
+            //have an opportunity to debug them in future.
+            Log.log(Level.SEVERE, this, "ErrorResponseMapper handling unknown exception type", exception);
         }
 
         objNode.put("status", status.getStatusCode());
