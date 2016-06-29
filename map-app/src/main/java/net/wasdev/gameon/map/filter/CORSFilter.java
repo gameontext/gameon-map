@@ -26,6 +26,8 @@ import javax.servlet.ServletResponse;
 import javax.servlet.annotation.WebFilter;
 import javax.servlet.http.HttpServletResponse;
 
+//CORS filter to allow site operations from outside of GameOn! e.g. registering new rooms
+
 @WebFilter(
         filterName = "corsFilter",
         urlPatterns = {"/*"}
@@ -40,6 +42,7 @@ public class CORSFilter implements Filter {
         sresponse.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE");
         sresponse.setHeader("Access-Control-Max-Age", "86400");
         sresponse.setHeader("Access-Control-Allow-Credentials", "true");
+        sresponse.setHeader("Access-Control-Allow-Headers", "gameon-id,gameon-date,gameon-sig-body,gameon-signature, Content-Type");
         chain.doFilter(request, response);
     }
 
