@@ -28,12 +28,10 @@ public class SignedContainerRequestFilter implements ContainerRequestFilter {
 
     private final SignedRequestSecretProvider playerClient;
     private final SignedRequestTimedCache timedCache;
-    private final String requestAddr;
 
-    public SignedContainerRequestFilter(SignedRequestSecretProvider playerClient, SignedRequestTimedCache timedCache, String requestAddr) {
+    public SignedContainerRequestFilter(SignedRequestSecretProvider playerClient, SignedRequestTimedCache timedCache) {
         this.playerClient = playerClient;
         this.timedCache = timedCache;
-        this.requestAddr = requestAddr;
         
         if ( playerClient == null || timedCache == null ) {
             SignedRequestFeature.writeLog(Level.SEVERE, this,
@@ -56,12 +54,11 @@ public class SignedContainerRequestFilter implements ContainerRequestFilter {
         String userId = requestContext.getHeaderString(SignedRequestHmac.GAMEON_ID);
         String method = requestContext.getMethod();
 
-        SignedRequestFeature.writeLog(Level.FINEST, this, "REQUEST FILTER: USER={0}, PATH={1}, QUERY={2}, HEADERS={3}, REMOTEADDR={4}",
+        SignedRequestFeature.writeLog(Level.FINEST, this, "REQUEST FILTER: USER={0}, PATH={1}, QUERY={2}, HEADERS={3}",
                 userId,
                 method + " "  + requestContext.getUriInfo().getAbsolutePath().getRawPath(),
                 requestContext.getUriInfo().getQueryParameters(false),
-                requestContext.getHeaders(),
-                requestAddr);
+                requestContext.getHeaders());
 
         if ( userId == null || userId.trim().isEmpty()) {
             if ( "GET".equals(method) ) {
