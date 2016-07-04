@@ -48,9 +48,6 @@ public class SignedRequestFeature implements DynamicFeature {
             logger.logp(level, source.getClass().getName(), "", message, thrown);
         }
     }
-
-    @Context
-    private HttpServletRequest request;
     
     SignedRequestSecretProvider playerClient;
     SignedRequestTimedCache timedCache;
@@ -71,16 +68,8 @@ public class SignedRequestFeature implements DynamicFeature {
         if ( sr == null )
             return;
         
-        String addr = "null";
-        try{
-            addr = request.getRemoteAddr();
-        }catch(Exception e){
-            StringWriter sw = new StringWriter();
-            e.printStackTrace(new PrintWriter(sw));
-            addr = "could not obtain address due to "+sw.toString();
-        }
 
-        context.register(new SignedContainerRequestFilter(playerClient, timedCache, addr));
+        context.register(new SignedContainerRequestFilter(playerClient, timedCache));
 
         GET get = resourceInfo.getResourceMethod().getAnnotation(GET.class);
         DELETE delete = resourceInfo.getResourceMethod().getAnnotation(DELETE.class);
