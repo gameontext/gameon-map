@@ -20,10 +20,12 @@ import java.util.logging.Logger;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.spi.CDI;
+import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.container.DynamicFeature;
 import javax.ws.rs.container.ResourceInfo;
+import javax.ws.rs.core.Context;
 import javax.ws.rs.core.FeatureContext;
 import javax.ws.rs.ext.Provider;
 
@@ -45,6 +47,9 @@ public class SignedRequestFeature implements DynamicFeature {
         }
     }
 
+    @Context
+    private HttpServletRequest request;
+    
     SignedRequestSecretProvider playerClient;
     SignedRequestTimedCache timedCache;
 
@@ -64,7 +69,7 @@ public class SignedRequestFeature implements DynamicFeature {
         if ( sr == null )
             return;
 
-        context.register(new SignedContainerRequestFilter(playerClient, timedCache));
+        context.register(new SignedContainerRequestFilter(playerClient, timedCache, request));
 
         GET get = resourceInfo.getResourceMethod().getAnnotation(GET.class);
         DELETE delete = resourceInfo.getResourceMethod().getAnnotation(DELETE.class);
