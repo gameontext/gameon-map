@@ -63,7 +63,7 @@ public class SignedContainerRequestFilter implements ContainerRequestFilter {
                 requestContext.getHeaders(),
                 requestAddr);
 
-        if ( userId == null ) {
+        if ( userId == null || userId.trim().isEmpty()) {
             if ( "GET".equals(method) ) {
                 // no validation required for GET requests. If an ID isn't provided,
                 // then we won't do validation and will just return.
