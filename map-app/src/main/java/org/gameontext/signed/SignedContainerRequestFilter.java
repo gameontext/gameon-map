@@ -18,7 +18,6 @@ package org.gameontext.signed;
 import java.io.IOException;
 import java.util.logging.Level;
 
-import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerRequestFilter;
@@ -29,12 +28,12 @@ public class SignedContainerRequestFilter implements ContainerRequestFilter {
 
     private final SignedRequestSecretProvider playerClient;
     private final SignedRequestTimedCache timedCache;
-    private final HttpServletRequest request;
+    private final String requestAddr;
 
-    public SignedContainerRequestFilter(SignedRequestSecretProvider playerClient, SignedRequestTimedCache timedCache, HttpServletRequest request) {
+    public SignedContainerRequestFilter(SignedRequestSecretProvider playerClient, SignedRequestTimedCache timedCache, String requestAddr) {
         this.playerClient = playerClient;
         this.timedCache = timedCache;
-        this.request = request;
+        this.requestAddr = requestAddr;
         
         if ( playerClient == null || timedCache == null ) {
             SignedRequestFeature.writeLog(Level.SEVERE, this,
@@ -62,7 +61,7 @@ public class SignedContainerRequestFilter implements ContainerRequestFilter {
                 method + " "  + requestContext.getUriInfo().getAbsolutePath().getRawPath(),
                 requestContext.getUriInfo().getQueryParameters(false),
                 requestContext.getHeaders(),
-                request.getRemoteAddr());
+                requestAddr);
 
         if ( userId == null ) {
             if ( "GET".equals(method) ) {

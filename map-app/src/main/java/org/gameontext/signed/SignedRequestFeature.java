@@ -69,7 +69,7 @@ public class SignedRequestFeature implements DynamicFeature {
         if ( sr == null )
             return;
 
-        context.register(new SignedContainerRequestFilter(playerClient, timedCache, request));
+        context.register(new SignedContainerRequestFilter(playerClient, timedCache, request.getRemoteAddr()));
 
         GET get = resourceInfo.getResourceMethod().getAnnotation(GET.class);
         DELETE delete = resourceInfo.getResourceMethod().getAnnotation(DELETE.class);
