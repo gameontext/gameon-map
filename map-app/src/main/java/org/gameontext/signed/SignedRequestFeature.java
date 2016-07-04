@@ -15,6 +15,8 @@
  *******************************************************************************/
 package org.gameontext.signed;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -68,8 +70,17 @@ public class SignedRequestFeature implements DynamicFeature {
         }
         if ( sr == null )
             return;
+        
+        String addr = "null";
+        try{
+            addr = request.getRemoteAddr();
+        }catch(Exception e){
+            StringWriter sw = new StringWriter();
+            e.printStackTrace(new PrintWriter(sw));
+            addr = "could not obtain address due to "+sw.toString();
+        }
 
-        context.register(new SignedContainerRequestFilter(playerClient, timedCache, request.getRemoteAddr()));
+        context.register(new SignedContainerRequestFilter(playerClient, timedCache, addr));
 
         GET get = resourceInfo.getResourceMethod().getAnnotation(GET.class);
         DELETE delete = resourceInfo.getResourceMethod().getAnnotation(DELETE.class);
