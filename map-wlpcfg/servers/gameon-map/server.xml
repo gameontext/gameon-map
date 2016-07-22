@@ -13,7 +13,7 @@
         <feature>concurrent-1.0</feature>
     </featureManager>
 
-    <httpEndpoint host="*" httpPort="9080" httpsPort="9443" id="defaultHttpEndpoint">
+    <httpEndpoint host="*" httpPort="-1" httpsPort="9443" id="defaultHttpEndpoint">
         <accessLogging
             filepath="${server.output.dir}/logs/http_defaultEndpoint_access.log"
             logFormat='%h %u %t "%r" %s %b %D %{User-agent}i'>
@@ -31,7 +31,7 @@
     <jndiEntry jndiName="jwtKeyStorePassword" value="testOnlyKeystore"/>
     <jndiEntry jndiName="jwtKeyStoreAlias" value="default"/>
 
-    <jndiEntry jndiName="playerUrl" value="${env.MAP_PLAYER_URL}"/>
+    <jndiEntry jndiName="playerUrl" value="${env.PLAYER_SERVICE_URL}"/>
 
     <!-- This is our private backend room registration key, only used for recroom/nodejs etc -->
     <jndiEntry jndiName="registrationSecret" value="${env.MAP_KEY}"/>
@@ -45,8 +45,8 @@
 
     <jndiEntry jndiName="serverName" value="${wlp.server.name}"/>
     <jndiEntry jndiName="serverOutputDir" value="${server.output.dir}"/>
-    
-    <jndiEntry jndiName="kafkaUrl" value="${env.KAFKA_URL}"/>
+
+    <jndiEntry jndiName="kafkaUrl" value="${env.KAFKA_SERVICE_URL}"/>
 
     <applicationMonitor dropinsEnabled="false" />
 
@@ -60,7 +60,7 @@
     <couchdb id="couchdb"
       jndiName="couchdb/connector"
       libraryRef="couchdb-lib"
-      url="${env.COUCHDB_URL}"
+      url="${env.COUCHDB_SERVICE_URL}"
       username="${env.COUCHDB_USER}"
       password="${env.COUCHDB_PASSWORD}"/>
 
