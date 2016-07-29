@@ -1,6 +1,6 @@
 <server description="Game On! Map Service">
 
-	<!-- Enable API discovery -->
+    <!-- Enable API discovery -->
     <include location="${server.config.dir}/apiDiscovery.xml"/>
 
     <!-- Enable features -->

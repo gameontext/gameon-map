@@ -46,6 +46,14 @@ task copyCouchdb(type: Sync) {
 task build(dependsOn: ['copyApplication', 'copyCouchdb']){
 }
 
+task clean {
+    delete "servers/gameon-map/apps"
+    delete "servers/gameon-map/lib"
+    delete "servers/gameon-map/logs"
+    delete "servers/gameon-map/workarea"
+    delete "servers/gameon-map/resources"
+}
+
 apply plugin: 'com.bmuschko.docker-remote-api'
 
 import com.bmuschko.gradle.docker.tasks.container.*
