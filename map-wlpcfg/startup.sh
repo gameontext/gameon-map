@@ -1,5 +1,10 @@
 #!/bin/bash
 
+# Configure amalgam8 for this container
+export A8_SERVICE=map:v1
+export A8_ENDPOINT_PORT=9443
+export A8_ENDPOINT_TYPE=https
+
 if [ "$SERVERDIRNAME" == "" ]; then
   SERVERDIRNAME=defaultServer
 else
@@ -36,11 +41,11 @@ if [ "$ETCDCTL_ENDPOINT" != "" ]; then
   keytool -delete -storepass testOnlyKeystore -alias endeca -keystore security/key.jks
   keytool -v -importkeystore -srcalias 1 -alias 1 -destalias default -noprompt -srcstorepass keystore -deststorepass testOnlyKeystore -srckeypass keystore -destkeypass testOnlyKeystore -srckeystore cert.pkcs12 -srcstoretype PKCS12 -destkeystore security/key.jks -deststoretype JKS
 
-  export COUCHDB_URL=$(etcdctl get /couchdb/url)
+  export COUCHDB_SERVICE_URL=$(etcdctl get /couchdb/url)
   export COUCHDB_USER=$(etcdctl get /couchdb/user)
   export COUCHDB_PASSWORD=$(etcdctl get /passwords/couchdb)
   export MAP_KEY=$(etcdctl get /passwords/map-key)
-  export MAP_PLAYER_URL=$(etcdctl get /player/url)
+  export PLAYER_SERVICE_URL=$(etcdctl get /player/url)
   export LOGSTASH_ENDPOINT=$(etcdctl get /logstash/endpoint)
   export LOGMET_HOST=$(etcdctl get /logmet/host)
   export LOGMET_PORT=$(etcdctl get /logmet/port)
@@ -49,9 +54,9 @@ if [ "$ETCDCTL_ENDPOINT" != "" ]; then
   export SYSTEM_ID=$(etcdctl get /player/system_id)
   export SWEEP_ID=$(etcdctl get /npc/sweep/id)
   export SWEEP_SECRET=$(etcdctl get /npc/sweep/password)
-  export KAFKA_URL=$(etcdctl get /kafka/url)
-  export KAFKA_USER=$(etcdctl get /kafka/user)
-  export KAFKA_PASSWORD=$(etcdctl get /passwords/kafka)
+  export KAFKA_SERVICE_URL=$(etcdctl get /kafka/url)
+  export MESSAGEHUB_USER=$(etcdctl get /kafka/user)
+  export MESSAGEHUB_PASSWORD=$(etcdctl get /passwords/kafka)
 
   #to run with message hub, we need a jaas jar we can only obtain
   #from github, and have to use an extra config snippet to enable it.
@@ -59,8 +64,8 @@ if [ "$ETCDCTL_ENDPOINT" != "" ]; then
   mkdir -p configDropins/overrides
   mv kafkaDropin.xml configDropins/overrides
   wget https://github.com/ibm-messaging/message-hub-samples/raw/master/java/message-hub-liberty-sample/lib-message-hub/messagehub.login-1.0.0.jar
-  
-  
+
+
   # Softlayer needs a logstash endpoint so we set up the server
   # to run in the background and the primary task is running the
   # forwarder. In ICS, Liberty is the primary task so we need to
@@ -86,7 +91,7 @@ else
   AUTH_HOST="http://${COUCHDB_USER}:${COUCHDB_PASSWORD}@couchdb:5984"
   SERVER_PATH=/opt/ibm/wlp/usr/servers/$SERVERDIRNAME
 
-  echo "** Testing connection to ${COUCHDB_URL}"
+  echo "** Testing connection to ${COUCHDB_SERVICE_URL}"
   curl --fail -X GET ${AUTH_HOST}/_config/admins/${COUCHDB_USER}
   RC=$?
 
@@ -96,7 +101,7 @@ else
       sleep 15
 
       # recheck condition
-      echo "** Re-testing connection to ${COUCHDB_URL}"
+      echo "** Re-testing connection to ${COUCHDB_SERVICE_URL}"
       curl --fail -X GET ${AUTH_HOST}/_config/admins/${COUCHDB_USER}
       RC=$?
   done
@@ -104,7 +109,7 @@ else
   # RC=22 means the user doesn't exist
   if [ $RC -eq 22 ]; then
       echo "** Creating ${COUCHDB_USER}"
-      curl -X PUT ${COUCHDB_URL}/_config/admins/${COUCHDB_USER} -d \"${COUCHDB_PASSWORD}\"
+      curl -X PUT ${COUCHDB_SERVICE_URL}/_config/admins/${COUCHDB_USER} -d \"${COUCHDB_PASSWORD}\"
   fi
 
   echo "** Checking database"
@@ -128,5 +133,5 @@ else
       curl -X POST -H "Content-Type: application/json" --data @${SERVER_PATH}/firstRoom.withid.json ${AUTH_HOST}/map_repository
   fi
 
-  exec /opt/ibm/wlp/bin/server run $SERVERDIRNAME
+  exec a8sidecar --supervise /opt/ibm/wlp/bin/server run $SERVERDIRNAME
 fi
