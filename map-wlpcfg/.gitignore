@@ -1,12 +1,13 @@
 /.settings/
 /.project
 .*.swp
+/servers/.classCache
+/servers/.pid
 /servers/*/apps
 /servers/*/lib
 /servers/*/logs
 /servers/*/workarea
-/servers/.pid
-/servers/gameon-map/resources
+/servers/*/configDropins/overrides
+/servers/*/resources
 /build/
-/servers/.classCache
 /target
