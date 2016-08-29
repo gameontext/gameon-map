@@ -1,0 +1,32 @@
+apply plugin: 'eclipse'
+
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+}
+
+task copyApplication(type: Copy) {
+    from '../map-app/build/libs/map-app-1.0.war'
+    into 'servers/gameon-map/apps/'
+    rename("map-app-1.0.war", "map-app.war")
+}
+
+task copyCouchdb(type: Sync) {
+    from '../map-app/build/libs/'
+    into 'servers/gameon-map/lib/'
+    include '*.jar'
+    exclude 'map-*'
+}
+
+task build(dependsOn: ['copyApplication', 'copyCouchdb']){
+}
+
+task clean {
+    delete "servers/gameon-map/apps"
+    delete "servers/gameon-map/lib"
+    delete "servers/gameon-map/logs"
+    delete "servers/gameon-map/workarea"
+    delete "servers/gameon-map/resources"
+}
+
