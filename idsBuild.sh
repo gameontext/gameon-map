@@ -19,8 +19,8 @@ echo Cert `echo $CERT | md5sum`
 cd ..
 
 echo Obtaining docker.
-wget http://security.ubuntu.com/ubuntu/pool/main/a/apparmor/libapparmor1_2.8.95-2430-0ubuntu5.3_amd64.deb -O libapparmor.deb
-sudo dpkg -i libapparmor.deb 
+wget http://security.ubuntu.com/ubuntu/pool/main/a/apparmor/libapparmor1_2.8.95~2430-0ubuntu5.3_amd64.deb -O libapparmor.deb
+sudo dpkg -i libapparmor.deb
 rm libapparmor.deb
 wget https://get.docker.com/builds/Linux/x86_64/docker-1.9.1 --quiet -O docker
 chmod +x docker
@@ -33,9 +33,9 @@ then
   exit -1
 else
   cd map-wlpcfg
-  ../docker build -t gameon-map
+  ../docker build -t gameon-map .
   if [ $? != 0 ]
-  then 
+  then
     echo Docker Build failed.
     exit -2
   else
