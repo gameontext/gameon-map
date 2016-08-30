@@ -3,6 +3,7 @@ apply plugin: 'eclipse'
 buildscript {
     repositories {
         mavenCentral()
+        jcenter()
     }
 
     dependencies {
