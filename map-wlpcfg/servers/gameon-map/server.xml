@@ -50,12 +50,12 @@
 
     <applicationMonitor dropinsEnabled="false" />
 
-    <logging consoleLogLevel="INFO" traceSpecification="*=info:net.wasdev.gameon.*=all:org.gameontext.*=all"/>
+    <logging consoleLogLevel="INFO" traceSpecification="*=info:org.gameontext.*=all"/>
 
     <!-- This is required to prevent the web apps from being lazily loaded -->
     <webContainer deferServletLoad="false"/>
     <!-- The JVM can get confused about available CPU in virtualized envs -->
-    <executor coreThreads="10"  />
+    <executor coreThreads="5"  />
 
     <couchdb id="couchdb"
       jndiName="couchdb/connector"
