@@ -33,7 +33,7 @@ then
   exit -1
 else
   cd map-wlpcfg
-  ../docker build -t gameon-map -f Dockerfile.live .
+  ../docker build -t gameon-map -f Dockerfile .
   if [ $? != 0 ]
   then
     echo Docker Build failed.
