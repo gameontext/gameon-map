@@ -1,8 +1,5 @@
 <server description="Game On! Map Service">
 
-    <!-- Enable API discovery -->
-    <include location="${server.config.dir}/apiDiscovery.xml"/>
-
     <!-- Enable features -->
     <featureManager>
         <feature>localConnector-1.0</feature>
@@ -14,17 +11,15 @@
     </featureManager>
 
     <httpEndpoint host="*" httpPort="-1" httpsPort="9443" id="defaultHttpEndpoint">
-        <accessLogging
-            filepath="${server.output.dir}/logs/http_defaultEndpoint_access.log"
-            logFormat='%h %u %t "%r" %s %b %D %{User-agent}i'>
+        <accessLogging filepath="${server.output.dir}/logs/http_defaultEndpoint_access.log" logFormat="%h %u %t &quot;%r&quot; %s %b %D %{User-agent}i">
         </accessLogging>
     </httpEndpoint>
 
     <keyStore id="defaultKeyStore" password="testOnlyKeystore"/>
     <keyStore id="defaultTrustStore" location="truststore.jks" password="truststore"/>
 
-    <sslDefault sslRef="DefaultSSLSettings" />
-    <ssl id="DefaultSSLSettings" keyStoreRef="defaultKeyStore" trustStoreRef="defaultTrustStore" />
+    <sslDefault sslRef="DefaultSSLSettings"/>
+    <ssl id="DefaultSSLSettings" keyStoreRef="defaultKeyStore" trustStoreRef="defaultTrustStore"/>
 
     <!-- Signed JWT keystore info -->
     <jndiEntry jndiName="jwtKeyStore" value="${server.config.dir}/resources/security/key.jks"/>
@@ -48,28 +43,24 @@
 
     <jndiEntry jndiName="kafkaUrl" value="${env.KAFKA_SERVICE_URL}"/>
 
-    <applicationMonitor dropinsEnabled="false" />
+    <!-- turn off polling -->
+    <config updateTrigger="mbean" />
+    <applicationMonitor dropinsEnabled="false" updateTrigger="mbean"/>
 
-    <logging consoleLogLevel="INFO" traceSpecification="*=info:org.gameontext.*=all"/>
+    <logging traceSpecification="*=info:org.gameontext.*=all"/>
 
     <!-- This is required to prevent the web apps from being lazily loaded -->
     <webContainer deferServletLoad="false"/>
     <!-- The JVM can get confused about available CPU in virtualized envs -->
-    <executor coreThreads="5"  />
+    <executor coreThreads="5"/>
 
-    <couchdb id="couchdb"
-      jndiName="couchdb/connector"
-      libraryRef="couchdb-lib"
-      url="${env.COUCHDB_SERVICE_URL}"
-      username="${env.COUCHDB_USER}"
-      password="${env.COUCHDB_PASSWORD}"/>
+    <couchdb id="couchdb" jndiName="couchdb/connector" libraryRef="couchdb-lib" password="${env.COUCHDB_PASSWORD}" url="${env.COUCHDB_SERVICE_URL}" username="${env.COUCHDB_USER}"/>
 
-    <library id="couchdb-lib" >
-        <fileset dir='${server.config.dir}/lib' />
+    <library id="couchdb-lib">
+        <fileset dir="${server.config.dir}/lib"/>
     </library>
 
     <webApplication contextRoot="/map" id="map-app" location="map-app.war">
       <classloader commonLibraryRef="couchdb-lib"></classloader>
     </webApplication>
-
 </server>
