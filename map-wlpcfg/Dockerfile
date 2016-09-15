@@ -23,11 +23,11 @@ RUN /opt/ibm/wlp/bin/installUtility install  --acceptLicense \
 
 RUN wget -qO- https://github.com/amalgam8/amalgam8/releases/download/v0.3.0/a8sidecar.sh | sh
 
+RUN apt-get update && apt-get install -y curl
+
 ENV SERVERDIRNAME map
 
 COPY ./startup.sh /opt/startup.sh
 ADD ./servers/gameon-map /opt/ibm/wlp/usr/servers/defaultServer/
-
-RUN apt-get update; apt-get install -y curl
 
 CMD ["/opt/startup.sh"]
