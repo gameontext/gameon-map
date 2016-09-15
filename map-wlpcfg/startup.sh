@@ -43,6 +43,7 @@ if [ "$ETCDCTL_ENDPOINT" != "" ]; then
   keytool -genkey -storepass testOnlyKeystore -keypass wefwef -keyalg RSA -alias endeca -keystore security/key.jks -dname CN=rsssl,OU=unknown,O=unknown,L=unknown,ST=unknown,C=CA
   keytool -delete -storepass testOnlyKeystore -alias endeca -keystore security/key.jks
   keytool -v -importkeystore -srcalias 1 -alias 1 -destalias default -noprompt -srcstorepass keystore -deststorepass testOnlyKeystore -srckeypass keystore -destkeypass testOnlyKeystore -srckeystore cert.pkcs12 -srcstoretype PKCS12 -destkeystore security/key.jks -deststoretype JKS
+  cd ${SERVER_PATH}
 
   export COUCHDB_SERVICE_URL=$(etcdctl get /couchdb/url)
   export COUCHDB_USER=$(etcdctl get /couchdb/user)
