@@ -21,6 +21,7 @@ import java.util.List;
 
 import javax.inject.Inject;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
@@ -37,8 +38,8 @@ import javax.ws.rs.core.Response;
 import org.gameontext.map.auth.ResourceAccessPolicy;
 import org.gameontext.map.auth.ResourceAccessPolicyFactory;
 import org.gameontext.map.db.MapRepository;
-import org.gameontext.map.models.RoomInfo;
-import org.gameontext.map.models.Site;
+import org.gameontext.map.model.RoomInfo;
+import org.gameontext.map.model.Site;
 import org.gameontext.signed.SignedRequest;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -79,13 +80,14 @@ public class SitesResource {
         response = Site.class,
         responseContainer = "List")
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Successful"),
-            @ApiResponse(code = 204, message = "No results found")
+            @ApiResponse(code = HttpServletResponse.SC_OK, message = Messages.SUCCESSFUL),
+            @ApiResponse(code = HttpServletResponse.SC_NO_CONTENT, message = Messages.NOT_FOUND)
         })
     @Produces(MediaType.APPLICATION_JSON)
     public Response listAll(
             @ApiParam(value = "filter by owner") @QueryParam("owner") String owner,
             @ApiParam(value = "filter by name") @QueryParam("name") String name) {
+
         String authenticatedId = getAuthenticatedId(AuthMode.UNAUTHENTICATED_OK);
         ResourceAccessPolicy auth = resourceAccessPolicyFactory.createPolicyForUser(authenticatedId);
 
@@ -113,6 +115,11 @@ public class SitesResource {
                 + "connected/adjacent sites. ",
         response = Site.class,
         code = HttpURLConnection.HTTP_CREATED )
+    @ApiResponses(value = {
+            @ApiResponse(code = HttpServletResponse.SC_BAD_REQUEST, message = Messages.BAD_REQUEST),
+            @ApiResponse(code = HttpServletResponse.SC_FORBIDDEN, message = Messages.FORBIDDEN + "create room"),
+            @ApiResponse(code = HttpServletResponse.SC_CONFLICT, message = Messages.CONFLICT)
+        })
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response createRoom(
@@ -134,6 +141,10 @@ public class SitesResource {
     @ApiOperation(value = "Get a specific room",
         notes = "",
         response = Site.class )
+    @ApiResponses(value = {
+            @ApiResponse(code = HttpServletResponse.SC_OK, message = Messages.SUCCESSFUL),
+            @ApiResponse(code = HttpServletResponse.SC_NOT_FOUND, message = Messages.NOT_FOUND)
+        })
     @Produces(MediaType.APPLICATION_JSON)
     public Response getRoom(
             @ApiParam(value = "target room id", required = true) @PathParam("id") String roomId) {
@@ -155,6 +166,13 @@ public class SitesResource {
     @ApiOperation(value = "Update a specific room",
         notes = "",
         response = Site.class )
+    @ApiResponses(value = {
+            @ApiResponse(code = HttpServletResponse.SC_OK, message = Messages.SUCCESSFUL),
+            @ApiResponse(code = HttpServletResponse.SC_BAD_REQUEST, message = Messages.BAD_REQUEST),
+            @ApiResponse(code = HttpServletResponse.SC_FORBIDDEN, message = Messages.FORBIDDEN + "update room"),
+            @ApiResponse(code = HttpServletResponse.SC_NOT_FOUND, message = Messages.NOT_FOUND),
+            @ApiResponse(code = HttpServletResponse.SC_CONFLICT, message = Messages.CONFLICT)
+        })
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response updateRoom(
@@ -176,7 +194,11 @@ public class SitesResource {
         notes = "",
         code = 204 )
     @ApiResponses(value = {
-        @ApiResponse(code = 204, message = "Delete successful")
+        @ApiResponse(code = HttpServletResponse.SC_NO_CONTENT, message = Messages.SUCCESSFUL),
+        @ApiResponse(code = HttpServletResponse.SC_BAD_REQUEST, message = Messages.BAD_REQUEST),
+        @ApiResponse(code = HttpServletResponse.SC_FORBIDDEN, message = Messages.FORBIDDEN + "delete room"),
+        @ApiResponse(code = HttpServletResponse.SC_NOT_FOUND, message = Messages.NOT_FOUND),
+        @ApiResponse(code = HttpServletResponse.SC_CONFLICT, message = Messages.CONFLICT)
     })
     public Response deleteRoom(
             @ApiParam(value = "target room id", required = true) @PathParam("id") String roomId) {

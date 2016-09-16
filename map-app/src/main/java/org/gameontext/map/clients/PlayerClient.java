@@ -13,10 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *******************************************************************************/
-package org.gameontext.map.auth;
+package org.gameontext.map.clients;
 
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.StringReader;
 import java.security.Key;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
@@ -30,25 +31,26 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Level;
 
+import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import javax.enterprise.context.ApplicationScoped;
-import javax.net.ssl.SSLContext;
+import javax.json.Json;
+import javax.json.JsonObject;
+import javax.json.JsonReader;
+import javax.ws.rs.ProcessingException;
 import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.Invocation;
+import javax.ws.rs.client.ResponseProcessingException;
+import javax.ws.rs.client.WebTarget;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.HttpResponseException;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.conn.ssl.NoopHostnameVerifier;
-import org.apache.http.impl.client.BasicResponseHandler;
-import org.apache.http.impl.client.HttpClientBuilder;
+import org.gameontext.map.JsonProvider;
 import org.gameontext.map.Log;
 import org.gameontext.signed.SignedRequestSecretProvider;
 import org.gameontext.signed.TimestampedKey;
-
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
@@ -112,12 +114,30 @@ public class PlayerClient implements SignedRequestSecretProvider {
     String sweepSecret;
 
     /**
-     * Obtain the key we'll use to sign the jwts we use to talk to Player endpoints.
+     * The root target used to define the root path and common query parameters
+     * for all outbound requests to the player service.
      *
-     * @throws IOException
-     *             if there are any issues with the keystore processing.
+     * @see WebTarget
      */
-    private synchronized void getKeyStoreInfo() {
+    WebTarget root;
+
+
+    /**
+     * The {@code @PostConstruct} annotation indicates that this method should
+     * be called immediately after the {@code PlayerClient} is instantiated
+     * with the default no-argument constructor.
+     *
+     * @see PostConstruct
+     * @see ApplicationScoped
+     */
+    @PostConstruct
+    public void initClient() {
+
+        if ( playerLocation == null ) {
+            Log.log(Level.SEVERE, this, "Player client can not be initialized, 'playerUrl' is not defined");
+            throw new IllegalStateException("Unable to initialize PlayerClient");
+        }
+
         try {
             // load up the keystore..
             FileInputStream is = new FileInputStream(keyStore);
@@ -126,7 +146,6 @@ public class PlayerClient implements SignedRequestSecretProvider {
 
             // grab the key we'll use to sign
             signingKey = signingKeystore.getKey(keyStoreAlias, keyStorePW.toCharArray());
-
         } catch (KeyStoreException |
                 NoSuchAlgorithmException |
                 CertificateException |
@@ -134,6 +153,17 @@ public class PlayerClient implements SignedRequestSecretProvider {
                 IOException e) {
             throw new IllegalStateException("Unable to get required keystore: " + keyStore, e);
         }
+
+        Client client = ClientBuilder.newBuilder()
+                                     .property("com.ibm.ws.jaxrs.client.ssl.config", "DefaultSSLSettings")
+                                     .property("com.ibm.ws.jaxrs.client.disableCNCheck", true)
+                                     .build();
+
+        client.register(JsonProvider.class);
+
+        this.root = client.target(playerLocation);
+
+        Log.log(Level.FINER, this, "Player client initialized with {0}", playerLocation);
     }
 
     /**
@@ -146,10 +176,7 @@ public class PlayerClient implements SignedRequestSecretProvider {
      * @return The JWT as a string.
      * @throws IOException
      */
-    private String getClientJwtForId(String playerId) throws IOException{
-        // grab the key if needed
-        if (signingKey == null)
-            getKeyStoreInfo();
+    private String getClientJwtForId(String playerId) {
 
         Claims onwardsClaims = Jwts.claims();
 
@@ -209,7 +236,7 @@ public class PlayerClient implements SignedRequestSecretProvider {
         Log.log(Level.FINER,"Map asking player service for key for id {0}",id);
 
         try {
-            playerSecret = getPlayerSecret(id);
+            playerSecret = getPlayerSecret(id, getClientJwtForId(id));
             newKey.setKey(playerSecret);
         } catch (WebApplicationException e) {
             if ( playerSecret != null ) {
@@ -229,67 +256,45 @@ public class PlayerClient implements SignedRequestSecretProvider {
     }
 
     /**
-     * Obtain sharedSecret for player id.
-     *
+     * Get shared secret for player
      * @param playerId
-     *            The player id
-     * @return The apiKey for the player
+     * @param jwt
+     * @param oldRoomId
+     * @param newRoomId
+     * @return
      */
-    private String getPlayerSecret(String playerId) throws WebApplicationException {
+    public String getPlayerSecret(String playerId, String jwt) {
+        WebTarget target = this.root.path("{playerId}").resolveTemplate("playerId", playerId);
+
+        Log.log(Level.FINER, this, "requesting shared secret using {0}", target.getUri().toString());
 
         try {
-            String jwt = getClientJwtForId(playerId);
-
-            HttpClient client = null;
-            if("development".equals(System.getenv("MAP_PLAYER_MODE"))){
-                System.out.println("Using development mode player connection. (DefaultSSL,NoHostNameValidation)");
-                HttpClientBuilder b = HttpClientBuilder.create();
-
-                //use the default ssl context, we have a trust store configured for player cert.
-                SSLContext sslContext = SSLContext.getDefault();
-
-                //use a very trusting truststore.. (not needed..)
-                //SSLContext sslContext = new SSLContextBuilder().loadTrustMaterial(null, new TrustSelfSignedStrategy()).build();
-
-                b.setSSLContext( sslContext);
-
-                //disable hostname validation, because we'll need to access the cert via a different hostname.
-                b.setSSLHostnameVerifier(NoopHostnameVerifier.INSTANCE);
-
-                client = b.build();
-            }else{
-                client = HttpClientBuilder.create().build();
-            }
-
-            HttpGet hg = new HttpGet(playerLocation+"/"+playerId);
-            hg.addHeader("gameon-jwt", jwt);
-
-            Log.log(Level.FINEST, this, "Building web target: {0}", hg.getURI().toString());
-
-            // Make GET request using the specified target, get result as a
+            // Make PUT request using the specified target, get result as a
             // string containing JSON
-            HttpResponse r = client.execute(hg);
-            String result = new BasicResponseHandler().handleResponse(r);
+            Invocation.Builder builder = target.request(MediaType.APPLICATION_JSON);
+            builder.header("Content-type", "application/json");
+            builder.header("gameon-jwt", jwt);
+            String result = builder.get(String.class);
 
-            // Parse the JSON response, and retrieve the apiKey field value.
-            ObjectMapper om = new ObjectMapper();
-            JsonNode jn = om.readValue(result,JsonNode.class);
+            JsonReader p = Json.createReader(new StringReader(result));
+            JsonObject j = p.readObject();
+            JsonObject creds = j.getJsonObject("credentials");
+            return creds.getString("sharedSecret");
 
-            Log.log(Level.FINER, this, "Got player record for {0} from player service", playerId);
+        } catch (ResponseProcessingException rpe) {
+            Response response = rpe.getResponse();
+            Log.log(Level.FINER, this, "Exception obtaining shared secret for player,  uri: {0} resp code: {1} data: {2}",
+                    target.getUri().toString(),
+                    response.getStatusInfo().getStatusCode() + " " + response.getStatusInfo().getReasonPhrase(),
+                    response.readEntity(String.class));
 
-            JsonNode creds = jn.get("credentials").get("sharedSecret");
-            return creds.textValue();
-
-        } catch (HttpResponseException hre) {
-            Log.log(Level.FINEST, this, "Error communicating with player service: {0} {1}", hre.getStatusCode(), hre.getMessage());
-            throw new WebApplicationException("Error communicating with Player service", Response.Status.INTERNAL_SERVER_ERROR);
-        } catch ( IOException | NoSuchAlgorithmException e ) {
-            Log.log(Level.FINEST, this, "Unexpected exception getting secret from playerService: {0}", e);
-            throw new WebApplicationException("Error communicating with Player service", Response.Status.INTERNAL_SERVER_ERROR);
-        } catch (WebApplicationException wae) {
-            Log.log(Level.FINEST, this, "Error processing response: {0}", wae.getResponse());
-            throw wae;
+            Log.log(Level.FINEST, this, "Exception obtaining shared secret for player", rpe);
+        } catch (ProcessingException | WebApplicationException ex) {
+            Log.log(Level.FINEST, this, "Exception obtaining shared secret for player (" + target.getUri().toString() + ")", ex);
         }
+
+        // Sadly, badness happened while trying to get the shared secret
+        return null;
     }
 
 }

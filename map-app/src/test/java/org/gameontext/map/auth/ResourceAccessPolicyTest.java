@@ -22,7 +22,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import org.gameontext.map.auth.ResourceAccessPolicy;
 import org.gameontext.map.auth.ResourceAccessPolicyFactory;
 import org.gameontext.map.auth.SiteSwapPermission;
-import org.gameontext.map.models.ConnectionDetails;
+import org.gameontext.map.model.ConnectionDetails;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;

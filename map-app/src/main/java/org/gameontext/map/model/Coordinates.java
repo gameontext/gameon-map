@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *******************************************************************************/
-package org.gameontext.map.models;
+package org.gameontext.map.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -39,6 +39,12 @@ public class Coordinates {
         this.y = y;
     }
 
+    @JsonIgnore
+    public Coordinates(Coordinates copy) {
+        this.x = copy.x;
+        this.y = copy.y;
+    }
+
     public int getX() {
         return x;
     }
@@ -55,13 +61,19 @@ public class Coordinates {
         this.y = y;
     }
 
+    @JsonIgnore
+    public void diagonalShift(int index) {
+        x = x >= 0 ? x + index : x - index;
+        y = y >= 0 ? y + index : y - index;
+    }
+
     @Override
     public String toString()  {
       StringBuilder sb = new StringBuilder();
-      sb.append("class Coordinates {\n");
-      sb.append("  x: ").append(x).append("\n");
-      sb.append("  y: ").append(y).append("\n");
-      sb.append("}\n");
+      sb.append("{");
+      sb.append(" x: ").append(x).append(",");
+      sb.append(" y: ").append(y).append(" ");
+      sb.append("}");
       return sb.toString();
     }
 
@@ -85,5 +97,10 @@ public class Coordinates {
 
         Coordinates other = (Coordinates) obj;
         return (x == other.x && y == other.y);
+    }
+
+    @JsonIgnore
+    public boolean equals(int x, int y) {
+        return this.x == x && this.y == y;
     }
 }

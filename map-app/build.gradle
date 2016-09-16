@@ -1,5 +1,6 @@
 apply plugin: 'war'
 apply plugin: 'eclipse-wtp'
+apply plugin: 'jacoco'
 
 sourceCompatibility = 1.8
 
@@ -26,14 +27,9 @@ dependencies {
     providedCompile 'javax.inject:javax.inject:1'
     providedCompile 'javax.enterprise.concurrent:javax.enterprise.concurrent-api:1.0'
     providedCompile 'javax.enterprise:cdi-api:1.2'
-    providedCompile 'io.swagger:swagger-annotations:1.5.0'
+    providedCompile 'io.swagger:swagger-annotations:1.5.10'
 
-     //httpclient for making the request (temporary)
-     compile ('org.apache.httpcomponents:httpclient:4.5.2') {
-        exclude group: 'com.fasterxml.jackson'
-     }
-
-    // couchdb dependencies
+    // couchdb dependencies -- shared library
     couchdb ('org.ektorp:org.ektorp:1.4.2') {
         exclude group: 'org.slf4j'
     }
@@ -45,9 +41,11 @@ dependencies {
     couchdb 'org.slf4j:jcl-over-slf4j:1.7.13'
 
     providedCompile configurations.couchdb
-    
+
     // kafka client =)
     compile 'org.apache.kafka:kafka-clients:0.9.0.1'
+
+    compile 'com.netflix.hystrix:hystrix-core:1.5.5'
 
     jmockit 'org.jmockit:jmockit:1.22'
     testCompile 'junit:junit:4.12'
@@ -58,6 +56,10 @@ dependencies {
 
 test {
    jvmArgs "-javaagent:${configurations.jmockit.singleFile.absolutePath}"
+
+   jacoco {
+     excludes = ["*\$Impl_*"]
+   }
 }
 
 sourceSets {
@@ -91,7 +93,7 @@ eclipse.classpath.file {
     	Node testSrc = node.find {it.@path == "src/test/java"}
   		testSrc.@output ="bin/test"
 	}
-	 
+
     whenMerged { classpath ->
     	def genSrc = new org.gradle.plugins.ide.eclipse.model.SourceFolder('src/endToEnd/java', 'bin/endToEnd')
   		classpath.entries.add(genSrc)
