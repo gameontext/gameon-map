@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *******************************************************************************/
-package org.gameontext.map;
+package org.gameontext.map.clients;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Properties;
@@ -28,7 +28,8 @@ import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.KafkaException;
-import org.gameontext.map.models.Site;
+import org.gameontext.map.Log;
+import org.gameontext.map.model.Site;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;

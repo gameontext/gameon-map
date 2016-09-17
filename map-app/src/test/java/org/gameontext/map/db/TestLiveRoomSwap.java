@@ -40,11 +40,11 @@ import org.gameontext.map.auth.NoAccessPolicy;
 import org.gameontext.map.auth.SiteSwapPermission;
 import org.gameontext.map.db.CouchInjector;
 import org.gameontext.map.db.MapRepository;
-import org.gameontext.map.models.ConnectionDetails;
-import org.gameontext.map.models.Coordinates;
-import org.gameontext.map.models.Doors;
-import org.gameontext.map.models.RoomInfo;
-import org.gameontext.map.models.Site;
+import org.gameontext.map.model.ConnectionDetails;
+import org.gameontext.map.model.Coordinates;
+import org.gameontext.map.model.Doors;
+import org.gameontext.map.model.RoomInfo;
+import org.gameontext.map.model.Site;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -56,7 +56,7 @@ import org.junit.rules.TestName;
 import com.fasterxml.jackson.databind.ObjectWriter;
 
 @Ignore
-public class TestRoomSwap {
+public class TestLiveRoomSwap {
 
     public class RoomIdPair {
 

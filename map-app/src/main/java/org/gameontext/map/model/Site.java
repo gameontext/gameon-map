@@ -13,10 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *******************************************************************************/
-package org.gameontext.map.models;
+package org.gameontext.map.model;
+
+import java.time.Instant;
+import java.time.format.DateTimeFormatter;
 
 import org.ektorp.support.TypeDiscriminator;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -53,13 +57,11 @@ public class Site {
     private String rev;
 
     /** Descriptive room info */
-    @ApiModelProperty(
-            required = true)
+    @ApiModelProperty(required = true)
     private RoomInfo info;
 
     /** Exit bindings: the other rooms' doors */
-    @ApiModelProperty(
-            required = true)
+    @ApiModelProperty(required = true)
     private Exits exits;
 
     /** Owner of the room */
@@ -68,17 +70,35 @@ public class Site {
             required = true)
     private String owner;
 
+    /** Date site assigned */
+    @ApiModelProperty(
+            value="Date site created in ISO-8601 instant format",
+            example = "2011-12-03T10:15:30Z",
+            name = "created_on",
+            required = false)
+    private String createdOn;
+
+    /** Date site assigned */
+    @ApiModelProperty(value="Date room assigned in ISO-8601 instant format",
+            example = "2011-12-03T10:15:30Z",
+            name = "assigned_on",
+            required = false)
+    private String assignedOn;
+
     @TypeDiscriminator
     private Coordinates coord;
 
     @ApiModelProperty(hidden = true)
     private String type;
 
-    public Site() {}
+    public Site() {
+        this.createdOn = DateTimeFormatter.ISO_INSTANT.format(Instant.now());
+    }
 
     public Site(int x, int y) {
         type = "placeholder";
         coord = new Coordinates(x, y);
+        this.createdOn = DateTimeFormatter.ISO_INSTANT.format(Instant.now());
     }
 
     public String getId() {
@@ -107,6 +127,7 @@ public class Site {
     }
     public void setInfo(RoomInfo info) {
         this.info = info;
+        this.assignedOn = info == null ? null : DateTimeFormatter.ISO_INSTANT.format(Instant.now());
     }
 
     public Exits getExits() {
@@ -129,17 +150,52 @@ public class Site {
     public void setType(String type) {
         this.type = type;
     }
+
+    public String getCreatedOn() {
+        return createdOn;
+    }
+
+    public void setCreatedOn(String createdOn) {
+        this.createdOn = createdOn;
+    }
+
+    @JsonIgnore
+    public Instant getCreatedInstant() {
+        if ( createdOn == null )
+            return null;
+
+        return Instant.from(DateTimeFormatter.ISO_INSTANT.parse(createdOn));
+    }
+
+    public String getAssignedOn() {
+        return assignedOn;
+    }
+
+    public void setAssignedOn(String assignedOn) {
+        this.assignedOn = assignedOn;
+    }
+
+    @JsonIgnore
+    public Instant getAssignedInstant() {
+        if ( assignedOn == null )
+            return null;
+
+        return Instant.from(DateTimeFormatter.ISO_INSTANT.parse(assignedOn));
+    }
+
     @Override
     public String toString()  {
       StringBuilder sb = new StringBuilder();
-      sb.append("class Site {\n");
-      sb.append("  _id: ").append(id).append("\n");
-      sb.append("  _rev: ").append(rev).append("\n");
-      sb.append("  type: ").append(type).append("\n");
-      sb.append("  coord: ").append(coord).append("\n");
-      sb.append("  info: ").append(info).append("\n");
+      sb.append("{");
+      sb.append("  _id: \"").append(id).append("\",\n");
+      sb.append("  _rev: \"").append(rev).append("\",\n");
+      sb.append("  createdOn: \"").append(createdOn).append("\",\n");
+      sb.append("  assignedOn: \"").append(assignedOn).append("\",\n");
+      sb.append("  type: \"").append(type).append("\",\n");
+      sb.append("  coord: ").append(coord).append(",\n");
+      sb.append("  info: ").append(info).append(",\n");
       sb.append("  exits: ").append(exits).append("\n");
-      sb.append("}\n");
+      sb.append("}");
       return sb.toString();
     }
 

@@ -17,9 +17,9 @@ package org.gameontext.map.model;
 
 import static org.junit.Assert.assertEquals;
 
-import org.gameontext.map.models.Exit;
-import org.gameontext.map.models.RoomInfo;
-import org.gameontext.map.models.Site;
+import org.gameontext.map.model.Exit;
+import org.gameontext.map.model.RoomInfo;
+import org.gameontext.map.model.Site;
 import org.junit.Test;
 
 public class ExitTest {
