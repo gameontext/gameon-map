@@ -13,15 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *******************************************************************************/
-package org.gameontext.map.models;
+package org.gameontext.map.model;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
+
 /**
  * Room-centric view of an established path.
  */
-@io.swagger.annotations.ApiModel(
+@ApiModel(
         description = "When a room is placed in the map, paths are created between it and other rooms. "
                 + "Each exit provides the door and URL required for the player to traverse the path "
                 + "to the target room.")
@@ -35,7 +38,7 @@ public class Exits {
     private Exit u = null;
     private Exit d = null;
 
-    @io.swagger.annotations.ApiModelProperty(
+    @ApiModelProperty(
             required = false)
     public Exit getN() {
         return n;
@@ -45,7 +48,7 @@ public class Exits {
         this.n = n;
     }
 
-    @io.swagger.annotations.ApiModelProperty(
+    @ApiModelProperty(
             required = false)
     public Exit getS() {
         return s;
@@ -55,7 +58,7 @@ public class Exits {
         this.s = s;
     }
 
-    @io.swagger.annotations.ApiModelProperty(
+    @ApiModelProperty(
             required = false)
     public Exit getE() {
         return e;
@@ -65,7 +68,7 @@ public class Exits {
         this.e = e;
     }
 
-    @io.swagger.annotations.ApiModelProperty(
+    @ApiModelProperty(
             required = false)
     public Exit getW() {
         return w;
@@ -75,7 +78,7 @@ public class Exits {
         this.w = w;
     }
 
-    @io.swagger.annotations.ApiModelProperty(
+    @ApiModelProperty(
             required = false)
     public Exit getU() {
         return u;
@@ -85,7 +88,7 @@ public class Exits {
         this.u = u;
     }
 
-    @io.swagger.annotations.ApiModelProperty(
+    @ApiModelProperty(
             required = false)
     public Exit getD() {
         return d;
@@ -98,14 +101,14 @@ public class Exits {
     @Override
     public String toString()  {
       StringBuilder sb = new StringBuilder();
-      sb.append("class Exits {\n");
-      sb.append("  n: ").append(n).append("\n");
-      sb.append("  w: ").append(w).append("\n");
-      sb.append("  s: ").append(s).append("\n");
-      sb.append("  e: ").append(e).append("\n");
-      sb.append("  u: ").append(u).append("\n");
-      sb.append("  d: ").append(d).append("\n");
-      sb.append("}\n");
+      sb.append("{");
+      sb.append(" n: ").append(n).append(", ");
+      sb.append(" w: ").append(w).append(", ");
+      sb.append(" s: ").append(s).append(", ");
+      sb.append(" e: ").append(e).append(", ");
+      sb.append(" u: ").append(u).append(", ");
+      sb.append(" d: ").append(d);
+      sb.append("}");
       return sb.toString();
     }
 

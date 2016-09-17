@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *******************************************************************************/
-package org.gameontext.map.models;
+package org.gameontext.map.model;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -25,7 +25,7 @@ import io.swagger.annotations.ApiModelProperty;
         description = "Mutable information: descriptive elements, service URL, etc.")
 @JsonInclude(Include.NON_EMPTY)
 public class RoomInfo {
-    
+
     /** name of room (short / url-friendly) */
     private String name;
 
@@ -40,7 +40,7 @@ public class RoomInfo {
 
     /** Optional door descriptions */
     private Doors doors;
-    
+
     @ApiModelProperty(
             value = "Short/Terse name of the target room, must be unique within the owner's rooms",
             example = "First Room",
@@ -94,13 +94,13 @@ public class RoomInfo {
     @Override
     public String toString()  {
       StringBuilder sb = new StringBuilder();
-      sb.append("class RoomInfo {\n");
-      sb.append("  name: ").append(name).append("\n");
-      sb.append("  fullName: ").append(fullName).append("\n");
-      sb.append("  description: ").append(description).append("\n");
-      sb.append("  doors: ").append(doors).append("\n");
-      sb.append("  connectionDetails: ").append(connectionDetails).append("\n");
-      sb.append("}\n");
+      sb.append("{");
+      sb.append("  name: \"").append(name).append("\",");
+      sb.append("  fullName: \"").append(fullName).append("\",");
+      sb.append("  description: \"").append(description).append("\",");
+      sb.append("  doors: ").append(doors).append(",");
+      sb.append("  connectionDetails: ").append(connectionDetails);
+      sb.append("}");
       return sb.toString();
     }
 }

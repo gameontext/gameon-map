@@ -19,14 +19,14 @@ import java.util.Collections;
 import java.util.List;
 
 import org.ektorp.CouchDbConnector;
-import org.gameontext.map.Kafka;
 import org.gameontext.map.MapModificationException;
 import org.gameontext.map.auth.AccessCertainResourcesPolicy;
 import org.gameontext.map.auth.SiteSwapPermission;
-import org.gameontext.map.models.Coordinates;
-import org.gameontext.map.models.Site;
-import org.gameontext.map.models.SiteCoordinates;
-import org.gameontext.map.models.SiteSwap;
+import org.gameontext.map.clients.Kafka;
+import org.gameontext.map.model.Coordinates;
+import org.gameontext.map.model.Site;
+import org.gameontext.map.model.SiteCoordinates;
+import org.gameontext.map.model.SiteSwap;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
@@ -39,7 +39,7 @@ import mockit.Expectations;
 import mockit.Mocked;
 import mockit.Verifications;
 
-public class TestMockedRoomSwap {
+public class SiteSwapMockedTest {
 
     private static final AccessCertainResourcesPolicy swapRoomsAccessPolicy = new AccessCertainResourcesPolicy(Collections.singleton(SiteSwapPermission.class));
     private static final String owner = "testOwner";
