@@ -14,10 +14,10 @@ import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
-import org.gameontext.map.models.ConnectionDetails;
-import org.gameontext.map.models.Doors;
-import org.gameontext.map.models.RoomInfo;
-import org.gameontext.map.models.Site;
+import org.gameontext.map.model.ConnectionDetails;
+import org.gameontext.map.model.Doors;
+import org.gameontext.map.model.RoomInfo;
+import org.gameontext.map.model.Site;
 import org.gameontext.signed.SignedClientRequestFilter;
 import org.junit.After;
 import org.junit.Before;
@@ -29,7 +29,6 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 
-@Ignore
 public class TestRoomCreate {
 
     private static Collection<String> sitesToDelete;
