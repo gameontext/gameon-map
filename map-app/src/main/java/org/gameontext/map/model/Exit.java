@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *******************************************************************************/
-package org.gameontext.map.models;
+package org.gameontext.map.model;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -155,12 +155,12 @@ public class Exit {
     @Override
     public String toString()  {
       StringBuilder sb = new StringBuilder();
-      sb.append("class Exit {\n");
-      sb.append("  id: ").append(id).append("\n");
-      sb.append("  name: ").append(name).append("\n");
-      sb.append("  door: ").append(door).append("\n");
-      sb.append("  connDetails: ").append(connectionDetails).append("\n");
-      sb.append("}\n");
+      sb.append("{");
+      sb.append(" id: \"").append(id).append("\",");
+      sb.append(" name: \"").append(name).append("\",");
+      sb.append(" door: \"").append(door).append("\",");
+      sb.append(" connDetails: ").append(connectionDetails);
+      sb.append("}");
       return sb.toString();
     }
 

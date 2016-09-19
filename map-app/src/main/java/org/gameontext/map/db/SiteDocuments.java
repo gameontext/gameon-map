@@ -31,13 +31,13 @@ import org.ektorp.ViewQuery;
 import org.ektorp.ViewResult;
 import org.gameontext.map.Log;
 import org.gameontext.map.MapModificationException;
-import org.gameontext.map.models.Coordinates;
-import org.gameontext.map.models.Exit;
-import org.gameontext.map.models.Exits;
-import org.gameontext.map.models.RoomInfo;
-import org.gameontext.map.models.Site;
-import org.gameontext.map.models.SiteCoordinates;
-import org.gameontext.map.models.SiteSwap;
+import org.gameontext.map.model.Coordinates;
+import org.gameontext.map.model.Exit;
+import org.gameontext.map.model.Exits;
+import org.gameontext.map.model.RoomInfo;
+import org.gameontext.map.model.Site;
+import org.gameontext.map.model.SiteCoordinates;
+import org.gameontext.map.model.SiteSwap;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -154,7 +154,6 @@ public class SiteDocuments {
                 .includeDocs(true);
     }
 
-
     /**
      * CREATE ROOM
      * @param owner Room/Suite owner
@@ -164,14 +163,6 @@ public class SiteDocuments {
      */
     public Site connectRoom(String owner, RoomInfo newRoom) {
         Log.mapOperations(Level.FINE, this, "Add new room: {0}", newRoom);
-
-        // TODO: Revisit this when we have groups/organizations.. *sigh*
-
-        if ( owner == null ) {
-            throw new MapModificationException(Response.Status.FORBIDDEN,
-                    "Room could not be created",
-                    "Owner was not specified (unauthenticated)");
-        }
 
         // Check for duplicate owner/room name: sloppy room registration
         // with no pre-check would land here potentially often.
@@ -197,8 +188,54 @@ public class SiteDocuments {
 
         // Set and return the response!
         candidateSite.setExits(exits);
+
         return candidateSite;
     }
+
+    /**
+     * CREATE ROOM with a given ID.
+     * @param owner Room/Suite owner
+     * @param newRoom Room or Suite to add
+     * @return Wired site containing the room or Suite
+     * @throws MapModificationException
+     */
+    public Site connectRoomWithId(String owner, String id, RoomInfo newRoom) {
+        Log.mapOperations(Level.FINE, this, "Add new room with id {0}", newRoom);
+
+        // Check for duplicate owner/room name: sloppy room registration
+        // with no pre-check would land here potentially often.
+        List<JsonNode> rooms = listSites(owner, newRoom.getName());
+        if ( rooms.size() > 0 ) {
+            throw new MapModificationException(Response.Status.CONFLICT,
+                    "Unable to place room in the map",
+                    "A room with this name ("+newRoom.getName()+") already exists for owner ("+owner+")");
+        }
+
+
+        Site candidateSite = new Site();
+        candidateSite.setId(id);
+        candidateSite.setOwner(owner);
+        candidateSite.setInfo(newRoom);
+        candidateSite.setType("room");
+
+        // use last empty site to find periphery of map
+        Site emptySite = getLastEmptySite();
+        candidateSite.setCoord(findEmptyCoordinates(emptySite.getCoord()));
+
+        db.create(candidateSite);
+
+        // Now we need to prep the response (with existing exits)..
+        Exits exits = getExits(candidateSite.getCoord());
+
+        // Make sure we have new empty neighbors (still may be on an island .. )
+        createEmptyNeighbors(candidateSite.getCoord(), exits);
+
+        // Set and return the response!
+        candidateSite.setExits(exits);
+
+        return candidateSite;
+    }
+
 
     /**
      * RETRIEVE
@@ -278,7 +315,7 @@ public class SiteDocuments {
      * SWAP ROOMS
      * @param id1 First site in swap
      * @param id2 Second site in swap
-     * @param room2Id
+     * @return Collection containing new site information
      */
     public Collection<Site> swapRooms(String id1, String id2) {
         Log.mapOperations(Level.FINE, this, "Swap rooms: {0} {1}", id1, id2);
@@ -300,10 +337,16 @@ public class SiteDocuments {
         Collection<Site> sites = new ArrayList<Site>();
         sites.add(site1);
         sites.add(site2);
+
         db.executeBulk(sites);
         return sites;
     }
 
+    /**
+     * SWAP SITES
+     * @param siteSwap ids and coordinates for sites to swap
+     * @return Collection containing new site information
+     */
     public List<Site> swapSites(SiteSwap siteSwap) {
         Log.mapOperations(Level.FINE, this, "Swap rooms: {0}", siteSwap);
 
@@ -332,7 +375,9 @@ public class SiteDocuments {
         List<Site> sites = new ArrayList<Site>();
         sites.add(site1);
         sites.add(site2);
+
         db.executeBulk(sites);
+        // checking...
         return sites;
     }
 
@@ -368,7 +413,7 @@ public class SiteDocuments {
      *
      * @param x
      * @param y
-     * @return List of sites located at x,y in the map (hoepfully only one!)
+     * @return List of sites located at x,y in the map (hopefully only one!)
      */
     protected List<Site> getByCoordinate(int x, int y) {
         ViewQuery getByCoordinate = new ViewQuery()
@@ -448,9 +493,7 @@ public class SiteDocuments {
         }
 
         Log.mapOperations(Level.FINEST, this, "Added exit: {0} {1} {2}",
-                mapper.valueToTree(targetSite.getCoord()),
-                mapper.valueToTree(exit),
-                mapper.valueToTree(exits));
+                targetSite.getCoord(), exit, exits);
     }
 
     protected Site assignEmptySite(String owner, RoomInfo newRoom) {
@@ -498,6 +541,24 @@ public class SiteDocuments {
     }
 
     /**
+     * @return a single empty site selected in reverse order
+     */
+    protected Site getLastEmptySite() {
+        ViewQuery oneEmptySite = new ViewQuery()
+                .designDocId(DESIGN_DOC)
+                .viewName("empty_sites")
+                .descending(true)
+                .limit(1);
+
+        List<Site> sites = db.queryView(oneEmptySite, Site.class);
+        if ( sites.isEmpty() )
+            return null;
+        else
+            return sites.get(0);
+    }
+
+
+    /**
      * @return a single empty site
      */
     protected Site getEmptySite() {
@@ -526,21 +587,42 @@ public class SiteDocuments {
      */
     protected Site createEmptySite(int x, int y) {
         Site newSite = new Site(x, y);
+        newSite.setType("empty");
+        newSite.setCoord(findEmptyCoordinates(newSite.getCoord()));
         db.create(newSite);
 
-        List<Site> emptySites = getByCoordinate(x, y);
-        if ( emptySites.size() > 1 ) {
-            // Duplicate.. remove the one we've added.
-            db.delete(newSite);
-            emptySites.remove(newSite);
-
-            newSite = emptySites.get(0);
+        if ( newSite.getCoord().equals(x, y) ) {
+            return newSite;
         } else {
-            newSite.setType("empty");
-            db.update(newSite);
+            // returning the x, y neighbor is more important than the empty site
+            return getByCoordinate(x, y).get(0);
+        }
+    }
+
+    protected Coordinates findEmptyCoordinates(Coordinates c) {
+        Coordinates empty = new Coordinates(c);
+
+        List<Site> emptySites = getByCoordinate(empty.getX(), empty.getY());
+        while ( emptySites.size() > 1 ) {
+            // rather than delete, see if we can just move it over, and place it there.
+            Exits exits = getExits(empty);
+
+            if ( exits.getN() == null && empty.getY() < Integer.MAX_VALUE ) {
+                empty.setY(empty.getY()+1);
+            } else if ( exits.getS() == null && empty.getY() > Integer.MIN_VALUE  ) {
+                empty.setY(empty.getY()-1);
+            } else if ( exits.getE() == null  && empty.getX() < Integer.MAX_VALUE ) {
+                empty.setX(empty.getX()+1);
+            } else if ( exits.getW() == null  && empty.getX() > Integer.MIN_VALUE ) {
+                empty.setX(empty.getX()-1);
+            } else {
+                empty.diagonalShift(1); // move towards outside...
+            }
+
+            emptySites = getByCoordinate(empty.getX(), empty.getY());
         }
 
-        return newSite;
+        return empty;
     }
 
     /**

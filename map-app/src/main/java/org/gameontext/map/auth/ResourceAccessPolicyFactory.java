@@ -21,7 +21,7 @@ import java.util.Collection;
 import javax.annotation.Resource;
 import javax.enterprise.context.ApplicationScoped;
 
-import org.gameontext.map.models.ConnectionDetails;
+import org.gameontext.map.model.ConnectionDetails;
 
 @ApplicationScoped
 public class ResourceAccessPolicyFactory {

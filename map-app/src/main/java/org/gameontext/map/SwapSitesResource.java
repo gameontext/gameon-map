@@ -20,6 +20,8 @@ import java.util.Collection;
 
 import javax.inject.Inject;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.ws.rs.Consumes;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
@@ -32,13 +34,15 @@ import javax.ws.rs.core.Response;
 import org.gameontext.map.auth.ResourceAccessPolicy;
 import org.gameontext.map.auth.ResourceAccessPolicyFactory;
 import org.gameontext.map.db.MapRepository;
-import org.gameontext.map.models.Site;
-import org.gameontext.map.models.SiteSwap;
+import org.gameontext.map.model.Site;
+import org.gameontext.map.model.SiteSwap;
 import org.gameontext.signed.SignedRequest;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
+import io.swagger.annotations.ApiResponse;
+import io.swagger.annotations.ApiResponses;
 
 /**
  * Root of CRUD operations on or with sites
@@ -69,6 +73,7 @@ public class SwapSitesResource {
     @Produces(MediaType.APPLICATION_JSON)
     public Response swapSites(@QueryParam("room1Id") String room1Id,
             @QueryParam("room2Id") String room2Id) {
+
         String authenticatedId = getAuthenticatedId(AuthMode.AUTHENTICATION_REQUIRED);
         ResourceAccessPolicy auth = resourceAccessPolicyFactory.createPolicyForUser(authenticatedId);
 
@@ -88,9 +93,18 @@ public class SwapSitesResource {
         response = Site.class,
         responseContainer = "List",
         code = HttpURLConnection.HTTP_OK )
+    @ApiResponses(value = {
+            @ApiResponse(code = HttpServletResponse.SC_OK, message = Messages.SUCCESSFUL),
+            @ApiResponse(code = HttpServletResponse.SC_BAD_REQUEST, message = Messages.BAD_REQUEST),
+            @ApiResponse(code = HttpServletResponse.SC_FORBIDDEN, message = Messages.FORBIDDEN + "swap rooms"),
+            @ApiResponse(code = HttpServletResponse.SC_NOT_FOUND, message = Messages.NOT_FOUND),
+            @ApiResponse(code = HttpServletResponse.SC_CONFLICT, message = Messages.CONFLICT)
+        })
+    @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response swapSites(
             @ApiParam(value = "Sites to swap", required = true) SiteSwap siteSwap) {
+
         String authenticatedId = getAuthenticatedId(AuthMode.AUTHENTICATION_REQUIRED);
         ResourceAccessPolicy auth = resourceAccessPolicyFactory.createPolicyForUser(authenticatedId);
 
