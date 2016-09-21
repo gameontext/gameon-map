@@ -1,4 +1,4 @@
-package org.gameontext.map.models;
+package org.gameontext.map.model;
 
 import io.swagger.annotations.ApiModelProperty;
 

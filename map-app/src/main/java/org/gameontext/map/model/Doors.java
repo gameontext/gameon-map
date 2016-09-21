@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *******************************************************************************/
-package org.gameontext.map.models;
+package org.gameontext.map.model;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -131,14 +131,14 @@ public class Doors {
     @Override
     public String toString()  {
       StringBuilder sb = new StringBuilder();
-      sb.append("class Doors {\n");
-      sb.append("  n: ").append(n).append("\n");
-      sb.append("  w: ").append(w).append("\n");
-      sb.append("  s: ").append(s).append("\n");
-      sb.append("  e: ").append(e).append("\n");
-      sb.append("  u: ").append(u).append("\n");
-      sb.append("  d: ").append(d).append("\n");
-      sb.append("}\n");
+      sb.append("{\",");
+      sb.append(" n: \"").append(n).append("\",");
+      sb.append(" w: \"").append(w).append("\",");
+      sb.append(" s: \"").append(s).append("\",");
+      sb.append(" e: \"").append(e).append("\",");
+      sb.append(" u: \"").append(u).append("\",");
+      sb.append(" d: \"").append(d).append("\"");
+      sb.append("}");
       return sb.toString();
     }
 }
