@@ -33,8 +33,6 @@ import org.gameontext.map.MapModificationException;
 import org.gameontext.map.auth.ResourceAccessPolicy;
 import org.gameontext.map.auth.SiteSwapPermission;
 import org.gameontext.map.model.ConnectionDetails;
-import org.gameontext.map.model.Coordinates;
-import org.gameontext.map.model.Exits;
 import org.gameontext.map.model.RoomInfo;
 import org.gameontext.map.model.Site;
 import org.gameontext.map.model.SiteSwap;
@@ -67,10 +65,7 @@ public class MapRepository {
         try {
             // Ensure required views exist
             sites = new SiteDocuments(db);
-
-            // Make sure that first room has neighbors (should always do, but.. )
-            Exits exits = new Exits();
-            sites.createEmptyNeighbors(new Coordinates(0, 0), exits);
+            sites.postConstruct();
         } catch (Exception e) {
             // Log the warning, and then re-throw to prevent this class from going into service,
             // which will prevent injection to the Health check, which will make the app stay down.
@@ -143,7 +138,8 @@ public class MapRepository {
         Site result = sites.connectRoom(user, newRoom);
 
         //publish event
-        kafka.publishSiteEvent(SiteEvent.CREATE, result);
+        if ( kafka != null )
+            kafka.publishSiteEvent(SiteEvent.CREATE, result);
 
         return result;
     }
@@ -223,7 +219,8 @@ public class MapRepository {
         Site result = sites.updateRoom(authenticatedId, id, roomInfo);
 
         //publish event.
-        kafka.publishSiteEvent(SiteEvent.UPDATE, result);
+        if ( kafka != null )
+            kafka.publishSiteEvent(SiteEvent.UPDATE, result);
 
         return result;
     }
@@ -244,7 +241,8 @@ public class MapRepository {
         Collection<Site> results = sites.swapRooms(room1Id, room2Id);
 
         //publish events
-        results.forEach(site -> kafka.publishSiteEvent(SiteEvent.UPDATE, site));
+        if ( kafka != null )
+            results.forEach(site -> kafka.publishSiteEvent(SiteEvent.UPDATE, site));
 
         return results;
     }
@@ -260,7 +258,8 @@ public class MapRepository {
         List<Site> results = sites.swapSites(siteSwap);
 
         //publish events
-        results.forEach(site -> kafka.publishSiteEvent(SiteEvent.UPDATE, site));
+        if ( kafka != null )
+            results.forEach(site -> kafka.publishSiteEvent(SiteEvent.UPDATE, site));
 
         return results;
     }
@@ -279,7 +278,9 @@ public class MapRepository {
         //we don't have a full site to send, but notifying by id is fine.
         Site deleted = new Site();
         deleted.setId(id);
-        kafka.publishSiteEvent(SiteEvent.DELETE, deleted);
+
+        if ( kafka != null )
+            kafka.publishSiteEvent(SiteEvent.DELETE, deleted);
 
     }
 
@@ -288,7 +289,7 @@ public class MapRepository {
     }
 
     private boolean stripSensitiveData(ResourceAccessPolicy accessPolicy, String owner) {
-        return !accessPolicy.isAuthorized(owner, ConnectionDetails.class);
+        return accessPolicy == null || !accessPolicy.isAuthorized(owner, ConnectionDetails.class);
     }
 
 }

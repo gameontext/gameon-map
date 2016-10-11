@@ -63,10 +63,21 @@ public class SiteSwapMockedTest {
     public void before() {
         System.out.println("\n====== " + test.getMethodName());
 
+        // instance only for mocking.
+        final SiteDocuments anyInstance = new SiteDocuments(null);
+
+        new Expectations(SiteDocuments.class) {{
+            anyInstance.getByCoordinate(0, 1); result = new Site(0, 1);
+            anyInstance.getByCoordinate(0, -1); result = new Site(0, -1);
+            anyInstance.getByCoordinate(1, 0); result = new Site(1, 0);
+            anyInstance.getByCoordinate(-1, 0); result = new Site(-1, 0);
+        }};
+
         repo = new MapRepository();
         repo.db = dbc;
         repo.kafka = kafka;
         repo.postConstruct();
+
         debugWriter = repo.mapper.writerWithDefaultPrettyPrinter();
 
         site1 = new Site(1, 1);
@@ -124,6 +135,7 @@ public class SiteSwapMockedTest {
         } catch (MapModificationException ex){
             e = ex;
         }
+
         Assert.assertNotNull(e);
         String expectedMessage = "Unable to swap sites";
         String actualMessage = e.getMessage();
