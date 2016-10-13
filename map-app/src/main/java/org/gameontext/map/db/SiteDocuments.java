@@ -94,6 +94,12 @@ public class SiteDocuments {
         mapper = new ObjectMapper();
     }
 
+    protected void postConstruct() {
+        // Make sure that first room has neighbors (should always do, but.. )
+        Exits exits = new Exits();
+        createEmptyNeighbors(new Coordinates(0, 0), exits);
+    }
+
     /**
      * LIST
      * @param owner Owner of sites (optional)
@@ -220,7 +226,7 @@ public class SiteDocuments {
 
         // use last empty site to find periphery of map
         Site emptySite = getLastEmptySite();
-        candidateSite.setCoord(findEmptyCoordinates(emptySite.getCoord()));
+        candidateSite.setCoord(findUnusedCoordinate(emptySite.getCoord()));
 
         db.create(candidateSite);
 
@@ -328,6 +334,7 @@ public class SiteDocuments {
                     "Unable to swap rooms",
                     "Cannot swap a room with itself. Room id provided is " + id1);
         }
+
         site1.setExits(null);
         site2.setExits(null);
         Coordinates site1CoordsOld = site1.getCoord();
@@ -423,7 +430,11 @@ public class SiteDocuments {
                 .includeDocs(true)
                 .key(ComplexKey.of(x, y));
 
-        return db.queryView(getByCoordinate, Site.class);
+        List<Site> list = db.queryView(getByCoordinate, Site.class);
+        Log.mapOperations(Level.FINEST, this, "Get by coordinate: {0},{1}: {2}", x, y, list);
+
+        // protect caller from null
+        return ( list == null ) ? Collections.emptyList() : list;
     }
 
 
@@ -575,7 +586,17 @@ public class SiteDocuments {
     }
 
     protected Site createEmptySite(Coordinates coord) {
-        return createEmptySite(coord.getX(), coord.getY());
+        Coordinates emptyCoord = findUnusedCoordinate(coord);
+
+        if ( emptyCoord.equals(coord) ) {
+            Site newSite = new Site();
+            newSite.setType("empty");
+            newSite.setCoord(emptyCoord);
+            db.create(newSite);
+        }
+
+        // return the x, y neighbor (in case of conflict)
+        return getByCoordinate(coord.getX(), coord.getY()).get(0);
     }
 
     /**
@@ -586,43 +607,33 @@ public class SiteDocuments {
      * @return Empty site
      */
     protected Site createEmptySite(int x, int y) {
-        Site newSite = new Site(x, y);
-        newSite.setType("empty");
-        newSite.setCoord(findEmptyCoordinates(newSite.getCoord()));
-        db.create(newSite);
-
-        if ( newSite.getCoord().equals(x, y) ) {
-            return newSite;
-        } else {
-            // returning the x, y neighbor is more important than the empty site
-            return getByCoordinate(x, y).get(0);
-        }
+        return createEmptySite(new Coordinates(x, y));
     }
 
-    protected Coordinates findEmptyCoordinates(Coordinates c) {
-        Coordinates empty = new Coordinates(c);
+    protected Coordinates findUnusedCoordinate(Coordinates start) {
+        Coordinates target = new Coordinates(start);
 
-        List<Site> emptySites = getByCoordinate(empty.getX(), empty.getY());
-        while ( emptySites.size() > 1 ) {
+        List<Site> existingSite = getByCoordinate(target.getX(), target.getY());
+        while ( existingSite.size() > 0 ) {
             // rather than delete, see if we can just move it over, and place it there.
-            Exits exits = getExits(empty);
+            Exits exits = getExits(target);
 
-            if ( exits.getN() == null && empty.getY() < Integer.MAX_VALUE ) {
-                empty.setY(empty.getY()+1);
-            } else if ( exits.getS() == null && empty.getY() > Integer.MIN_VALUE  ) {
-                empty.setY(empty.getY()-1);
-            } else if ( exits.getE() == null  && empty.getX() < Integer.MAX_VALUE ) {
-                empty.setX(empty.getX()+1);
-            } else if ( exits.getW() == null  && empty.getX() > Integer.MIN_VALUE ) {
-                empty.setX(empty.getX()-1);
+            if ( exits.getN() == null && target.getY() < Integer.MAX_VALUE ) {
+                target.setY(target.getY()+1);
+            } else if ( exits.getS() == null && target.getY() > Integer.MIN_VALUE  ) {
+                target.setY(target.getY()-1);
+            } else if ( exits.getE() == null  && target.getX() < Integer.MAX_VALUE ) {
+                target.setX(target.getX()+1);
+            } else if ( exits.getW() == null  && target.getX() > Integer.MIN_VALUE ) {
+                target.setX(target.getX()-1);
             } else {
-                empty.diagonalShift(1); // move towards outside...
+                target.diagonalShift(1); // move towards outside...
             }
 
-            emptySites = getByCoordinate(empty.getX(), empty.getY());
+            existingSite = getByCoordinate(target.getX(), target.getY());
         }
 
-        return empty;
+        return target;
     }
 
     /**

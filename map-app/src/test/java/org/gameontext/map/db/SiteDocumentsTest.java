@@ -81,9 +81,8 @@ public class SiteDocumentsTest {
     }
 
     @Test
-    public void testFindEmptyCoordinates(@Mocked ViewResult queryResult, @Mocked ViewResult.Row row, @Mocked JsonNode key) throws Exception {
+    public void testUnusedCoordinates(@Mocked ViewResult queryResult, @Mocked ViewResult.Row row, @Mocked JsonNode key) throws Exception {
         Exits exits = new Exits();
-        docs.assignExit(exits, "n", site);
         site.setExits(exits);
 
         final ObjectMapper anyInstance = new ObjectMapper();
@@ -92,6 +91,7 @@ public class SiteDocumentsTest {
             anyInstance.treeToValue((TreeNode) any, Site.class); returns(site);
         }};
 
+        docs.assignExit(exits, "n", site);
         new Expectations() {{
             dbc.queryView((ViewQuery) any, Site.class); returns(Arrays.asList(site, site), Collections.emptyList());
             dbc.queryView((ViewQuery) any); returns(queryResult);
@@ -99,7 +99,7 @@ public class SiteDocumentsTest {
         }};
 
         Coordinates c0 = new Coordinates(5,-5);
-        Coordinates c1 = docs.findEmptyCoordinates(c0);
+        Coordinates c1 = docs.findUnusedCoordinate(c0);
         System.out.println(c0 + " --> " + c1);
         Assert.assertNotEquals("Coordinates should be different", c0, c1);
         Assert.assertEquals("No exit present, move north", c0.getX(), c1.getX());
@@ -113,7 +113,7 @@ public class SiteDocumentsTest {
             queryResult.getRows(); returns(Arrays.asList(row, row));
             key.get(2); returns(JsonNodeFactory.instance.textNode("n"));
         }};
-        Coordinates c2 = docs.findEmptyCoordinates(c1);
+        Coordinates c2 = docs.findUnusedCoordinate(c1);
         System.out.println(c1 + " --> " + c2);
         Assert.assertNotEquals("Coordinates should be different", c1, c2);
         Assert.assertEquals("North exits is present, move south", c1.getX(), c2.getX());
@@ -126,7 +126,7 @@ public class SiteDocumentsTest {
             queryResult.getRows(); returns(Arrays.asList(row, row));
             key.get(2); returns(JsonNodeFactory.instance.textNode("n"), JsonNodeFactory.instance.textNode("s"));
         }};
-        Coordinates c3 = docs.findEmptyCoordinates(c2);
+        Coordinates c3 = docs.findUnusedCoordinate(c2);
         System.out.println(c2 + " --> " + c3);
         Assert.assertNotEquals("Coordinates should be different", c2, c3);
         Assert.assertEquals("North and South exits are present, move east", c2.getY(), c3.getY());
@@ -139,7 +139,7 @@ public class SiteDocumentsTest {
             queryResult.getRows(); returns(Arrays.asList(row, row, row));
             key.get(2); returns(JsonNodeFactory.instance.textNode("n"), JsonNodeFactory.instance.textNode("s"), JsonNodeFactory.instance.textNode("e"));
         }};
-        Coordinates c4 = docs.findEmptyCoordinates(c3);
+        Coordinates c4 = docs.findUnusedCoordinate(c3);
         System.out.println(c3 + " --> " + c4);
         Assert.assertNotEquals("Coordinates should be different", c3, c4);
         Assert.assertEquals("North, South, and East exits are present, move west", c3.getY(), c4.getY());
@@ -156,12 +156,11 @@ public class SiteDocumentsTest {
                     JsonNodeFactory.instance.textNode("e"),
                     JsonNodeFactory.instance.textNode("w"));
         }};
-        Coordinates c5 = docs.findEmptyCoordinates(c4);
+        Coordinates c5 = docs.findUnusedCoordinate(c4);
         System.out.println(c4 + " --> " + c5);
         Assert.assertNotEquals("Coordinates should be different", c4, c5);
         Assert.assertNotEquals("North, South, East, West exits are present, move diagonally", c4.getY(), c5.getY());
         Assert.assertNotEquals("North, South, East, West exits are present, move diagonally", c4.getX(), c5.getX());
-
     }
 
 }
