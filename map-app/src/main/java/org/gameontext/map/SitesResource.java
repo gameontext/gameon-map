@@ -118,7 +118,7 @@ public class SitesResource {
     @ApiResponses(value = {
             @ApiResponse(code = HttpServletResponse.SC_BAD_REQUEST, message = Messages.BAD_REQUEST),
             @ApiResponse(code = HttpServletResponse.SC_FORBIDDEN, message = Messages.FORBIDDEN + "create room"),
-            @ApiResponse(code = HttpServletResponse.SC_CONFLICT, message = Messages.CONFLICT, response = Error.class)
+            @ApiResponse(code = HttpServletResponse.SC_CONFLICT, message = Messages.CONFLICT)
         })
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
