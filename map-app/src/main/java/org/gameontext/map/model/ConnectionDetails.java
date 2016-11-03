@@ -24,8 +24,10 @@ import io.swagger.annotations.ApiModelProperty;
 @ApiModel(description = "Connection details used by the mediator to connect to the room on the player's behalf")
 @JsonInclude(Include.NON_EMPTY)
 public class ConnectionDetails {
+	
+	private final static String DEFAULT_TYPE = "websocket";
 
-    private String type;
+    private String type = DEFAULT_TYPE;
 
     private String target;
     
@@ -40,7 +42,11 @@ public class ConnectionDetails {
     }
 
     public void setType(String type) {
-        this.type = type;
+    	if(type!=null){
+    		this.type = type;
+    	}else{
+    		this.type = DEFAULT_TYPE;
+    	}
     }
 
     @ApiModelProperty(
