@@ -49,6 +49,8 @@ import org.gameontext.signed.TimestampedKey;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.netflix.hystrix.HystrixCommand;
+import com.netflix.hystrix.HystrixCommandGroupKey;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
@@ -146,7 +148,7 @@ public class PlayerClient implements SignedRequestSecretProvider {
      * @return The JWT as a string.
      * @throws IOException
      */
-    private String getClientJwtForId(String playerId) throws IOException{
+    private String buildClientJwtForId(String playerId) throws IOException{
         // grab the key if needed
         if (signingKey == null)
             getKeyStoreInfo();
@@ -191,8 +193,6 @@ public class PlayerClient implements SignedRequestSecretProvider {
             return sweepSecret;
         }
 
-        // TODO: hystrix around player.
-
         String playerSecret = null;
 
         TimestampedKey timedKey =  playerSecrets.get(id);
@@ -236,60 +236,83 @@ public class PlayerClient implements SignedRequestSecretProvider {
      * @return The apiKey for the player
      */
     private String getPlayerSecret(String playerId) throws WebApplicationException {
-
-        try {
-            String jwt = getClientJwtForId(playerId);
-
-            HttpClient client = null;
-            if("development".equals(System.getenv("MAP_PLAYER_MODE"))){
-                System.out.println("Using development mode player connection. (DefaultSSL,NoHostNameValidation)");
-                HttpClientBuilder b = HttpClientBuilder.create();
-
-                //use the default ssl context, we have a trust store configured for player cert.
-                SSLContext sslContext = SSLContext.getDefault();
-
-                //use a very trusting truststore.. (not needed..)
-                //SSLContext sslContext = new SSLContextBuilder().loadTrustMaterial(null, new TrustSelfSignedStrategy()).build();
-
-                b.setSSLContext( sslContext);
-
-                //disable hostname validation, because we'll need to access the cert via a different hostname.
-                b.setSSLHostnameVerifier(NoopHostnameVerifier.INSTANCE);
-
-                client = b.build();
-            }else{
-                client = HttpClientBuilder.create().build();
-            }
-
-            HttpGet hg = new HttpGet(playerLocation+"/"+playerId);
-            hg.addHeader("gameon-jwt", jwt);
-
-            Log.log(Level.FINEST, this, "Building web target: {0}", hg.getURI().toString());
-
-            // Make GET request using the specified target, get result as a
-            // string containing JSON
-            HttpResponse r = client.execute(hg);
-            String result = new BasicResponseHandler().handleResponse(r);
-
-            // Parse the JSON response, and retrieve the apiKey field value.
-            ObjectMapper om = new ObjectMapper();
-            JsonNode jn = om.readValue(result,JsonNode.class);
-
-            Log.log(Level.FINER, this, "Got player record for {0} from player service", playerId);
-
-            JsonNode creds = jn.get("credentials").get("sharedSecret");
-            return creds.textValue();
-
-        } catch (HttpResponseException hre) {
-            Log.log(Level.FINEST, this, "Error communicating with player service: {0} {1}", hre.getStatusCode(), hre.getMessage());
-            throw new WebApplicationException("Error communicating with Player service", Response.Status.INTERNAL_SERVER_ERROR);
-        } catch ( IOException | NoSuchAlgorithmException e ) {
-            Log.log(Level.FINEST, this, "Unexpected exception getting secret from playerService: {0}", e);
-            throw new WebApplicationException("Error communicating with Player service", Response.Status.INTERNAL_SERVER_ERROR);
-        } catch (WebApplicationException wae) {
-            Log.log(Level.FINEST, this, "Error processing response: {0}", wae.getResponse());
-            throw wae;
+        try{
+            String jwt = buildClientJwtForId(playerId);
+            return new GetPlayerSecretCommand(jwt, playerId, playerLocation).execute();
+        }catch(IOException io){
+            Log.log(Level.FINEST, this, "Unexpected exception getting token for playerService: {0}", io);
+            throw new WebApplicationException("Token Error communicating with Player service", Response.Status.INTERNAL_SERVER_ERROR);
         }
     }
-
+    
+    private static class GetPlayerSecretCommand extends HystrixCommand<String> {
+        
+        private String jwt;
+        private String playerId;
+        private String playerLocation;
+        
+        public GetPlayerSecretCommand(String jwt, String playerId, String playerLocation){
+            super(HystrixCommandGroupKey.Factory.asKey("Player"));
+            this.jwt= jwt;
+            this.playerId = playerId;
+            this.playerLocation=playerLocation;
+        }
+        
+        @Override
+        protected String run(){
+            try{
+                HttpClient client = null;
+                if("development".equals(System.getenv("MAP_PLAYER_MODE"))){
+                    System.out.println("Using development mode player connection. (DefaultSSL,NoHostNameValidation)");
+                    HttpClientBuilder b = HttpClientBuilder.create();
+    
+                    //use the default ssl context, we have a trust store configured for player cert.
+                    SSLContext sslContext = SSLContext.getDefault();
+    
+                    //use a very trusting truststore.. (not needed..)
+                    //SSLContext sslContext = new SSLContextBuilder().loadTrustMaterial(null, new TrustSelfSignedStrategy()).build();
+    
+                    b.setSSLContext( sslContext);
+    
+                    //disable hostname validation, because we'll need to access the cert via a different hostname.
+                    b.setSSLHostnameVerifier(NoopHostnameVerifier.INSTANCE);
+    
+                    client = b.build();
+                }else{
+                    client = HttpClientBuilder.create().build();
+                }
+    
+                HttpGet hg = new HttpGet(playerLocation+"/"+playerId);
+                hg.addHeader("gameon-jwt", jwt);
+    
+                Log.log(Level.FINEST, this, "Building web target: {0}", hg.getURI().toString());
+    
+                // Make GET request using the specified target, get result as a
+                // string containing JSON
+                HttpResponse r = client.execute(hg);
+                String result = new BasicResponseHandler().handleResponse(r);
+    
+                // Parse the JSON response, and retrieve the apiKey field value.
+                ObjectMapper om = new ObjectMapper();
+                JsonNode jn = om.readValue(result,JsonNode.class);
+    
+                Log.log(Level.FINER, this, "Got player record for {0} from player service", playerId);
+    
+                JsonNode creds = jn.get("credentials").get("sharedSecret");
+                return creds.textValue();
+    
+            } catch (HttpResponseException hre) {
+                Log.log(Level.FINEST, this, "Error communicating with player service: {0} {1}", hre.getStatusCode(), hre.getMessage());
+                throw new WebApplicationException("Error communicating with Player service", Response.Status.INTERNAL_SERVER_ERROR);
+            } catch ( IOException | NoSuchAlgorithmException e ) {
+                Log.log(Level.FINEST, this, "Unexpected exception getting secret from playerService: {0}", e);
+                e.printStackTrace();
+                throw new WebApplicationException("Error communicating with Player service", Response.Status.INTERNAL_SERVER_ERROR);
+            } catch (WebApplicationException wae) {
+                Log.log(Level.FINEST, this, "Error processing response: {0}", wae.getResponse());
+                throw wae;
+            }
+        }
+        
+    }
 }
