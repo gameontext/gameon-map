@@ -51,6 +51,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.hystrix.HystrixCommand;
 import com.netflix.hystrix.HystrixCommandGroupKey;
+import com.netflix.hystrix.exception.HystrixBadRequestException;
+import com.netflix.hystrix.exception.HystrixRuntimeException;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
@@ -239,6 +241,17 @@ public class PlayerClient implements SignedRequestSecretProvider {
         try{
             String jwt = buildClientJwtForId(playerId);
             return new GetPlayerSecretCommand(jwt, playerId, playerLocation).execute();
+        }catch(HystrixRuntimeException e){
+            //unwrap hysterix exceptions.. 
+            Throwable cause = e.getCause();
+            if(cause instanceof WebApplicationException){
+                WebApplicationException wae = (WebApplicationException)cause;
+                throw wae;
+            }else{
+                throw new WebApplicationException("Unknown error during communication with player service",cause);
+            }
+        }catch(HystrixBadRequestException e){
+            throw new WebApplicationException("Internal issue communicating with player service",e);
         }catch(IOException io){
             Log.log(Level.FINEST, this, "Unexpected exception getting token for playerService: {0}", io);
             throw new WebApplicationException("Token Error communicating with Player service", Response.Status.INTERNAL_SERVER_ERROR);

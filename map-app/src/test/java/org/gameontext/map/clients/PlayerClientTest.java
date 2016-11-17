@@ -2,8 +2,10 @@ package org.gameontext.map.clients;
 
 import java.io.IOException;
 import java.security.Key;
-import java.util.Map;
 
+import javax.ws.rs.WebApplicationException;
+
+import org.apache.http.client.HttpResponseException;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.BasicResponseHandler;
@@ -55,7 +57,7 @@ public class PlayerClientTest {
     }
 
     @Test
-    public void test(@Mocked CloseableHttpClient httpClient,
+    public void testSuccess(@Mocked CloseableHttpClient httpClient,
             @Mocked CloseableHttpResponse response, @Mocked JwtBuilder jwtBuilder,
             @Mocked BasicResponseHandler responseHandler) throws IOException {
 
@@ -86,6 +88,29 @@ public class PlayerClientTest {
            Assert.assertEquals("<<BUILTJWT>>", httpGet.getFirstHeader("gameon-jwt").getValue());
            Assert.assertEquals("playerURL/fish", httpGet.getURI().toString());
         }};
+    }
+    
+    @Test(expected = WebApplicationException.class)
+    public void testFailure(@Mocked CloseableHttpClient httpClient,
+            @Mocked CloseableHttpResponse response, @Mocked JwtBuilder jwtBuilder,
+            @Mocked BasicResponseHandler responseHandler) throws IOException {
+
+        new Expectations() {{
+            //setup enough expectations to allow us to return the result that would have 
+            //happened via http get.
+            HttpClientBuilder.create(); result = builder;
+            builder.build(); result = httpClient;
+            httpClient.execute((HttpGet)any); result = new HttpResponseException(500,"test case failure");
+            
+            //setup enough expectations to allow jwt generation to end up with a known result.
+            Jwts.builder(); result = jwtBuilder;
+            jwtBuilder.setHeaderParam((String)any,any); result = jwtBuilder;
+            jwtBuilder.setClaims((Claims)any); result = jwtBuilder;
+            jwtBuilder.signWith((SignatureAlgorithm)any, key); result = jwtBuilder;
+            jwtBuilder.compact(); result = "<<BUILTJWT>>";
+        }};
+
+        String secret = pc.getSecretForId("fish");
     }
 
 }
