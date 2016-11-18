@@ -49,7 +49,7 @@ public class PlayerClientTest {
     @Mocked Jwts jwts;
 
     @Before
-    public void setup() {
+    public void injectResources() {
         //setup the injected resources.. 
         Deencapsulation.setField(pc, "signingKey", key);
         Deencapsulation.setField(pc, "playerLocation", "playerURL");
@@ -127,7 +127,7 @@ public class PlayerClientTest {
             jwtBuilder.compact(); result = "<<BUILTJWT>>";
         }};
 
-        String secret = pc.getSecretForId("fish");
+        pc.getSecretForId("fish");
     }
 
 }
