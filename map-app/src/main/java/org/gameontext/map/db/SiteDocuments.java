@@ -42,6 +42,9 @@ import org.gameontext.map.model.SiteSwap;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.netflix.hystrix.HystrixCommand;
+import com.netflix.hystrix.HystrixCommandGroupKey;
+import com.netflix.hystrix.exception.HystrixRuntimeException;
 
 /**
  * Repository tracking and working with Sites (sites) in the map
@@ -107,16 +110,39 @@ public class SiteDocuments {
      * @return List of all sites, possibly filtered by owner and/or name. Will not return null.
      */
     public List<JsonNode> listSites(String owner, String name) {
-
-        List<JsonNode> sites = Collections.emptyList();
-
-        ViewQuery viewQuery = createQueryToAppropriateView(owner, name);
-        sites = db.queryView(viewQuery, JsonNode.class);
-
-        if ( sites == null )
-            return Collections.emptyList();
-
-        return sites;
+        try{
+            return new ListSitesCommand(owner, name).execute();
+        }catch(HystrixRuntimeException e){
+            if(e.getCause() instanceof RuntimeException){
+                throw (RuntimeException)e.getCause();
+            }else{
+                throw e;
+            }
+        }
+    }
+    
+    private class ListSitesCommand extends HystrixCommand<List<JsonNode>> {
+        private String owner; 
+        private String name;
+       
+        public ListSitesCommand(String owner, String name){
+            super(HystrixCommandGroupKey.Factory.asKey("CouchDb"));
+            this.owner = owner;
+            this.name = name;
+        }
+        
+        @Override
+        protected List<JsonNode> run(){
+            List<JsonNode> sites = Collections.emptyList();
+    
+            ViewQuery viewQuery = createQueryToAppropriateView(owner, name);
+            sites = db.queryView(viewQuery, JsonNode.class);
+    
+            if ( sites == null )
+                return Collections.emptyList();
+    
+            return sites;
+        }
     }
 
     private ViewQuery createQueryToAppropriateView(String owner, String name) {
@@ -168,34 +194,59 @@ public class SiteDocuments {
      * @throws MapModificationException
      */
     public Site connectRoom(String owner, RoomInfo newRoom) {
-        Log.mapOperations(Level.FINE, this, "Add new room: {0}", newRoom);
-
-        // Check for duplicate owner/room name: sloppy room registration
-        // with no pre-check would land here potentially often.
-        List<JsonNode> rooms = listSites(owner, newRoom.getName());
-        if ( rooms.size() > 0 ) {
-            throw new MapModificationException(Response.Status.CONFLICT,
-                    "Unable to place room in the map",
-                    "A room with this name ("+newRoom.getName()+") already exists for owner ("+owner+")");
+        try{
+            return new ConnectRoomCommand(owner, newRoom).execute();
+        }catch(HystrixRuntimeException e){
+            if(e.getCause() instanceof RuntimeException){
+                throw (RuntimeException)e.getCause();
+            }else{
+                throw e;
+            }
         }
-
-        Site candidateSite = null;
-        while (candidateSite == null ) {
-            candidateSite = assignEmptySite(owner, newRoom);
+    }
+    
+    private class ConnectRoomCommand extends HystrixCommand<Site> {
+        
+        private String owner; 
+        private RoomInfo newRoom;
+       
+        public ConnectRoomCommand(String owner, RoomInfo newRoom){
+            super(HystrixCommandGroupKey.Factory.asKey("CouchDb"));
+            this.owner = owner;
+            this.newRoom = newRoom;
         }
-
-        // Yay! We have an allocated, previously-empty node
-        // that has already been updated to point to this room.
-        // Now we need to prep the response (with exits)..
-        Exits exits = getExits(candidateSite.getCoord());
-
-        // Make sure we have new empty sites (and add those to exits)
-        createEmptyNeighbors(candidateSite.getCoord(), exits);
-
-        // Set and return the response!
-        candidateSite.setExits(exits);
-
-        return candidateSite;
+        
+        @Override
+        protected Site run(){
+            Log.mapOperations(Level.FINE, this, "Add new room: {0}", newRoom);
+    
+            // Check for duplicate owner/room name: sloppy room registration
+            // with no pre-check would land here potentially often.
+            List<JsonNode> rooms = listSites(owner, newRoom.getName());
+            if ( rooms.size() > 0 ) {
+                throw new MapModificationException(Response.Status.CONFLICT,
+                        "Unable to place room in the map",
+                        "A room with this name ("+newRoom.getName()+") already exists for owner ("+owner+")");
+            }
+    
+            Site candidateSite = null;
+            while (candidateSite == null ) {
+                candidateSite = assignEmptySite(owner, newRoom);
+            }
+    
+            // Yay! We have an allocated, previously-empty node
+            // that has already been updated to point to this room.
+            // Now we need to prep the response (with exits)..
+            Exits exits = getExits(candidateSite.getCoord());
+    
+            // Make sure we have new empty sites (and add those to exits)
+            createEmptyNeighbors(candidateSite.getCoord(), exits);
+    
+            // Set and return the response!
+            candidateSite.setExits(exits);
+    
+            return candidateSite;
+        }
     }
 
     /**
@@ -206,40 +257,67 @@ public class SiteDocuments {
      * @throws MapModificationException
      */
     public Site connectRoomWithId(String owner, String id, RoomInfo newRoom) {
-        Log.mapOperations(Level.FINE, this, "Add new room with id {0}", newRoom);
-
-        // Check for duplicate owner/room name: sloppy room registration
-        // with no pre-check would land here potentially often.
-        List<JsonNode> rooms = listSites(owner, newRoom.getName());
-        if ( rooms.size() > 0 ) {
-            throw new MapModificationException(Response.Status.CONFLICT,
-                    "Unable to place room in the map",
-                    "A room with this name ("+newRoom.getName()+") already exists for owner ("+owner+")");
+        try{
+            return new ConnectRoomWithIdCommand(owner, id, newRoom).execute();
+        }catch(HystrixRuntimeException e){
+            if(e.getCause() instanceof RuntimeException){
+                throw (RuntimeException)e.getCause();
+            }else{
+                throw e;
+            }
         }
-
-
-        Site candidateSite = new Site();
-        candidateSite.setId(id);
-        candidateSite.setOwner(owner);
-        candidateSite.setInfo(newRoom);
-        candidateSite.setType("room");
-
-        // use last empty site to find periphery of map
-        Site emptySite = getLastEmptySite();
-        candidateSite.setCoord(findUnusedCoordinate(emptySite.getCoord()));
-
-        db.create(candidateSite);
-
-        // Now we need to prep the response (with existing exits)..
-        Exits exits = getExits(candidateSite.getCoord());
-
-        // Make sure we have new empty neighbors (still may be on an island .. )
-        createEmptyNeighbors(candidateSite.getCoord(), exits);
-
-        // Set and return the response!
-        candidateSite.setExits(exits);
-
-        return candidateSite;
+    }
+    
+    private class ConnectRoomWithIdCommand extends HystrixCommand<Site> {
+        
+        private String owner; 
+        private String id;
+        private RoomInfo newRoom;
+       
+        public ConnectRoomWithIdCommand(String owner, String id, RoomInfo newRoom){
+            super(HystrixCommandGroupKey.Factory.asKey("CouchDb"));
+            this.owner = owner;
+            this.id = id;
+            this.newRoom = newRoom;
+        }
+        
+        @Override
+        protected Site run(){
+            Log.mapOperations(Level.FINE, this, "Add new room with id {0}", newRoom);
+    
+            // Check for duplicate owner/room name: sloppy room registration
+            // with no pre-check would land here potentially often.
+            List<JsonNode> rooms = listSites(owner, newRoom.getName());
+            if ( rooms.size() > 0 ) {
+                throw new MapModificationException(Response.Status.CONFLICT,
+                        "Unable to place room in the map",
+                        "A room with this name ("+newRoom.getName()+") already exists for owner ("+owner+")");
+            }
+    
+    
+            Site candidateSite = new Site();
+            candidateSite.setId(id);
+            candidateSite.setOwner(owner);
+            candidateSite.setInfo(newRoom);
+            candidateSite.setType("room");
+    
+            // use last empty site to find periphery of map
+            Site emptySite = getLastEmptySite();
+            candidateSite.setCoord(findUnusedCoordinate(emptySite.getCoord()));
+    
+            db.create(candidateSite);
+    
+            // Now we need to prep the response (with existing exits)..
+            Exits exits = getExits(candidateSite.getCoord());
+    
+            // Make sure we have new empty neighbors (still may be on an island .. )
+            createEmptyNeighbors(candidateSite.getCoord(), exits);
+    
+            // Set and return the response!
+            candidateSite.setExits(exits);
+    
+            return candidateSite;
+        }
     }
 
 
@@ -252,24 +330,76 @@ public class SiteDocuments {
      * @throws DocumentNotFoundException for unknown room
      */
     public Site getSite(String id) throws DocumentNotFoundException {
-        Site site = getSiteWithoutExits(id);
-        if ( site != null ) {
-            Exits exits = getExits(site.getCoord());
-            site.setExits(exits);
+        try{
+            return new GetSiteCommand(id).execute();
+        }catch(HystrixRuntimeException e){
+            Throwable cause = e.getCause();
+            if(cause instanceof RuntimeException){
+                throw (RuntimeException)cause;
+            }else if (cause instanceof DocumentNotFoundException){
+                throw (DocumentNotFoundException)cause;
+            }else{
+                throw e;
+            }
         }
-
-        return site;
+    }
+    
+    private class GetSiteCommand extends HystrixCommand<Site> {
+        
+        private String id;
+       
+        public GetSiteCommand(String id){
+            super(HystrixCommandGroupKey.Factory.asKey("CouchDb"));
+            this.id = id;
+        }
+        
+        @Override
+        protected Site run(){        
+            Site site = getSiteWithoutExits(id);
+            if ( site != null ) {
+                Exits exits = getExits(site.getCoord());
+                site.setExits(exits);
+            }
+    
+            return site;
+        }
     }
 
     private Site getSiteWithoutExits(String id) throws DocumentNotFoundException{
-        if (id == null || id.isEmpty()) {
-            throw new MapModificationException(Response.Status.BAD_REQUEST,
-                    "Site id must be set.",
-                    "Site id passed in is " + id);
+        try{
+            return new GetSiteWithoutExitsCommand(id).execute();
+        }catch(HystrixRuntimeException e){
+            Throwable cause = e.getCause();
+            if(cause instanceof RuntimeException){
+                throw (RuntimeException)cause;
+            }else if (cause instanceof DocumentNotFoundException){
+                throw (DocumentNotFoundException)cause;
+            }else{
+                throw e;
+            }
         }
-        // get the document from the DB
-        Site site = db.get(Site.class, id);
-        return site;
+    }
+    
+    private class GetSiteWithoutExitsCommand extends HystrixCommand<Site> {
+        
+        private String id;
+       
+        public GetSiteWithoutExitsCommand(String id){
+            super(HystrixCommandGroupKey.Factory.asKey("CouchDb"));
+            this.id = id;
+        }
+        
+        @Override
+        protected Site run(){            
+            if (id == null || id.isEmpty()) {
+                throw new MapModificationException(Response.Status.BAD_REQUEST,
+                        "Site id must be set.",
+                        "Site id passed in is " + id);
+            }
+            // get the document from the DB
+            Site site = db.get(Site.class, id);
+            return site;
+        }
     }
 
     /**
@@ -280,41 +410,69 @@ public class SiteDocuments {
      * @return Wired site containing the room or Suite
      */
     public Site updateRoom(String user, String id, RoomInfo roomInfo) {
-        Log.mapOperations(Level.FINE, this, "Update room: {0} {1}", id, roomInfo);
-
-        // Get the site (includes reconstructing the exits)
-        Site site = getSite(id);
-        RoomInfo oldInfo = site.getInfo();
-
-        // Revisit this with orgs.. *sigh*
-        if ( site.getOwner() == null || !site.getOwner().equals(user) ) {
-            throw new MapModificationException(Response.Status.FORBIDDEN,
-                    "Room " + id + " could not be updated",
-                    user + " is not allowed to update room " + id);
-        }
-
-        site.setExits(null); // make sure exits is empty
-        site.setInfo(roomInfo);
-        db.update(site); // update DB
-
-        // Room name change! check for duplicates..
-        if ( !oldInfo.getName().equals(roomInfo.getName()) ) {
-            List<JsonNode> rooms = listSites(user, roomInfo.getName());
-            if ( rooms.size() > 1 ) {
-
-                site.setInfo(oldInfo); // revert!
-                db.update(site);
-
-                throw new MapModificationException(Response.Status.CONFLICT,
-                        "Room " + id + " could not be updated",
-                        "A room with the modified name ("+roomInfo.getName()+") already exists for owner ("+user+")");
+        try{
+            return new UpdateRoomCommand(user,id,roomInfo).execute();
+        }catch(HystrixRuntimeException e){
+            Throwable cause = e.getCause();
+            if(cause instanceof RuntimeException){
+                throw (RuntimeException)cause;
+            }else{
+                throw e;
             }
         }
-
-        // Find exits for return value
-        Exits exits = getExits(site.getCoord());
-        site.setExits(exits);
-        return site;
+    }
+    
+    private class UpdateRoomCommand extends HystrixCommand<Site> {
+        
+        private String user;
+        private String id;
+        private RoomInfo roomInfo;
+       
+        public UpdateRoomCommand(String user, String id, RoomInfo roomInfo){
+            super(HystrixCommandGroupKey.Factory.asKey("CouchDb"));
+            this.user=user;
+            this.id = id;
+            this.roomInfo = roomInfo;
+        }
+        
+        @Override
+        protected Site run(){          
+            Log.mapOperations(Level.FINE, this, "Update room: {0} {1}", id, roomInfo);
+    
+            // Get the site (includes reconstructing the exits)
+            Site site = getSite(id);
+            RoomInfo oldInfo = site.getInfo();
+    
+            // Revisit this with orgs.. *sigh*
+            if ( site.getOwner() == null || !site.getOwner().equals(user) ) {
+                throw new MapModificationException(Response.Status.FORBIDDEN,
+                        "Room " + id + " could not be updated",
+                        user + " is not allowed to update room " + id);
+            }
+    
+            site.setExits(null); // make sure exits is empty
+            site.setInfo(roomInfo);
+            db.update(site); // update DB
+    
+            // Room name change! check for duplicates..
+            if ( !oldInfo.getName().equals(roomInfo.getName()) ) {
+                List<JsonNode> rooms = listSites(user, roomInfo.getName());
+                if ( rooms.size() > 1 ) {
+    
+                    site.setInfo(oldInfo); // revert!
+                    db.update(site);
+    
+                    throw new MapModificationException(Response.Status.CONFLICT,
+                            "Room " + id + " could not be updated",
+                            "A room with the modified name ("+roomInfo.getName()+") already exists for owner ("+user+")");
+                }
+            }
+    
+            // Find exits for return value
+            Exits exits = getExits(site.getCoord());
+            site.setExits(exits);
+            return site;
+        }
     }
 
     /**
@@ -324,29 +482,55 @@ public class SiteDocuments {
      * @return Collection containing new site information
      */
     public Collection<Site> swapRooms(String id1, String id2) {
-        Log.mapOperations(Level.FINE, this, "Swap rooms: {0} {1}", id1, id2);
-
-        Site site1 = getSiteWithoutExits(id1);
-        Site site2 = getSiteWithoutExits(id2);
-
-        if (id1.equals(id2)) {
-            throw new MapModificationException(Response.Status.BAD_REQUEST,
-                    "Unable to swap rooms",
-                    "Cannot swap a room with itself. Room id provided is " + id1);
+        try{
+            return new SwapRoomsCommand(id1,id2).execute();
+        }catch(HystrixRuntimeException e){
+            Throwable cause = e.getCause();
+            if(cause instanceof RuntimeException){
+                throw (RuntimeException)cause;
+            }else{
+                throw e;
+            }
         }
-
-        site1.setExits(null);
-        site2.setExits(null);
-        Coordinates site1CoordsOld = site1.getCoord();
-        Coordinates site2CoordsOld = site2.getCoord();
-        site1.setCoord(site2CoordsOld);
-        site2.setCoord(site1CoordsOld);
-        Collection<Site> sites = new ArrayList<Site>();
-        sites.add(site1);
-        sites.add(site2);
-
-        db.executeBulk(sites);
-        return sites;
+    }
+    
+    private class SwapRoomsCommand extends HystrixCommand<Collection<Site>> {
+        
+        private String id1;
+        private String id2;
+       
+        public SwapRoomsCommand(String id1, String id2){
+            super(HystrixCommandGroupKey.Factory.asKey("CouchDb"));
+            this.id1 = id1;
+            this.id2 = id2;
+        }
+        
+        @Override
+        protected Collection<Site> run(){          
+            Log.mapOperations(Level.FINE, this, "Swap rooms: {0} {1}", id1, id2);
+    
+            Site site1 = getSiteWithoutExits(id1);
+            Site site2 = getSiteWithoutExits(id2);
+    
+            if (id1.equals(id2)) {
+                throw new MapModificationException(Response.Status.BAD_REQUEST,
+                        "Unable to swap rooms",
+                        "Cannot swap a room with itself. Room id provided is " + id1);
+            }
+    
+            site1.setExits(null);
+            site2.setExits(null);
+            Coordinates site1CoordsOld = site1.getCoord();
+            Coordinates site2CoordsOld = site2.getCoord();
+            site1.setCoord(site2CoordsOld);
+            site2.setCoord(site1CoordsOld);
+            Collection<Site> sites = new ArrayList<Site>();
+            sites.add(site1);
+            sites.add(site2);
+    
+            db.executeBulk(sites);
+            return sites;
+        }
     }
 
     /**
@@ -355,37 +539,61 @@ public class SiteDocuments {
      * @return Collection containing new site information
      */
     public List<Site> swapSites(SiteSwap siteSwap) {
-        Log.mapOperations(Level.FINE, this, "Swap rooms: {0}", siteSwap);
-
-        SiteCoordinates sc1 = siteSwap.getSite1();
-        SiteCoordinates sc2 = siteSwap.getSite2();
-
-        if (sc1.getId().equals(sc2.getId())) {
-            throw new MapModificationException(Response.Status.BAD_REQUEST,
-                    "Unable to swap sites",
-                    "A site cannot be swapped with itself. Site id provided is " + sc1.getId());
+        try{
+            return new SwapSitesCommand(siteSwap).execute();
+        }catch(HystrixRuntimeException e){
+            Throwable cause = e.getCause();
+            if(cause instanceof RuntimeException){
+                throw (RuntimeException)cause;
+            }else{
+                throw e;
+            }
         }
-
-        Site site1 = getSiteWithoutExits(sc1.getId());
-        Site site2 = getSiteWithoutExits(sc2.getId());
-
-        if ( !sc1.getCoord().equals(site1.getCoord())
-                || !sc2.getCoord().equals(site2.getCoord()) ) {
-            throw new MapModificationException(Response.Status.CONFLICT,
-                    "Unable to swap sites",
-                    "One or both sites have moved");
+    }
+    
+    private class SwapSitesCommand extends HystrixCommand<List<Site>> {
+        
+        private SiteSwap siteSwap;
+       
+        public SwapSitesCommand(SiteSwap siteSwap){
+            super(HystrixCommandGroupKey.Factory.asKey("CouchDb"));
+            this.siteSwap = siteSwap;
         }
-
-        site1.setCoord(sc2.getCoord());
-        site2.setCoord(sc1.getCoord());
-
-        List<Site> sites = new ArrayList<Site>();
-        sites.add(site1);
-        sites.add(site2);
-
-        db.executeBulk(sites);
-        // checking...
-        return sites;
+        
+        @Override
+        protected List<Site> run(){          
+            Log.mapOperations(Level.FINE, this, "Swap rooms: {0}", siteSwap);
+    
+            SiteCoordinates sc1 = siteSwap.getSite1();
+            SiteCoordinates sc2 = siteSwap.getSite2();
+    
+            if (sc1.getId().equals(sc2.getId())) {
+                throw new MapModificationException(Response.Status.BAD_REQUEST,
+                        "Unable to swap sites",
+                        "A site cannot be swapped with itself. Site id provided is " + sc1.getId());
+            }
+    
+            Site site1 = getSiteWithoutExits(sc1.getId());
+            Site site2 = getSiteWithoutExits(sc2.getId());
+    
+            if ( !sc1.getCoord().equals(site1.getCoord())
+                    || !sc2.getCoord().equals(site2.getCoord()) ) {
+                throw new MapModificationException(Response.Status.CONFLICT,
+                        "Unable to swap sites",
+                        "One or both sites have moved");
+            }
+    
+            site1.setCoord(sc2.getCoord());
+            site2.setCoord(sc1.getCoord());
+    
+            List<Site> sites = new ArrayList<Site>();
+            sites.add(site1);
+            sites.add(site2);
+    
+            db.executeBulk(sites);
+            // checking...
+            return sites;
+        }
     }
 
     /**
@@ -396,23 +604,52 @@ public class SiteDocuments {
      * @return the revision of the deleted document
      */
     public String deleteSite(String user, String id) throws DocumentNotFoundException {
-        // Get the site first (need the coordinates)
-        Site site = db.get(Site.class, id);
-
-        // Revisit this with orgs.. *sigh*
-        if ( site.getOwner() == null || !site.getOwner().equals(user) ) {
-            throw new MapModificationException(Response.Status.FORBIDDEN,
-                    "Room " + id + " could not be deleted",
-                    user + " is not allowed to delete room " + id);
+        try{
+            return new DeleteSiteCommand(user,id).execute();
+        }catch(HystrixRuntimeException e){
+            Throwable cause = e.getCause();
+            if(cause instanceof RuntimeException){
+                throw (RuntimeException)cause;
+            }else if(cause instanceof DocumentNotFoundException){
+                throw (DocumentNotFoundException)cause;
+            }else{
+                throw e;
+            }
         }
-
-        Coordinates coord = site.getCoord();
-        String revision = db.delete(site);
-
-        // Replace this site with an empty placeholder
-        createEmptySite(coord);
-
-        return revision;
+    }
+    
+    private class DeleteSiteCommand extends HystrixCommand<String> {
+        
+        private String user;
+        private String id;
+       
+        public DeleteSiteCommand(String user, String id){
+            super(HystrixCommandGroupKey.Factory.asKey("CouchDb"));
+            this.user=user;
+            this.id = id;
+        }
+        
+        @Override
+        protected String run(){          
+            
+            // Get the site first (need the coordinates)
+            Site site = db.get(Site.class, id);
+    
+            // Revisit this with orgs.. *sigh*
+            if ( site.getOwner() == null || !site.getOwner().equals(user) ) {
+                throw new MapModificationException(Response.Status.FORBIDDEN,
+                        "Room " + id + " could not be deleted",
+                        user + " is not allowed to delete room " + id);
+            }
+    
+            Coordinates coord = site.getCoord();
+            String revision = db.delete(site);
+    
+            // Replace this site with an empty placeholder
+            createEmptySite(coord);
+    
+            return revision;
+        }
     }
 
     /**
@@ -423,18 +660,44 @@ public class SiteDocuments {
      * @return List of sites located at x,y in the map (hopefully only one!)
      */
     protected List<Site> getByCoordinate(int x, int y) {
-        ViewQuery getByCoordinate = new ViewQuery()
-                .designDocId(DESIGN_DOC)
-                .viewName("uniqueSite")
-                .reduce(false)
-                .includeDocs(true)
-                .key(ComplexKey.of(x, y));
-
-        List<Site> list = db.queryView(getByCoordinate, Site.class);
-        Log.mapOperations(Level.FINEST, this, "Get by coordinate: {0},{1}: {2}", x, y, list);
-
-        // protect caller from null
-        return ( list == null ) ? Collections.emptyList() : list;
+        try{
+            return new GetByCoordinatesCommand(x,y).execute();
+        }catch(HystrixRuntimeException e){
+            Throwable cause = e.getCause();
+            if(cause instanceof RuntimeException){
+                throw (RuntimeException)cause;
+            }else{
+                throw e;
+            }
+        }
+    }
+    
+    private class GetByCoordinatesCommand extends HystrixCommand<List<Site>> {
+        
+        private int x;
+        private int y;
+       
+        public GetByCoordinatesCommand(int x, int y){
+            super(HystrixCommandGroupKey.Factory.asKey("CouchDb"));
+            this.x = x;
+            this.y = y;
+        }
+        
+        @Override
+        protected List<Site> run(){          
+            ViewQuery getByCoordinate = new ViewQuery()
+                    .designDocId(DESIGN_DOC)
+                    .viewName("uniqueSite")
+                    .reduce(false)
+                    .includeDocs(true)
+                    .key(ComplexKey.of(x, y));
+    
+            List<Site> list = db.queryView(getByCoordinate, Site.class);
+            Log.mapOperations(Level.FINEST, this, "Get by coordinate: {0},{1}: {2}", x, y, list);
+    
+            // protect caller from null
+            return ( list == null ) ? Collections.emptyList() : list;
+        }
     }
 
 
@@ -444,37 +707,61 @@ public class SiteDocuments {
      * @throws JsonProcessingException
      */
     protected Exits getExits(Coordinates coord) {
-        // Query for the neighbors of this node. Use "A" to "Z" to capture the
-        // directional index (N/S/E/W/U/D), but skip this node (" "), as we have
-        // that already.
-        ViewQuery getNeighbors = new ViewQuery()
-                .designDocId(DESIGN_DOC)
-                .viewName("neighbors")
-                .reduce(false) // do not reduce the result
-                .includeDocs(true) // include referenced documents
-                .startKey(ComplexKey.of(coord.getX(), coord.getY(), "A"))
-                .endKey(ComplexKey.of(coord.getX(), coord.getY(), "Z"));
-
-        ViewResult result = db.queryView(getNeighbors);
-        Log.mapOperations(Level.FINEST, this, "Found neighbors: {0}", result);
-
-        Exits exits = new Exits();
-
-        for(ViewResult.Row row : result.getRows() ) {
-            JsonNode key = row.getKeyAsNode();
-            String direction = key.get(2).asText(); // [0, 1, "n"]
-
-            try {
-                Site targetSite = mapper.treeToValue(row.getDocAsNode(), Site.class);
-                assignExit(exits, direction, targetSite);
-            } catch (JsonProcessingException e) {
-                // Disagreement between our model class and what is in the data store :(
-                Log.log(Level.SEVERE, this, "Unable to assign exit for {0} due to exception {1}", key, e);
-                Log.log(Level.SEVERE, this, "Exception reading value from database", e);
+        try{
+            return new GetExitsCommand(coord).execute();
+        }catch(HystrixRuntimeException e){
+            Throwable cause = e.getCause();
+            if(cause instanceof RuntimeException){
+                throw (RuntimeException)cause;
+            }else{
+                throw e;
             }
         }
-
-        return exits;
+    }
+    
+    private class GetExitsCommand extends HystrixCommand<Exits> {
+        
+        private Coordinates coord;
+       
+        public GetExitsCommand(Coordinates coord){
+            super(HystrixCommandGroupKey.Factory.asKey("CouchDb"));
+            this.coord = coord;
+        }
+        
+        @Override
+        protected Exits run(){          
+            // Query for the neighbors of this node. Use "A" to "Z" to capture the
+            // directional index (N/S/E/W/U/D), but skip this node (" "), as we have
+            // that already.
+            ViewQuery getNeighbors = new ViewQuery()
+                    .designDocId(DESIGN_DOC)
+                    .viewName("neighbors")
+                    .reduce(false) // do not reduce the result
+                    .includeDocs(true) // include referenced documents
+                    .startKey(ComplexKey.of(coord.getX(), coord.getY(), "A"))
+                    .endKey(ComplexKey.of(coord.getX(), coord.getY(), "Z"));
+    
+            ViewResult result = db.queryView(getNeighbors);
+            Log.mapOperations(Level.FINEST, this, "Found neighbors: {0}", result);
+    
+            Exits exits = new Exits();
+    
+            for(ViewResult.Row row : result.getRows() ) {
+                JsonNode key = row.getKeyAsNode();
+                String direction = key.get(2).asText(); // [0, 1, "n"]
+    
+                try {
+                    Site targetSite = mapper.treeToValue(row.getDocAsNode(), Site.class);
+                    assignExit(exits, direction, targetSite);
+                } catch (JsonProcessingException e) {
+                    // Disagreement between our model class and what is in the data store :(
+                    Log.log(Level.SEVERE, this, "Unable to assign exit for {0} due to exception {1}", key, e);
+                    Log.log(Level.SEVERE, this, "Exception reading value from database", e);
+                }
+            }
+    
+            return exits;
+        }
     }
 
     /**
@@ -508,64 +795,131 @@ public class SiteDocuments {
     }
 
     protected Site assignEmptySite(String owner, RoomInfo newRoom) {
-
-        // Get an unassigned empty site
-        Site candidateSite = getEmptySite();
-        Log.mapOperations(Level.FINEST, this, "Found empty node: {0}", candidateSite);
-
-        candidateSite.setOwner(owner);
-        candidateSite.setInfo(newRoom);
-        candidateSite.setType("room");
-
-        try {
-            db.update(candidateSite);
-        } catch (UpdateConflictException ex) {
-            // If there is a conflict, we'll return null so that the caller tries again.
-            // RETURN NULL: Caller should retry
-            return null;
+        try{
+            return new AssignEmptySiteCommand(owner, newRoom).execute();
+        }catch(HystrixRuntimeException e){
+            Throwable cause = e.getCause();
+            if(cause instanceof RuntimeException){
+                throw (RuntimeException)cause;
+            }else{
+                throw e;
+            }
         }
-
-        // Check again for duplicate owner/room name
-        List<JsonNode> rooms = listSites(owner, newRoom.getName());
-        if ( rooms.size() > 1 ) {
-            // we have a duplicate. *le sigh*
-
-            candidateSite.setOwner(null);
-            candidateSite.setInfo(null);
-            candidateSite.setType("empty");
-            db.update(candidateSite);
-
-            throw new MapModificationException(Response.Status.CONFLICT,
-                    "Unable to place room in the map",
-                    "A room with this name ("+newRoom.getName()+") already exists for owner ("+owner+")");
+    }
+    
+    private class AssignEmptySiteCommand extends HystrixCommand<Site> {
+        
+        private String owner; 
+        private RoomInfo newRoom;
+       
+        public AssignEmptySiteCommand(String owner, RoomInfo newRoom){
+            super(HystrixCommandGroupKey.Factory.asKey("CouchDb"));
+            this.owner = owner;
+            this.newRoom = newRoom;
         }
-
-        // Return the new/shiny site!
-        return candidateSite;
+        
+        @Override
+        protected Site run(){        
+            // Get an unassigned empty site
+            Site candidateSite = getEmptySite();
+            Log.mapOperations(Level.FINEST, this, "Found empty node: {0}", candidateSite);
+    
+            candidateSite.setOwner(owner);
+            candidateSite.setInfo(newRoom);
+            candidateSite.setType("room");
+    
+            try {
+                db.update(candidateSite);
+            } catch (UpdateConflictException ex) {
+                // If there is a conflict, we'll return null so that the caller tries again.
+                // RETURN NULL: Caller should retry
+                return null;
+            }
+    
+            // Check again for duplicate owner/room name
+            List<JsonNode> rooms = listSites(owner, newRoom.getName());
+            if ( rooms.size() > 1 ) {
+                // we have a duplicate. *le sigh*
+    
+                candidateSite.setOwner(null);
+                candidateSite.setInfo(null);
+                candidateSite.setType("empty");
+                db.update(candidateSite);
+    
+                throw new MapModificationException(Response.Status.CONFLICT,
+                        "Unable to place room in the map",
+                        "A room with this name ("+newRoom.getName()+") already exists for owner ("+owner+")");
+            }
+    
+            // Return the new/shiny site!
+            return candidateSite;
+        }
     }
 
     /**
      * @return a list of all empty sites
      */
     protected List<Site> getEmptySites() {
-        return db.queryView(allEmptySites, Site.class);
+        try{
+            return new GetEmptySitesCommand().execute();
+        }catch(HystrixRuntimeException e){
+            Throwable cause = e.getCause();
+            if(cause instanceof RuntimeException){
+                throw (RuntimeException)cause;
+            }else{
+                throw e;
+            }
+        }
+    }
+    
+    private class GetEmptySitesCommand extends HystrixCommand<List<Site>> {
+
+        public GetEmptySitesCommand(){
+            super(HystrixCommandGroupKey.Factory.asKey("CouchDb"));
+        }
+        
+        @Override
+        protected List<Site> run(){
+            return db.queryView(allEmptySites, Site.class);
+        }
     }
 
     /**
      * @return a single empty site selected in reverse order
      */
     protected Site getLastEmptySite() {
-        ViewQuery oneEmptySite = new ViewQuery()
-                .designDocId(DESIGN_DOC)
-                .viewName("empty_sites")
-                .descending(true)
-                .limit(1);
+        try{
+            return new GetLastEmptySiteCommand().execute();
+        }catch(HystrixRuntimeException e){
+            Throwable cause = e.getCause();
+            if(cause instanceof RuntimeException){
+                throw (RuntimeException)cause;
+            }else{
+                throw e;
+            }
+        }
+    }
+    
+    private class GetLastEmptySiteCommand extends HystrixCommand<Site> {
 
-        List<Site> sites = db.queryView(oneEmptySite, Site.class);
-        if ( sites.isEmpty() )
-            return null;
-        else
-            return sites.get(0);
+        public GetLastEmptySiteCommand(){
+            super(HystrixCommandGroupKey.Factory.asKey("CouchDb"));
+        }
+        
+        @Override
+        protected Site run(){        
+            ViewQuery oneEmptySite = new ViewQuery()
+                    .designDocId(DESIGN_DOC)
+                    .viewName("empty_sites")
+                    .descending(true)
+                    .limit(1);
+    
+            List<Site> sites = db.queryView(oneEmptySite, Site.class);
+            if ( sites.isEmpty() )
+                return null;
+            else
+                return sites.get(0);
+        }
     }
 
 
@@ -573,32 +927,39 @@ public class SiteDocuments {
      * @return a single empty site
      */
     protected Site getEmptySite() {
-        ViewQuery oneEmptySite = new ViewQuery()
-                .designDocId(DESIGN_DOC)
-                .viewName("empty_sites")
-                .limit(1);
-
-        List<Site> sites = db.queryView(oneEmptySite, Site.class);
-        if ( sites.isEmpty() )
-            return null;
-        else
-            return sites.get(0);
-    }
-
-    protected Site createEmptySite(Coordinates coord) {
-        Coordinates emptyCoord = findUnusedCoordinate(coord);
-
-        if ( emptyCoord.equals(coord) ) {
-            Site newSite = new Site();
-            newSite.setType("empty");
-            newSite.setCoord(emptyCoord);
-            db.create(newSite);
+        try{
+            return new GetEmptySiteCommand().execute();
+        }catch(HystrixRuntimeException e){
+            Throwable cause = e.getCause();
+            if(cause instanceof RuntimeException){
+                throw (RuntimeException)cause;
+            }else{
+                throw e;
+            }
         }
-
-        // return the x, y neighbor (in case of conflict)
-        return getByCoordinate(coord.getX(), coord.getY()).get(0);
     }
+    
+    private class GetEmptySiteCommand extends HystrixCommand<Site> {
 
+        public GetEmptySiteCommand(){
+            super(HystrixCommandGroupKey.Factory.asKey("CouchDb"));
+        }
+        
+        @Override
+        protected Site run(){          
+            ViewQuery oneEmptySite = new ViewQuery()
+                    .designDocId(DESIGN_DOC)
+                    .viewName("empty_sites")
+                    .limit(1);
+    
+            List<Site> sites = db.queryView(oneEmptySite, Site.class);
+            if ( sites.isEmpty() )
+                return null;
+            else
+                return sites.get(0);
+        }
+    }
+    
     /**
      * Create an empty site for the specified x,y, coordinates
      *
@@ -608,6 +969,44 @@ public class SiteDocuments {
      */
     protected Site createEmptySite(int x, int y) {
         return createEmptySite(new Coordinates(x, y));
+    }
+
+    protected Site createEmptySite(Coordinates coord) {
+        try{
+            return new CreateEmptySiteCommand(coord).execute();
+        }catch(HystrixRuntimeException e){
+            Throwable cause = e.getCause();
+            if(cause instanceof RuntimeException){
+                throw (RuntimeException)cause;
+            }else{
+                throw e;
+            }
+        }
+    }
+    
+    private class CreateEmptySiteCommand extends HystrixCommand<Site> {
+
+        private Coordinates coord;
+        
+        public CreateEmptySiteCommand(Coordinates coord){
+            super(HystrixCommandGroupKey.Factory.asKey("CouchDb"));
+            this.coord = coord;
+        }
+        
+        @Override
+        protected Site run(){         
+            Coordinates emptyCoord = findUnusedCoordinate(coord);
+    
+            if ( emptyCoord.equals(coord) ) {
+                Site newSite = new Site();
+                newSite.setType("empty");
+                newSite.setCoord(emptyCoord);
+                db.create(newSite);
+            }
+    
+            // return the x, y neighbor (in case of conflict)
+            return getByCoordinate(coord.getX(), coord.getY()).get(0);
+        }
     }
 
     protected Coordinates findUnusedCoordinate(Coordinates start) {
@@ -645,23 +1044,49 @@ public class SiteDocuments {
      * @param exits List of exits to be completed
      */
     protected void createEmptyNeighbors(Coordinates newRoom, Exits exits) {
-        // Protect against MAX/MIN values so we can use the corners for testing.
+        try{
+            new CreateEmptyNeighboursCommand(newRoom,exits).execute();
+        }catch(HystrixRuntimeException e){
+            Throwable cause = e.getCause();
+            if(cause instanceof RuntimeException){
+                throw (RuntimeException)cause;
+            }else{
+                throw e;
+            }
+        }
+    }
+    
+    private class CreateEmptyNeighboursCommand extends HystrixCommand<Object> {
 
-        if ( exits.getN() == null && newRoom.getY() < Integer.MAX_VALUE ) {
-            Site newSite = createEmptySite(newRoom.getX(), newRoom.getY()+1);
-            assignExit(exits, "n", newSite);
+        private Coordinates newRoom;
+        private Exits exits;
+        
+        public CreateEmptyNeighboursCommand(Coordinates newRoom, Exits exits){
+            super(HystrixCommandGroupKey.Factory.asKey("CouchDb"));
+            this.newRoom = newRoom;
+            this.exits = exits;
         }
-        if ( exits.getS() == null && newRoom.getY() > Integer.MIN_VALUE  ) {
-            Site newSite = createEmptySite(newRoom.getX(), newRoom.getY()-1);
-            assignExit(exits, "s", newSite);
-        }
-        if ( exits.getE() == null  && newRoom.getX() < Integer.MAX_VALUE ) {
-            Site newSite = createEmptySite(newRoom.getX()+1, newRoom.getY());
-            assignExit(exits, "e", newSite);
-        }
-        if ( exits.getW() == null  && newRoom.getX() > Integer.MIN_VALUE ) {
-            Site newSite = createEmptySite(newRoom.getX()-1, newRoom.getY());
-            assignExit(exits, "w", newSite);
+        
+        @Override
+        protected Object run(){         
+            // Protect against MAX/MIN values so we can use the corners for testing.
+            if ( exits.getN() == null && newRoom.getY() < Integer.MAX_VALUE ) {
+                Site newSite = createEmptySite(newRoom.getX(), newRoom.getY()+1);
+                assignExit(exits, "n", newSite);
+            }
+            if ( exits.getS() == null && newRoom.getY() > Integer.MIN_VALUE  ) {
+                Site newSite = createEmptySite(newRoom.getX(), newRoom.getY()-1);
+                assignExit(exits, "s", newSite);
+            }
+            if ( exits.getE() == null  && newRoom.getX() < Integer.MAX_VALUE ) {
+                Site newSite = createEmptySite(newRoom.getX()+1, newRoom.getY());
+                assignExit(exits, "e", newSite);
+            }
+            if ( exits.getW() == null  && newRoom.getX() > Integer.MIN_VALUE ) {
+                Site newSite = createEmptySite(newRoom.getX()-1, newRoom.getY());
+                assignExit(exits, "w", newSite);
+            }
+            return null;
         }
     }
 }
