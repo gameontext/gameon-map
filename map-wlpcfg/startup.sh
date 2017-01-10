@@ -129,5 +129,5 @@ else
       curl -X POST -H "Content-Type: application/json" --data @${SERVER_PATH}/firstRoom.withid.json ${AUTH_HOST}/map_repository
   fi
 
-  exec a8sidecar --log --proxy --register --supervise /opt/ibm/wlp/bin/server run defaultServer
+  exec a8sidecar --proxy --register /opt/ibm/wlp/bin/server run defaultServer
 fi
