@@ -31,3 +31,8 @@ COPY ./startup.sh /opt/startup.sh
 ADD ./servers/gameon-map /opt/ibm/wlp/usr/servers/defaultServer/
 
 CMD ["/opt/startup.sh"]
+
+HEALTHCHECK \
+  --timeout=10s \
+  --start-period=40s \
+  CMD wget -q -O /dev/null --no-check-certificate https://localhost:9443/map/v1/health
