@@ -18,6 +18,8 @@ package org.gameontext.map;
 import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
@@ -42,15 +44,14 @@ public class MapResource {
      */
     @GET
     @Path("health")
+    @Produces(MediaType.APPLICATION_JSON)
     @io.swagger.annotations.ApiOperation(value = "Check application health",
         notes = "")
     public Response healthCheck() {
         if ( mapRepository != null && mapRepository.connectionReady() ) {
-            return Response.ok().build();
+            return Response.ok().entity("{\"status\":\"UP\"}").build();
         } else {
-            return Response.status(Status.SERVICE_UNAVAILABLE).build();
+            return Response.status(Status.SERVICE_UNAVAILABLE).entity("{\"status\":\"DOWN\"}").build();
         }
     }
-
-
 }
