@@ -13,15 +13,8 @@ before_install:
 script:
 - ./gradlew build
 after_success:
-- echo "TRAVIS_BRANCH='$TRAVIS_BRANCH'" \
-  ;if [ "$TRAVIS_BRANCH" == "master" ]; then
-     echo "Building and Pushing new image" \
-     && docker login -u="${DOCKER_USERNAME}" -p="${DOCKER_PASSWORD}" && echo "Login ok" \
-     && docker build -t ${DOCKER_REPO}/${DOCKER_IMAGE} ${DOCKER_BUILDDIR} && echo "Build complete" \
-     && docker push ${DOCKER_REPO}/${DOCKER_IMAGE} && echo "Push complete"
-  ;else
-     echo "Not master branch, skipping docker"
-  ;fi
+- echo "TRAVIS_BRANCH='$TRAVIS_BRANCH'"
+- bash <(curl -s https://raw.githubusercontent.com/gameontext/gameon/master/images/dockerhub.sh)
 notifications:
   slack:
     secure: oVSW4tx0lEXLYbSE3Xm1VcbR/SQ65ZpLwQfK0TABTyaHa894/8Q0xCLD5hQ2NDBxYFXm52TtOO3Glq4Q5XFZBY9r7cDuN5MOSM2hL/O5PMaZYmJpCvVC5LlXSJcW7aSR5+0/eyaWRjFemOAVcjZP/+lo3coSfwWwiUZgRpuDhbYVN8yEQZAxpthNKWeEBd7t1bnuJf98OlToFjD0QAUjYi9a4asRKmP433ouu5CG9RTxD9TfFnSaEhKR8MO8dBKzcx63qqDfUuVmmc98bVowPedMZ6gHjQfbj0353a7Ac4vy3s9yNeTlE96+5uyXWDpE8l1dJAGnL3reqNGHXwtmSWSen71+azqQRpVxBhWpi22BNeF6JPykT235NkKqAQEKxSXbt+skL2mSQXTkdK6qVfAZ6QqlmeCbIIJfB3q55nqZLq2nu/CwRTNqoxS20MYQBfzEUbqBcgN6up9bUzMWFPWRakLAA7SQS2PVOCDgPQ2pWkMdlWTgFhaY4epkPY+YrBr4doihYDTJEmmN4xPHQYcjDv+AGjuQ7FInwHMbQ3kUXra7yto5dcL4U3SrDsrBValHerlj+5rwrWTXAsErvHJeaIYa3STyozJrwka6kTvfAy62YYR+vxpaTgs6G7iuFeQqVLIBRo+6yaXEL9ut7IpR8Ut2RTQng1GIaF1Ci2g=
