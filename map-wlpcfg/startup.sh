@@ -43,7 +43,6 @@ if [ "$ETCDCTL_ENDPOINT" != "" ]; then
 
   export PLAYER_SERVICE_URL=$(etcdctl get /player/url)
 
-  export LOGSTASH_ENDPOINT=$(etcdctl get /logstash/endpoint)
   export LOGMET_HOST=$(etcdctl get /logmet/host)
   export LOGMET_PORT=$(etcdctl get /logmet/port)
   export LOGMET_TENANT=$(etcdctl get /logmet/tenant)
