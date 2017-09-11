@@ -4,6 +4,12 @@
 
 A service that builds and maintains the map as rooms are added and removed.
 
+## Building
+
+To build this project:
+
+    ./gradlew build
+    docker build -t gameontext/gameon-map map-wlpcfg
 
 ## Contributing
 
