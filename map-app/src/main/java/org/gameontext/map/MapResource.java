@@ -34,6 +34,9 @@ public class MapResource {
     @Inject
     protected MapRepository mapRepository;
 
+    @Inject
+    Kafka kafka;
+
     @GET
     public Response basicGet() {
         return Response.ok().build();
@@ -48,7 +51,7 @@ public class MapResource {
     @io.swagger.annotations.ApiOperation(value = "Check application health",
         notes = "")
     public Response healthCheck() {
-        if ( mapRepository != null && mapRepository.connectionReady() ) {
+        if ( mapRepository != null && mapRepository.connectionReady() && kafka.isHealthy() ) {
             return Response.ok().entity("{\"status\":\"UP\"}").build();
         } else {
             return Response.status(Status.SERVICE_UNAVAILABLE).entity("{\"status\":\"DOWN\"}").build();

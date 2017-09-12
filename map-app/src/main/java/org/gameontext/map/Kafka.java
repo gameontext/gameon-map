@@ -45,6 +45,10 @@ public class Kafka {
    public Kafka(){
    }
 
+   public boolean isHealthy() {
+       return producer != null;
+   }
+
    private boolean multipleHosts(){
        //this is a cheat, we need to enable ssl when talking to message hub, and not to kafka locally
        //the easiest way to know which we are running on, is to check how many hosts are in kafkaUrl
