@@ -20,6 +20,7 @@ import java.util.logging.Level;
 import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
+import javax.ws.rs.ClientErrorException;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.ExceptionMapper;
 import javax.ws.rs.ext.Provider;
@@ -79,10 +80,13 @@ public class ErrorResponseMapper implements ExceptionMapper<Exception> {
 
         } else if ( exception instanceof JsonMappingException ) {
             status = Response.Status.BAD_REQUEST;
+        } else if ( exception instanceof ClientErrorException) {
+            int code = ((ClientErrorException) exception).getResponse().getStatus();
+            status = Response.Status.fromStatusCode(code);
         } else {
-            //if we're going to handle every unknown type, lets log them so we 
+            //if we're going to handle every unknown type, lets log them so we
             //have an opportunity to debug them in future.
-            Log.log(Level.SEVERE, this, "ErrorResponseMapper handling unknown exception type", exception);
+            Log.log(Level.SEVERE, this, "ErrorResponseMapper handling unknown exception type: {0}", exception.getClass(), exception);
         }
 
         objNode.put("status", status.getStatusCode());

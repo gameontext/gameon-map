@@ -26,6 +26,7 @@ import javax.ws.rs.core.Response.Status;
 import org.gameontext.map.db.MapRepository;
 
 import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
 
 @Path("/")
 @Api( value = "map")
@@ -38,6 +39,7 @@ public class MapResource {
     Kafka kafka;
 
     @GET
+    @ApiOperation(value="basic ping", hidden = true)
     public Response basicGet() {
         return Response.ok().build();
     }
@@ -48,8 +50,7 @@ public class MapResource {
     @GET
     @Path("health")
     @Produces(MediaType.APPLICATION_JSON)
-    @io.swagger.annotations.ApiOperation(value = "Check application health",
-        notes = "")
+    @ApiOperation(value="health check", hidden = true)
     public Response healthCheck() {
         if ( mapRepository != null && mapRepository.connectionReady() && kafka.isHealthy() ) {
             return Response.ok().entity("{\"status\":\"UP\"}").build();
