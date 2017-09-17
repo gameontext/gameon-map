@@ -24,14 +24,17 @@ import io.swagger.annotations.ApiModelProperty;
 @ApiModel(description = "Connection details used by the mediator to connect to the room on the player's behalf")
 @JsonInclude(Include.NON_EMPTY)
 public class ConnectionDetails {
-	
-	private final static String DEFAULT_TYPE = "websocket";
+
+    private final static String DEFAULT_TYPE = "websocket";
 
     private String type = DEFAULT_TYPE;
 
     private String target;
-    
+
     private String token;
+
+    /** Health check URL */
+    private String healthUrl;
 
     @ApiModelProperty(
             value = "Connection type",
@@ -42,23 +45,33 @@ public class ConnectionDetails {
     }
 
     public void setType(String type) {
-    	if(type!=null){
-    		this.type = type;
-    	}else{
-    		this.type = DEFAULT_TYPE;
-    	}
+        if( type!=null ){
+            this.type = type;
+        } else {
+            this.type = DEFAULT_TYPE;
+        }
     }
 
     @ApiModelProperty(
             value = "Connection target, usually a URL",
-            example = "wss://secondroom:9008/barn/ws",
+            example = "ws://secondroom:9008/barn/ws",
             required = true)
     public String getTarget() {
         return target;
     }
-
     public void setTarget(String target) {
         this.target = target;
+    }
+
+    @ApiModelProperty(
+            value = "Health Check URL",
+            example = "http://secondroom:9008/barn/health",
+            required = false)
+    public String getHealthUrl() {
+        return healthUrl;
+    }
+    public void setHealthUrl(String healthUrl) {
+        this.healthUrl = healthUrl;
     }
 
     @ApiModelProperty(
@@ -71,7 +84,7 @@ public class ConnectionDetails {
     public void setToken(String token) {
         this.token = token;
     }
-    
+
     @Override
     public String toString()  {
       StringBuilder sb = new StringBuilder();
