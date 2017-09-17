@@ -24,6 +24,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
 import org.gameontext.map.db.MapRepository;
+import org.gameontext.map.kafka.Kafka;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;

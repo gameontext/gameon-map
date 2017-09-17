@@ -30,8 +30,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Level;
 
+import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Inject;
 import javax.net.ssl.SSLContext;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
@@ -44,6 +46,8 @@ import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.impl.client.BasicResponseHandler;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.gameontext.map.Log;
+import org.gameontext.map.kafka.Kafka;
+import org.gameontext.map.kafka.KafkaEventHandler;
 import org.gameontext.signed.SignedRequestSecretProvider;
 import org.gameontext.signed.TimestampedKey;
 
@@ -74,7 +78,7 @@ import io.jsonwebtoken.SignatureAlgorithm;
  * @see ApplicationScoped
  */
 @ApplicationScoped
-public class PlayerClient implements SignedRequestSecretProvider {
+public class PlayerClient implements SignedRequestSecretProvider, KafkaEventHandler {
 
     private static final Duration hours24 = Duration.ofHours(24);
 
@@ -83,6 +87,10 @@ public class PlayerClient implements SignedRequestSecretProvider {
 
     /** Cache of player API keys */
     private ConcurrentMap<String,TimestampedKey> playerSecrets = new ConcurrentHashMap<>();
+
+    /** Listen for secret updates */
+    @Inject
+    Kafka kafka;
 
     /**
      * The player URL injected from JNDI via CDI.
@@ -114,6 +122,14 @@ public class PlayerClient implements SignedRequestSecretProvider {
 
     @Resource(lookup="sweepSecret")
     String sweepSecret;
+
+    /**
+     * Initialize kafka consumer
+     */
+    @PostConstruct
+    protected void init() {
+        kafka.subscribe(this);
+    }
 
     /**
      * Obtain the key we'll use to sign the jwts we use to talk to Player endpoints.
@@ -325,6 +341,16 @@ public class PlayerClient implements SignedRequestSecretProvider {
                 throw wae;
             }
         }
+    }
 
+    @Override
+    public String getEventType() {
+        return "UPDATE_APIKEY";
+    }
+
+    @Override
+    public void handleEvent(String key, JsonNode eventData) {
+        Log.log(Level.FINEST, this, "Dropping cached key for {0}", key);
+        playerSecrets.remove(key);
     }
 }
