@@ -50,8 +50,8 @@ public class SiteCreateMockedTest {
     public void before() {
         System.out.println("\n====== " + test.getMethodName());
 
-        docs = new SiteDocuments(dbc);
         mapper = new ObjectMapper();
+        docs = new SiteDocuments(dbc, mapper);
         debugWriter = mapper.writerWithDefaultPrettyPrinter();
 
         info = new RoomInfo();

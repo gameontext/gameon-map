@@ -30,9 +30,13 @@ dependencies {
     providedCompile 'io.swagger:swagger-annotations:1.5.0'
 
      //httpclient for making the request (temporary)
-     compile ('org.apache.httpcomponents:httpclient:4.5.2') {
-        exclude group: 'com.fasterxml.jackson'
-     }
+    compile ('org.apache.httpcomponents:httpclient:4.5.2') {
+      exclude group: 'com.fasterxml.jackson'
+    }
+
+    //the entire couch & jackson dependency collection will not
+    //be packaged in the app, but supplied as a shared library
+    //to liberty. Thus this must be providedCompile.
 
     // couchdb dependencies
     couchdb ('org.ektorp:org.ektorp:1.4.2') {
@@ -41,23 +45,26 @@ dependencies {
     couchdb ('io.jsonwebtoken:jjwt:0.5.1') {
         exclude group: 'org.slf4j'
     }
+    couchdb ('org.apache.kafka:kafka-clients:0.10.2.0') {
+      exclude group: 'org.slf4j'
+    }
     couchdb 'com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider:2.2.2'
     couchdb 'org.slf4j:slf4j-jdk14:1.7.13'
     couchdb 'org.slf4j:jcl-over-slf4j:1.7.13'
 
     providedCompile configurations.couchdb
-    
-    // kafka client =)
-    compile 'org.apache.kafka:kafka-clients:0.9.0.1'
-    
+
+    //anything not depending on jackson or slf4j! is safe to include via compile
+    //dependencies from here..
+
     // hysterix
     compile group:'com.netflix.hystrix', name:'hystrix-core', version:'1.5.8'
 
     jmockit 'org.jmockit:jmockit:1.22'
     testCompile 'junit:junit:4.12'
     testCompile 'org.glassfish:javax.json:1.0.4'
-	testRuntime 'org.apache.cxf:cxf-rt-rs-client:3.1.1'
-	testRuntime 'org.apache.httpcomponents:httpclient:4.5.2'
+  	testRuntime 'org.apache.cxf:cxf-rt-rs-client:3.1.1'
+  	testRuntime 'org.apache.httpcomponents:httpclient:4.5.2'
 }
 
 test {
@@ -95,7 +102,7 @@ eclipse.classpath.file {
     	Node testSrc = node.find {it.@path == "src/test/java"}
   		testSrc.@output ="bin/test"
 	}
-	 
+
     whenMerged { classpath ->
     	def genSrc = new org.gradle.plugins.ide.eclipse.model.SourceFolder('src/endToEnd/java', 'bin/endToEnd')
   		classpath.entries.add(genSrc)

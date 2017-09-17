@@ -75,6 +75,7 @@ public class Site {
             value="Date site created in ISO-8601 instant format",
             example = "2011-12-03T10:15:30Z",
             name = "created_on",
+            readOnly = true,
             required = false)
     private String createdOn;
 
@@ -82,6 +83,7 @@ public class Site {
     @ApiModelProperty(value="Date room assigned in ISO-8601 instant format",
             example = "2011-12-03T10:15:30Z",
             name = "assigned_on",
+            readOnly = true,
             required = false)
     private String assignedOn;
 
