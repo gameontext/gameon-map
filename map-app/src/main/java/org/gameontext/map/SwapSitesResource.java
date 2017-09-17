@@ -92,7 +92,8 @@ public class SwapSitesResource {
                 + "will be undisturbed. The 'exits' be re-assigned.",
         response = Site.class,
         responseContainer = "List",
-        code = HttpURLConnection.HTTP_OK )
+        code = HttpURLConnection.HTTP_OK,
+        hidden=true )
     @ApiResponses(value = {
             @ApiResponse(code = HttpServletResponse.SC_OK, message = Messages.SUCCESSFUL),
             @ApiResponse(code = HttpServletResponse.SC_BAD_REQUEST, message = Messages.BAD_REQUEST),

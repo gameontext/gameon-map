@@ -26,12 +26,12 @@ import javax.ws.rs.core.Response;
 
 import org.ektorp.CouchDbConnector;
 import org.ektorp.DocumentNotFoundException;
-import org.gameontext.map.Kafka;
-import org.gameontext.map.Kafka.SiteEvent;
 import org.gameontext.map.Log;
 import org.gameontext.map.MapModificationException;
 import org.gameontext.map.auth.ResourceAccessPolicy;
 import org.gameontext.map.auth.SiteSwapPermission;
+import org.gameontext.map.kafka.Kafka;
+import org.gameontext.map.kafka.Kafka.SiteEvent;
 import org.gameontext.map.model.ConnectionDetails;
 import org.gameontext.map.model.RoomInfo;
 import org.gameontext.map.model.Site;
@@ -64,7 +64,7 @@ public class MapRepository {
 
         try {
             // Ensure required views exist
-            sites = new SiteDocuments(db);
+            sites = new SiteDocuments(db, mapper);
             sites.postConstruct();
         } catch (Exception e) {
             // Log the warning, and then re-throw to prevent this class from going into service,
