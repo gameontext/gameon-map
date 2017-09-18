@@ -15,7 +15,6 @@
  *******************************************************************************/
 package org.gameontext.map;
 
-import java.net.HttpURLConnection;
 import java.net.URI;
 import java.util.List;
 
@@ -38,6 +37,7 @@ import javax.ws.rs.core.Response;
 import org.gameontext.map.auth.ResourceAccessPolicy;
 import org.gameontext.map.auth.ResourceAccessPolicyFactory;
 import org.gameontext.map.db.MapRepository;
+import org.gameontext.map.model.ErrorResponse;
 import org.gameontext.map.model.RoomInfo;
 import org.gameontext.map.model.Site;
 import org.gameontext.signed.SignedRequest;
@@ -80,7 +80,8 @@ public class SitesResource {
         response = Site.class,
         responseContainer = "List")
     @ApiResponses(value = {
-            @ApiResponse(code = HttpServletResponse.SC_OK, message = Messages.SUCCESSFUL),
+            @ApiResponse(code = HttpServletResponse.SC_OK, message = Messages.SUCCESSFUL,
+                    response = Site.class, responseContainer = "List"),
             @ApiResponse(code = HttpServletResponse.SC_NO_CONTENT, message = Messages.NOT_FOUND)
         })
     @Produces(MediaType.APPLICATION_JSON)
@@ -114,11 +115,12 @@ public class SitesResource {
                 + "compass directions. The 'exits' attribute in the return value describes "
                 + "connected/adjacent sites. ",
         response = Site.class,
-        code = HttpURLConnection.HTTP_CREATED )
+        code = HttpServletResponse.SC_CREATED )
     @ApiResponses(value = {
-            @ApiResponse(code = HttpServletResponse.SC_BAD_REQUEST, message = Messages.BAD_REQUEST),
-            @ApiResponse(code = HttpServletResponse.SC_FORBIDDEN, message = Messages.FORBIDDEN + "create room"),
-            @ApiResponse(code = HttpServletResponse.SC_CONFLICT, message = Messages.CONFLICT)
+            @ApiResponse(code = HttpServletResponse.SC_CREATED, message = Messages.SUCCESSFUL, response = Site.class),
+            @ApiResponse(code = HttpServletResponse.SC_BAD_REQUEST, message = Messages.BAD_REQUEST, response = ErrorResponse.class),
+            @ApiResponse(code = HttpServletResponse.SC_FORBIDDEN, message = Messages.FORBIDDEN + "create room", response = ErrorResponse.class),
+            @ApiResponse(code = HttpServletResponse.SC_CONFLICT, message = Messages.CONFLICT, response = ErrorResponse.class)
         })
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
@@ -142,8 +144,8 @@ public class SitesResource {
         notes = "",
         response = Site.class )
     @ApiResponses(value = {
-            @ApiResponse(code = HttpServletResponse.SC_OK, message = Messages.SUCCESSFUL),
-            @ApiResponse(code = HttpServletResponse.SC_NOT_FOUND, message = Messages.NOT_FOUND)
+            @ApiResponse(code = HttpServletResponse.SC_OK, message = Messages.SUCCESSFUL, response = Site.class),
+            @ApiResponse(code = HttpServletResponse.SC_NOT_FOUND, message = Messages.NOT_FOUND, response = ErrorResponse.class)
         })
     @Produces(MediaType.APPLICATION_JSON)
     public Response getRoom(
@@ -167,11 +169,11 @@ public class SitesResource {
         notes = "",
         response = Site.class )
     @ApiResponses(value = {
-            @ApiResponse(code = HttpServletResponse.SC_OK, message = Messages.SUCCESSFUL),
-            @ApiResponse(code = HttpServletResponse.SC_BAD_REQUEST, message = Messages.BAD_REQUEST),
-            @ApiResponse(code = HttpServletResponse.SC_FORBIDDEN, message = Messages.FORBIDDEN + "update room"),
-            @ApiResponse(code = HttpServletResponse.SC_NOT_FOUND, message = Messages.NOT_FOUND),
-            @ApiResponse(code = HttpServletResponse.SC_CONFLICT, message = Messages.CONFLICT)
+            @ApiResponse(code = HttpServletResponse.SC_OK, message = Messages.SUCCESSFUL, response = Site.class),
+            @ApiResponse(code = HttpServletResponse.SC_BAD_REQUEST, message = Messages.BAD_REQUEST, response = ErrorResponse.class),
+            @ApiResponse(code = HttpServletResponse.SC_FORBIDDEN, message = Messages.FORBIDDEN + "update room", response = ErrorResponse.class),
+            @ApiResponse(code = HttpServletResponse.SC_NOT_FOUND, message = Messages.NOT_FOUND, response = ErrorResponse.class),
+            @ApiResponse(code = HttpServletResponse.SC_CONFLICT, message = Messages.CONFLICT, response = ErrorResponse.class)
         })
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
@@ -195,10 +197,10 @@ public class SitesResource {
         code = 204 )
     @ApiResponses(value = {
         @ApiResponse(code = HttpServletResponse.SC_NO_CONTENT, message = Messages.SUCCESSFUL),
-        @ApiResponse(code = HttpServletResponse.SC_BAD_REQUEST, message = Messages.BAD_REQUEST),
-        @ApiResponse(code = HttpServletResponse.SC_FORBIDDEN, message = Messages.FORBIDDEN + "delete room"),
-        @ApiResponse(code = HttpServletResponse.SC_NOT_FOUND, message = Messages.NOT_FOUND),
-        @ApiResponse(code = HttpServletResponse.SC_CONFLICT, message = Messages.CONFLICT)
+        @ApiResponse(code = HttpServletResponse.SC_BAD_REQUEST, message = Messages.BAD_REQUEST, response = ErrorResponse.class),
+        @ApiResponse(code = HttpServletResponse.SC_FORBIDDEN, message = Messages.FORBIDDEN + "delete room", response = ErrorResponse.class),
+        @ApiResponse(code = HttpServletResponse.SC_NOT_FOUND, message = Messages.NOT_FOUND, response = ErrorResponse.class),
+        @ApiResponse(code = HttpServletResponse.SC_CONFLICT, message = Messages.CONFLICT, response = ErrorResponse.class)
     })
     public Response deleteRoom(
             @ApiParam(value = "target room id", required = true) @PathParam("id") String roomId) {

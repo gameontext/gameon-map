@@ -43,7 +43,8 @@ public class SiteDocumentsTest {
     public void before() {
         System.out.println("\n====== " + test.getMethodName());
 
-        docs = new SiteDocuments(dbc);
+        ObjectMapper mapper = new ObjectMapper();
+        docs = new SiteDocuments(dbc, mapper);
 
         info = new RoomInfo();
         info.setDescription("A room!");

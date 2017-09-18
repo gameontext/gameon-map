@@ -18,9 +18,12 @@ package org.gameontext.map;
 import javax.ws.rs.ApplicationPath;
 import javax.ws.rs.core.Application;
 
+import io.swagger.annotations.Info;
+import io.swagger.annotations.SwaggerDefinition;
+
 @ApplicationPath("/v1")
-@io.swagger.annotations.SwaggerDefinition(
-        info = @io.swagger.annotations.Info(
+@SwaggerDefinition(
+        info = @Info(
                     title = "Game On! Map API",
                     version = "1.0"
                 ))

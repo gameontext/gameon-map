@@ -19,10 +19,10 @@ import java.util.Collections;
 import java.util.List;
 
 import org.ektorp.CouchDbConnector;
-import org.gameontext.map.Kafka;
 import org.gameontext.map.MapModificationException;
 import org.gameontext.map.auth.AccessCertainResourcesPolicy;
 import org.gameontext.map.auth.SiteSwapPermission;
+import org.gameontext.map.kafka.Kafka;
 import org.gameontext.map.model.Coordinates;
 import org.gameontext.map.model.Site;
 import org.gameontext.map.model.SiteCoordinates;
@@ -33,6 +33,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 
 import mockit.Expectations;
@@ -64,7 +65,8 @@ public class SiteSwapMockedTest {
         System.out.println("\n====== " + test.getMethodName());
 
         // instance only for mocking.
-        final SiteDocuments anyInstance = new SiteDocuments(null);
+        ObjectMapper mapper = new ObjectMapper();
+        final SiteDocuments anyInstance = new SiteDocuments(null, mapper);
 
         new Expectations(SiteDocuments.class) {{
             anyInstance.getByCoordinate(0, 1); result = new Site(0, 1);

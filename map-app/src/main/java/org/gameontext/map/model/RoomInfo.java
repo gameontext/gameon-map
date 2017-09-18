@@ -32,11 +32,14 @@ public class RoomInfo {
     /** Connection details */
     private ConnectionDetails connectionDetails = null;
 
-    /** full name */
+    /** Full name */
     private String fullName;
 
-    /** Room door */
+    /** Room description */
     private String description;
+
+    /** Public repository Url */
+    private String repositoryUrl;
 
     /** Optional door descriptions */
     private Doors doors;
@@ -80,6 +83,17 @@ public class RoomInfo {
     }
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    @ApiModelProperty(
+            value = "Public Repository URL",
+            example = "https://github.com/your-fork",
+            required = false)
+    public String getRepositoryUrl() {
+        return repositoryUrl;
+    }
+    public void setRepositoryUrl(String repositoryUrl) {
+        this.repositoryUrl = repositoryUrl;
     }
 
     @ApiModelProperty(

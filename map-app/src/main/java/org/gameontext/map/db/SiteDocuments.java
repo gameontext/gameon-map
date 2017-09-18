@@ -86,12 +86,11 @@ public class SiteDocuments {
 
     protected final ObjectMapper mapper;
 
-    protected SiteDocuments(CouchDbConnector db) {
+    protected SiteDocuments(CouchDbConnector db, ObjectMapper mapper) {
         this.db = db;
+        this.mapper = mapper;
         all = new ViewQuery().designDocId(DESIGN_DOC).viewName("all").cacheOk(true);
         allEmptySites = new ViewQuery().designDocId(DESIGN_DOC).viewName("empty_sites");
-
-        mapper = new ObjectMapper();
     }
 
     protected void postConstruct() {
@@ -341,7 +340,7 @@ public class SiteDocuments {
         Coordinates site2CoordsOld = site2.getCoord();
         site1.setCoord(site2CoordsOld);
         site2.setCoord(site1CoordsOld);
-        Collection<Site> sites = new ArrayList<Site>();
+        Collection<Site> sites = new ArrayList<>();
         sites.add(site1);
         sites.add(site2);
 
@@ -379,7 +378,7 @@ public class SiteDocuments {
         site1.setCoord(sc2.getCoord());
         site2.setCoord(sc1.getCoord());
 
-        List<Site> sites = new ArrayList<Site>();
+        List<Site> sites = new ArrayList<>();
         sites.add(site1);
         sites.add(site2);
 
