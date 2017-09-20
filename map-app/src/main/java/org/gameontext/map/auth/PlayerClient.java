@@ -123,12 +123,23 @@ public class PlayerClient implements SignedRequestSecretProvider, KafkaEventHand
     @Resource(lookup="sweepSecret")
     String sweepSecret;
 
+    String systemSecret;
+
     /**
      * Initialize kafka consumer
      */
     @PostConstruct
     protected void init() {
+        Log.log(Level.INFO, this, "PostConstruct: Subscribing to playerEvents");
         kafka.subscribe(this);
+    }
+
+    public boolean isHealthy() {
+        String secret = systemSecret;
+        if ( secret == null ) {
+            secret = systemSecret = getSecretForId(SYSTEM_ID);
+        }
+        return secret != null;
     }
 
     /**
