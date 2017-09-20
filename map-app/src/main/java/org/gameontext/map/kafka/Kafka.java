@@ -221,7 +221,7 @@ public class Kafka {
                         }
 
                         consumerRecords.forEach(record -> {
-                            Log.log(Level.INFO, this, "Consumer Record:", record.key(), record.value(),
+                            Log.log(Level.FINER, this, "Consumer Record:", record.key(), record.value(),
                                     record.partition(), record.offset());
 
                             JsonNode tree;
