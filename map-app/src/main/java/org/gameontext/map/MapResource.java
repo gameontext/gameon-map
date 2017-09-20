@@ -15,6 +15,9 @@
  *******************************************************************************/
 package org.gameontext.map;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -23,6 +26,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
+import org.gameontext.map.auth.PlayerClient;
 import org.gameontext.map.db.MapRepository;
 import org.gameontext.map.kafka.Kafka;
 
@@ -39,6 +43,9 @@ public class MapResource {
     @Inject
     Kafka kafka;
 
+    @Inject
+    PlayerClient playerClient;
+
     @GET
     @ApiOperation(value="basic ping", hidden = true)
     public Response basicGet() {
@@ -53,10 +60,18 @@ public class MapResource {
     @Produces(MediaType.APPLICATION_JSON)
     @ApiOperation(value="health check", hidden = true)
     public Response healthCheck() {
-        if ( mapRepository != null && mapRepository.connectionReady() && kafka.isHealthy() ) {
+        if ( mapRepository != null && mapRepository.connectionReady()
+             && playerClient != null && playerClient.isHealthy()
+             && kafka != null && kafka.isHealthy() ) {
             return Response.ok().entity("{\"status\":\"UP\"}").build();
         } else {
-            return Response.status(Status.SERVICE_UNAVAILABLE).entity("{\"status\":\"DOWN\"}").build();
+            Map<String,String> map = new HashMap<>();
+            map.put("status", "DOWN");
+            map.put("mapRepository", mapRepository == null ? "null" : ""+mapRepository.connectionReady());
+            map.put("playerClient", playerClient == null ? "null" : ""+playerClient.isHealthy());
+            map.put("kafka", kafka == null ? "null" : ""+kafka.isHealthy());
+
+            return Response.status(Status.SERVICE_UNAVAILABLE).entity(map).build();
         }
     }
 }
