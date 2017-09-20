@@ -18,8 +18,8 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
-import java.util.List;
 import java.util.Properties;
+import java.util.UUID;
 import java.util.logging.Level;
 
 import javax.annotation.PostConstruct;
@@ -32,10 +32,12 @@ import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.clients.producer.Callback;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.KafkaException;
 import org.apache.kafka.common.errors.WakeupException;
 import org.gameontext.map.Log;
@@ -49,200 +51,219 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 @ApplicationScoped
 public class Kafka {
 
-   @Resource(lookup="kafkaUrl")
-   protected String kafkaUrl;
+    @Resource(lookup="kafkaUrl")
+    protected String kafkaUrl;
 
-   private Producer<String,String> producer=null;
-   private Consumer<String, String> consumer=null;
+    private Producer<String,String> producer=null;
+    private Consumer<String, String> consumer=null;
 
-   private volatile boolean keepGoing = true;
+    protected final ObjectMapper mapper = new ObjectMapper();
+    public enum SiteEvent {UPDATE,CREATE,DELETE};
 
-   /** CDI injection of Java EE7 Managed thread factory */
-   @Resource
-   protected ManagedThreadFactory threadFactory;
+    private volatile boolean keepGoing = true;
 
-   public Kafka(){
-   }
+    /** CDI injection of Java EE7 Managed thread factory */
+    @Resource
+    protected ManagedThreadFactory threadFactory;
 
-   public boolean isHealthy() {
-       return producer != null && consumer != null;
-   }
+    // starting with one. can add more later
+    KafkaEventHandler eventHandler;
 
-   private boolean multipleHosts(){
-       //this is a cheat, we need to enable ssl when talking to message hub, and not to kafka locally
-       //the easiest way to know which we are running on, is to check how many hosts are in kafkaUrl
-       //locally for kafka there'll only ever be one, and messagehub gives us a whole bunch..
-       return kafkaUrl.indexOf(",") != -1;
-   }
+    public Kafka(){
+    }
 
-   @PostConstruct
-   public void init(){
+    public boolean isHealthy() {
+        return producer != null && consumer != null;
+    }
 
-     try{
-         try{
-             //Kafka client expects this property to be set and pointing at the
-             //jaas config file.. except when running in liberty, we don't need
-             //one of those.. thankfully, neither does kafka client, it just doesn't
-             //know that.. so we'll set this to an empty string to bypass the check.
-             if(System.getProperty("java.security.auth.login.config")==null){
-               System.setProperty("java.security.auth.login.config", "");
-             }
+    private boolean multipleHosts(){
+        //this is a cheat, we need to enable ssl when talking to message hub, and not to kafka locally
+        //the easiest way to know which we are running on, is to check how many hosts are in kafkaUrl
+        //locally for kafka there'll only ever be one, and messagehub gives us a whole bunch..
+        return kafkaUrl.indexOf(",") != -1;
+    }
 
-             Properties producerProps = new Properties();
-             Properties consumerProps = new Properties();
+    @PostConstruct
+    public void init(){
+        try{
+            //Kafka client expects this property to be set and pointing at the
+            //jaas config file.. except when running in liberty, we don't need
+            //one of those.. thankfully, neither does kafka client, it just doesn't
+            //know that.. so we'll set this to an empty string to bypass the check.
+            if(System.getProperty("java.security.auth.login.config")==null){
+                System.setProperty("java.security.auth.login.config", "");
+            }
 
-             //this is a cheat, we need to enable ssl when talking to message hub, and not to kafka locally
-             //the easiest way to know which we are running on, is to check how many hosts are in kafkaUrl
-             //locally for kafka there'll only ever be one, and messagehub gives us a whole bunch..
-             boolean multipleHosts = multipleHosts();
-             if(multipleHosts){
-               Log.log(Level.INFO, this, "Initializing SSL Config for MessageHub");
-               producerProps.put("security.protocol","SASL_SSL");
-               producerProps.put("ssl.protocol","TLSv1.2");
-               producerProps.put("ssl.enabled.protocols","TLSv1.2");
-               Path p = Paths.get(System.getProperty("java.home"), "lib", "security", "cacerts");
-               producerProps.put("ssl.truststore.location", p.toString());
-               producerProps.put("ssl.truststore.password","changeit");
-               producerProps.put("ssl.truststore.type","JKS");
-               producerProps.put("ssl.endpoint.identification.algorithm","HTTPS");
-             }
+            Properties producerProps = new Properties();
+            Properties consumerProps = new Properties();
 
-             // duplicate common properties right now.
-             consumerProps.putAll(producerProps);
+            //this is a cheat, we need to enable ssl when talking to message hub, and not to kafka locally
+            //the easiest way to know which we are running on, is to check how many hosts are in kafkaUrl
+            //locally for kafka there'll only ever be one, and messagehub gives us a whole bunch..
+            boolean multipleHosts = multipleHosts();
+            if(multipleHosts){
+                Log.log(Level.INFO, this, "Initializing SSL Config for MessageHub");
+                producerProps.put("security.protocol","SASL_SSL");
+                producerProps.put("ssl.protocol","TLSv1.2");
+                producerProps.put("ssl.enabled.protocols","TLSv1.2");
+                Path p = Paths.get(System.getProperty("java.home"), "lib", "security", "cacerts");
+                producerProps.put("ssl.truststore.location", p.toString());
+                producerProps.put("ssl.truststore.password","changeit");
+                producerProps.put("ssl.truststore.type","JKS");
+                producerProps.put("ssl.endpoint.identification.algorithm","HTTPS");
+            }
 
-             Log.log(Level.INFO, this, "Initializing kafka producer for url {0}", kafkaUrl);
+            // duplicate common properties right now.
+            consumerProps.putAll(producerProps);
 
-             producerProps.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaUrl);
-             producerProps.put(ProducerConfig.ACKS_CONFIG,"-1");
-             producerProps.put(ProducerConfig.CLIENT_ID_CONFIG,"gameon-map");
-             producerProps.put(ProducerConfig.RETRIES_CONFIG,0);
-             producerProps.put(ProducerConfig.BATCH_SIZE_CONFIG,16384);
-             producerProps.put(ProducerConfig.LINGER_MS_CONFIG,1);
-             producerProps.put(ProducerConfig.BUFFER_MEMORY_CONFIG,33554432);
-             producerProps.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG,"org.apache.kafka.common.serialization.StringSerializer");
-             producerProps.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,"org.apache.kafka.common.serialization.StringSerializer");
+            Log.log(Level.INFO, this, "Initializing kafka producer for url {0}", kafkaUrl);
+            String uuid = "gameon-map-" + UUID.randomUUID();
 
-             producer = new KafkaProducer<>(producerProps);
+            producerProps.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaUrl);
+            producerProps.put(ProducerConfig.ACKS_CONFIG,"-1");
+            producerProps.put(ProducerConfig.CLIENT_ID_CONFIG,uuid);
+            producerProps.put(ProducerConfig.RETRIES_CONFIG,0);
+            producerProps.put(ProducerConfig.BATCH_SIZE_CONFIG,16384);
+            producerProps.put(ProducerConfig.LINGER_MS_CONFIG,1);
+            producerProps.put(ProducerConfig.BUFFER_MEMORY_CONFIG,33554432);
+            producerProps.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG,"org.apache.kafka.common.serialization.StringSerializer");
+            producerProps.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,"org.apache.kafka.common.serialization.StringSerializer");
 
-             Log.log(Level.INFO, this, "Initializing kafka consumer for url {0}", kafkaUrl);
+            producer = new KafkaProducer<>(producerProps);
 
-             consumerProps.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaUrl);
-             consumerProps.put(ConsumerConfig.GROUP_ID_CONFIG, "gameon-map");
-             consumerProps.put(ConsumerConfig.AUTO_COMMIT_INTERVAL_MS_CONFIG, "1000");
-             consumerProps.put(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, "30000");
-             consumerProps.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringDeserializer");
-             consumerProps.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringDeserializer");
+            Log.log(Level.INFO, this, "Initializing kafka consumer for url {0}", kafkaUrl);
 
-             consumer = new KafkaConsumer<>(consumerProps);
+            // NO GROUP. See subscribe below
+            consumerProps.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaUrl);
+            consumerProps.put(ConsumerConfig.GROUP_ID_CONFIG, "kafka."+this.getClass().getName());
+            consumerProps.put(ConsumerConfig.CLIENT_ID_CONFIG, uuid);
+            consumerProps.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "true");
+            consumerProps.put(ConsumerConfig.AUTO_COMMIT_INTERVAL_MS_CONFIG, "1000");
+            consumerProps.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "latest");
+            consumerProps.put(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, "30000");
+            consumerProps.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringDeserializer");
+            consumerProps.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringDeserializer");
 
-         }catch(KafkaException k){
-             Throwable cause = k.getCause();
-             if(cause != null && cause.getMessage().contains("DNS resolution failed for url") && multipleHosts()){
-                 Log.log(Level.SEVERE, this, "Error during Kafka Init. Kafka will be unavailable. You may need to restart all linked containers.", cause);
-             }else{
-                 throw k;
-             }
-         }
-     }catch(Exception e){
-         Log.log(Level.SEVERE, this, "Unknown error during kafka init, please report ", e);
-     }
-   }
+            consumer = new KafkaConsumer<>(consumerProps);
+        } catch(KafkaException k) {
+            Throwable cause = k.getCause();
+            if(cause != null && cause.getMessage().contains("DNS resolution failed for url") && multipleHosts()){
+                Log.log(Level.SEVERE, this, "Error during Kafka Init. Kafka will be unavailable. You may need to restart all linked containers.", cause);
+            }else{
+                throw k;
+            }
+        } catch(Exception e) {
+            Log.log(Level.SEVERE, this, "Unknown error during kafka init, please report ", e);
+        }
+    }
 
-   public void publishMessage(String topic, String key, String message){
-     if(producer!=null){
-         Log.log(Level.FINER, this, "Publishing Event {0} {1} {2}",topic,key,message);
-         ProducerRecord<String,String> pr = new ProducerRecord<>(topic, key, message);
-         producer.send(pr);
-         Log.log(Level.FINER, this, "Published Event");
-     }else{
-         Log.log(Level.FINER, this, "Kafka Unavailable, ignoring event {0} {1} {2}",topic,key,message);
-     }
-   }
+    public void publishMessage(String topic, String key, String message){
+        final Callback callback = (RecordMetadata m, Exception e) -> {
+            if ( e == null ) {
+                Log.log(Level.FINER, this, "Published Event");
+            } else {
+                Log.log(Level.FINER, this, "Error publishing event", e);
+            }
+        };
 
-   protected final ObjectMapper mapper = new ObjectMapper();
-   public enum SiteEvent {UPDATE,CREATE,DELETE};
-   public void publishSiteEvent(SiteEvent eventType, Site site){
-       try{
-           //note that messagehub topics are charged, so we must only
-           //create them via the bluemix ui, to avoid accidentally
-           //creating a thousand topics =)
-           String topic = "siteEvents";
-           //siteEvents are keyed by site id.
-           String key = site.getId();
+        if(producer!=null){
+            Log.log(Level.FINER, this, "Publishing Event {0} {1} {2}",topic,key,message);
+            ProducerRecord<String,String> pr = new ProducerRecord<>(topic, key, message);
+            producer.send(pr, callback);
+        }else{
+            Log.log(Level.FINER, this, "Kafka Unavailable, ignoring event {0} {1} {2}",topic,key,message);
+        }
+    }
 
-           ObjectNode rootNode = mapper.createObjectNode();
-           rootNode.put("type", eventType.name());
-           rootNode.set("site", mapper.valueToTree(site));
+    public void publishSiteEvent(SiteEvent eventType, Site site){
+        try{
+            //note that messagehub topics are charged, so we must only
+            //create them via the bluemix ui, to avoid accidentally
+            //creating a thousand topics =)
+            String topic = "siteEvents";
+            //siteEvents are keyed by site id.
+            String key = site.getId();
 
-           String message = mapper.writeValueAsString(rootNode);
+            ObjectNode rootNode = mapper.createObjectNode();
+            rootNode.put("type", eventType.name());
+            rootNode.set("site", mapper.valueToTree(site));
 
-           publishMessage(topic, key, message);
-       }catch(JsonProcessingException e){
-           Log.log(Level.SEVERE, this, "Error during event publish, could not build json for site with id "+site.getId(),e);
-       }
-   }
+            String message = mapper.writeValueAsString(rootNode);
 
-   public void subscribe(KafkaEventHandler eventHandler) {
-       if (consumer == null || eventHandler == null) {
-           return;
-       }
+            publishMessage(topic, key, message);
+        }catch(JsonProcessingException e){
+            Log.log(Level.SEVERE, this, "Error during event publish, could not build json for site with id "+site.getId(),e);
+        }
+    }
 
-       List<String> topics = Collections.singletonList("playerEvents");
-       Log.log(Level.INFO, this, "Kafka Consumer SUBSCRIBED to {0}", topics);
+    public void subscribe(KafkaEventHandler eventHandler) {
+        Log.log(Level.FINER, this, "Registering event handler {0}", eventHandler);
 
-       Runnable consumerThread = () -> {
-           consumer.subscribe(topics);
+        this.eventHandler = eventHandler;
+        startConsumer();
+    }
 
-           // Dedicated thread sending messages to the room as fast
-           // as it can take them: maybe we batch these someday.
-           while (keepGoing) {
-               try {
-                   final ConsumerRecords<String, String> consumerRecords = consumer.poll(1000);
-                   final String desiredType = eventHandler.getEventType();
+    private void startConsumer() {
+        if ( consumer == null ) {
+            return;
+        }
 
-                   if (consumerRecords.count()==0) {
-                       continue;
-                   }
+        threadFactory.newThread(() -> {
+            Log.log(Level.INFO, this, "Initializing Kafka Consumer ({0})", eventHandler);
+            try {
 
-                   consumerRecords.forEach(record -> {
-                       System.out.printf("Consumer Record:(%d, %s, %d, %d)\n",
-                               record.key(), record.value(),
-                               record.partition(), record.offset());
+                consumer.subscribe(Collections.singletonList("playerEvents"));
+                // Dedicated thread sending messages to the room as fast
+                // as it can take them: maybe we batch these someday.
+                while (keepGoing) {
+                    try {
+                        final ConsumerRecords<String, String> consumerRecords = consumer.poll(1000);
 
-                       JsonNode tree;
-                        try {
-                            tree = mapper.readTree(record.value());
-                            String type = tree.get("type").asText();
-
-                            if ( type.equals(desiredType) ) {
-                                eventHandler.handleEvent(record.key(), tree);
-                            }
-                        } catch (IOException e) {
-                            Log.log(Level.INFO, this, "Exception parsing JSON: {0}", e.getMessage());
-                            Log.log(Level.SEVERE, this, "Error consuming event {0}"+record.key(),record.value());
+                        if (consumerRecords.count()==0) {
+                            continue;
                         }
-                   });
-               } catch (WakeupException e) {
-                  // Ignore exception if closing
-                  if (!keepGoing) throw e;
-               } catch (KafkaException ex) {
-                   Log.log(Level.SEVERE, this, "Exception working with Kafka, closing: {0}", ex.getMessage());
-                   Log.log(Level.FINEST, this, "Exception working with Kafka", ex);
-                   keepGoing = false;
-               }
-           }
-           consumer.close();
-           Log.log(Level.INFO, this, "Kafka Consumer CLOSED");
-       };
 
-       // Start container-managed consumer thread
-       threadFactory.newThread(consumerThread);
-   }
+                        consumerRecords.forEach(record -> {
+                            Log.log(Level.FINER, this, "Consumer Record:(%d, %s, %d, %d)\n",
+                                    record.key(), record.value(),
+                                    record.partition(), record.offset());
 
-   @PreDestroy
-   protected void stopConsumer() {
-       Log.log(Level.INFO, this, "Stopping Kafka Consumer");
-       keepGoing = false;
-       consumer.wakeup();
-   }
+                            JsonNode tree;
+                            try {
+                                tree = mapper.readTree(record.value());
+                                String type = tree.get("type").asText();
+
+                                if ( type.equals(eventHandler.getEventType()) ) {
+                                    eventHandler.handleEvent(record.key(), tree);
+                                }
+                            } catch (IOException e) {
+                                Log.log(Level.INFO, this, "Exception parsing JSON: {0}", e.getMessage());
+                                Log.log(Level.SEVERE, this, "Error consuming event {0}"+record.key(),record.value());
+                            }
+                        });
+                    } catch (WakeupException e) {
+                        // Ignore exception if closing
+                        if (!keepGoing) throw e;
+                    } catch (KafkaException ex) {
+                        Log.log(Level.SEVERE, this, "Exception working with Kafka, closing: {0}", ex.getMessage());
+                        Log.log(Level.FINEST, this, "Exception working with Kafka", ex);
+                        keepGoing = false;
+                    }
+                }
+
+                consumer.close();
+                Log.log(Level.INFO, this, "Kafka Consumer CLOSED");
+            } catch ( KafkaException k) {
+                Log.log(Level.SEVERE, this, "Exception working with Kafka, closing: {0}", k.getMessage());
+                Log.log(Level.FINEST, this, "Exception working with Kafka", k);
+            }
+        }).start();
+    }
+
+    @PreDestroy
+    protected void stopConsumer() {
+        Log.log(Level.INFO, this, "Stopping Kafka Consumer");
+        keepGoing = false;
+        consumer.wakeup();
+    }
 }

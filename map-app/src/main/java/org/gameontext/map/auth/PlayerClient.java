@@ -131,6 +131,10 @@ public class PlayerClient implements SignedRequestSecretProvider, KafkaEventHand
         kafka.subscribe(this);
     }
 
+    public boolean isHealthy() {
+        return true;
+    }
+
     /**
      * Obtain the key we'll use to sign the jwts we use to talk to Player endpoints.
      *

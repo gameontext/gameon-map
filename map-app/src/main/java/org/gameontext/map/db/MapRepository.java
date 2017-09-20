@@ -153,7 +153,7 @@ public class MapRepository {
      * @throws MapModificationException if something goes awry creating the room
      */
     public Site connectRoom(String user, String id, RoomInfo newRoom) {
-        Log.log(Level.FINER, this, "Add new site: {0} by {1}", newRoom.getName(), user);
+        Log.log(Level.INFO, this, "Add new site: {0} by {1}", newRoom.getName(), user);
 
         // TODO: Revisit this when we have groups/organizations.. *sigh*
         if ( user == null ) {
@@ -182,7 +182,7 @@ public class MapRepository {
      * @throws DocumentNotFoundException for unknown room
      */
     public Site getRoom(ResourceAccessPolicy accessPolicy, String id) {
-        Log.log(Level.FINER, this, "Lookup site: {0}", id);
+        Log.log(Level.INFO, this, "Lookup site: {0}", id);
 
         Site result = sites.getSite(id);
         String owner = result.getOwner();
@@ -208,7 +208,7 @@ public class MapRepository {
      * @throws MapModificationException if something goes awry creating the room
      */
     public Site updateRoom(String authenticatedId, String id, RoomInfo roomInfo) {
-        Log.log(Level.FINER, this, "Update site: {0} {1}", id, roomInfo);
+        Log.log(Level.INFO, this, "Update site: {0} {1}", id, roomInfo);
 
         if ( authenticatedId == null ) {
             throw new MapModificationException(Response.Status.FORBIDDEN,
