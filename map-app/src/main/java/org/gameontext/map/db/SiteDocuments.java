@@ -130,7 +130,7 @@ public class SiteDocuments {
 
     private ViewQuery createQueryToNameView(String name) {
         return createQueryWithoutKeys("name")
-                .key(ComplexKey.of(name));
+                .key(name);
     }
 
     private ViewQuery createQueryToOwnerNameView(String owner, String name) {

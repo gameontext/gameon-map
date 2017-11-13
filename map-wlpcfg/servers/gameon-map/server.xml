@@ -47,7 +47,7 @@
     <config updateTrigger="mbean" />
     <applicationMonitor dropinsEnabled="false" updateTrigger="mbean"/>
 
-    <logging traceSpecification="*=info:org.gameontext.*=all"/>
+    <logging traceSpecification="*=info:org.gameontext.*=all:org.gameontext.signed.*=warning"/>
 
     <!-- This is required to prevent the web apps from being lazily loaded -->
     <webContainer deferServletLoad="false"/>
