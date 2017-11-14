@@ -1,25 +1,34 @@
 {
-   "language": "javascript",
-   "views": {
-       "empty_sites": {
-           "map": "function(doc) {\n  if ( doc.coord && doc.type == \"empty\" ) {\n    var sort = Math.abs(doc.coord.x) + Math.abs(doc.coord.y);\n    emit([sort, doc.coord.x, doc.coord.y], doc);\n  }\n}"
-       },
-       "all": {
-           "map": "function(doc) {\n  if ( doc.coord ) {\n    emit(null, doc);\n  }\n}"
-       },
-       "neighbors": {
-           "map": "function(doc) {\n  if ( doc.coord ) {\n    emit([doc.coord.x, doc.coord.y, \"0\", doc.type], null);\n    emit([(doc.coord.x + 1), doc.coord.y, \"W\", doc.type], {\"_id\": doc._id});\n    emit([(doc.coord.x - 1), doc.coord.y, \"E\", doc.type], {\"_id\": doc._id});\n    emit([doc.coord.x, (doc.coord.y + 1), \"S\", doc.type], {\"_id\": doc._id});\n    emit([doc.coord.x, (doc.coord.y - 1), \"N\", doc.type], {\"_id\": doc._id});\n  }\n}",
-           "reduce": "_count"
-       },
-       "uniqueSite": {
-           "map": "function(doc) {\n  if ( doc.coord ) {\n    emit([doc.coord.x, doc.coord.y], 1);\n  }\n}",
-           "reduce": "_count"
-       },
-       "owner_name": {
-           "map": "function(doc) {\n  if ( doc.info ) {\n     emit([doc.owner, doc.info.name], null);\n  }\n}"
-       },
-       "name": {
-           "map": "function(doc) {\n  if ( doc.info ) {\n     emit([doc.info.name], null);\n  }\n}"
-       }
-   }
+  "language": "javascript",
+  "views": {
+    "empty_sites": {
+      "map": "function(doc) {\n  if ( doc.coord && doc.type == \"empty\" ) {\n    var sort = Math.abs(doc.coord.x) + Math.abs(doc.coord.y);\n    emit([sort, doc.coord.x, doc.coord.y], doc);\n  }\n}"
+    },
+    "all": {
+      "map": "function(doc) {\n  if ( doc.coord ) {\n    emit(null, doc);\n  }\n}"
+    },
+    "neighbors": {
+      "map": "function(doc) {\n  if ( doc.coord ) {\n    emit([doc.coord.x, doc.coord.y, \"0\", doc.type], null);\n    emit([(doc.coord.x + 1), doc.coord.y, \"W\", doc.type], {\"_id\": doc._id});\n    emit([(doc.coord.x - 1), doc.coord.y, \"E\", doc.type], {\"_id\": doc._id});\n    emit([doc.coord.x, (doc.coord.y + 1), \"S\", doc.type], {\"_id\": doc._id});\n    emit([doc.coord.x, (doc.coord.y - 1), \"N\", doc.type], {\"_id\": doc._id});\n  }\n}",
+      "reduce": "_count"
+    },
+    "uniqueSite": {
+      "map": "function(doc) {\n  if ( doc.coord ) {\n    emit([doc.coord.x, doc.coord.y], 1);\n  }\n}",
+      "reduce": "_count"
+    },
+    "name": {
+      "map": "function(doc) {\n  if ( doc.info ) {\n     emit(doc.info.name, null);\n  }\n}"
+    },
+    "owner_name": {
+      "map": "function(doc) {\n  if ( doc.info ) {\n     emit([doc.owner, doc.info.name], null);\n  }\n}"
+    },
+    "hostname": {
+      "map": "function (doc) {\n  if ( doc.info && doc.info.connectionDetails ) {\n    emit(doc.info.connectionDetails.target, 1);\n  }\n}"
+    },
+    "createdRecently": {
+      "map": "function (doc) {\n  emit(doc.assignedOn, doc.info.name);\n}"
+    },
+    "path-weight": {
+      "map": "function(doc) {\n  if ( doc.coord && doc.type !== \"empty\" ) {\n    var path = Math.abs(doc.coord.x) + Math.abs(doc.coord.y);\n    emit(path, doc._id);\n  }\n}"
+    }
+  }
 }
