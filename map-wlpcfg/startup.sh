@@ -65,52 +65,54 @@ if [ "$ETCDCTL_ENDPOINT" != "" ]; then
   wget https://github.com/ibm-messaging/message-hub-samples/raw/master/java/message-hub-liberty-sample/lib-message-hub/messagehub.login-1.0.0.jar
 
 else
-  # LOCAL DEVELOPMENT!
-  # We do not want to ruin the cloudant admin party, but our code is written to expect
-  # that creds are required, so we should make sure the required user/password exist
+  if [ "$GAMEON_MODE" == "development" ]; then
+    # LOCAL DEVELOPMENT!
+    # We do not want to ruin the cloudant admin party, but our code is written to expect
+    # that creds are required, so we should make sure the required user/password exist
 
-  AUTH_HOST="http://${COUCHDB_USER}:${COUCHDB_PASSWORD}@couchdb:5984"
+    AUTH_HOST="http://${COUCHDB_USER}:${COUCHDB_PASSWORD}@couchdb:5984"
 
-  echo "** Testing connection to ${COUCHDB_SERVICE_URL}"
-  curl --fail -X GET ${AUTH_HOST}/_config/admins/${COUCHDB_USER}
-  RC=$?
+    echo "** Testing connection to ${COUCHDB_SERVICE_URL}"
+    curl --fail -X GET ${AUTH_HOST}/_config/admins/${COUCHDB_USER}
+    RC=$?
 
-  # RC=7 means the host isn't there yet. Let's do some re-trying until it
-  # does start / is ready
-  while [ $RC -eq 7 ]; do
+    # RC=7 means the host isn't there yet. Let's do some re-trying until it
+    # does start / is ready
+    while [ $RC -eq 7 ]; do
       sleep 15
 
       # recheck condition
       echo "** Re-testing connection to ${COUCHDB_SERVICE_URL}"
       curl --fail -X GET ${AUTH_HOST}/_config/admins/${COUCHDB_USER}
       RC=$?
-  done
+    done
 
-  # RC=22 means the user doesn't exist
-  if [ $RC -eq 22 ]; then
+    # RC=22 means the user doesn't exist
+    if [ $RC -eq 22 ]; then
       echo "** Creating ${COUCHDB_USER}"
       curl -X PUT ${COUCHDB_SERVICE_URL}/_config/admins/${COUCHDB_USER} -d \"${COUCHDB_PASSWORD}\"
-  fi
+    fi
 
-  echo "** Checking database"
-  curl --fail -X GET ${AUTH_HOST}/map_repository
-  if [ $? -eq 22 ]; then
+    echo "** Checking database"
+    curl --fail -X GET ${AUTH_HOST}/map_repository
+    if [ $? -eq 22 ]; then
       curl -X PUT $AUTH_HOST/map_repository
-  fi
+    fi
 
-  echo "** Checking design documents"
-  curl -v --fail -X GET ${AUTH_HOST}/map_repository/_design/site
-  if [ $? -eq 22 ]; then
+    echo "** Checking design documents"
+    curl -v --fail -X GET ${AUTH_HOST}/map_repository/_design/site
+    if [ $? -eq 22 ]; then
       curl -v -X PUT -H "Content-Type: application/json" --data @${SERVER_PATH}/site.json ${AUTH_HOST}/map_repository/_design/site
-  fi
+    fi
 
-  echo "** Checking firstroom"
-  curl --fail -X GET ${AUTH_HOST}/map_repository/firstroom
-  if [ $? -eq 22 ]; then
+    echo "** Checking firstroom"
+    curl --fail -X GET ${AUTH_HOST}/map_repository/firstroom
+    if [ $? -eq 22 ]; then
       echo "Updating firstroom.json ${SERVER_PATH}/firstRoom.json"
       sed "s/game-on.org/${SYSTEM_ID}/g" ${SERVER_PATH}/firstRoom.json > ${SERVER_PATH}/firstRoom.withid.json
       echo "Adding firstroom to db"
       curl -X POST -H "Content-Type: application/json" --data @${SERVER_PATH}/firstRoom.withid.json ${AUTH_HOST}/map_repository
+    fi
   fi
 fi
 
