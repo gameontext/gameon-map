@@ -7,7 +7,7 @@ fi
 
 export CONTAINER_NAME=map
 
-SERVER_PATH=/opt/ibm/wlp/usr/servers/defaultServer
+SERVER_PATH=/opt/ol/wlp/usr/servers/defaultServer
 
 if [ "$ETCDCTL_ENDPOINT" != "" ]; then
   echo Setting up etcd...
@@ -25,7 +25,7 @@ if [ "$ETCDCTL_ENDPOINT" != "" ]; then
   done
   echo "etcdctl returned sucessfully, continuing"
 
-  mkdir -p /etc/cert 
+  mkdir -p /etc/cert
   etcdctl get /proxy/third-party-ssl-cert > /etc/cert/cert.pem
 
   export COUCHDB_SERVICE_URL=$(etcdctl get /couchdb/url)
@@ -130,4 +130,4 @@ if [ "$GAMEON_MODE" == "development" ]; then
 fi
 
 # Start the server in the foreground
-exec /opt/ibm/wlp/bin/server run defaultServer
+exec /opt/ol/wlp/bin/server run defaultServer
