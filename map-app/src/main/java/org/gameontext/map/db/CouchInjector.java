@@ -15,6 +15,7 @@
  *******************************************************************************/
 package org.gameontext.map.db;
 
+import java.net.MalformedURLException;
 import java.util.logging.Level;
 
 import javax.annotation.Resource;
@@ -22,11 +23,21 @@ import javax.enterprise.inject.Produces;
 
 import org.ektorp.CouchDbConnector;
 import org.ektorp.CouchDbInstance;
+import org.ektorp.http.HttpClient;
+import org.ektorp.http.StdHttpClient;
+import org.ektorp.impl.StdCouchDbInstance;
 import org.gameontext.map.Log;
 
 public class CouchInjector {
-    @Resource(lookup="couchdb/connector")
-    protected CouchDbInstance dbi;
+
+    @Resource(lookup="couchdb/username")
+    protected String username;
+
+    @Resource(lookup="couchdb/password")
+    protected String password;
+
+    @Resource(lookup="couchdb/url")
+    protected String url;
 
     public static final String DB_NAME = "map_repository";
 
@@ -34,15 +45,23 @@ public class CouchInjector {
     public CouchDbConnector expose() {
 
         try {
+            HttpClient authenticatedHttpClient = new StdHttpClient.Builder()
+                    .url(url)
+                    .username(username)
+                    .password(password)
+                    .build();
+            
+            CouchDbInstance dbi = new StdCouchDbInstance(authenticatedHttpClient);
+
             // Connect to the database with the specified
             CouchDbConnector dbc = dbi.createConnector(DB_NAME, false);
             Log.log(Level.FINER, this, "Connected to {0}", DB_NAME);
             return dbc;
-        } catch (Exception e) {
+        } catch (MalformedURLException e) {
             // Log the warning, and then re-throw to prevent this class from going into service,
             // which will prevent injection to the Health check, which will make the app stay down.
             Log.log(Level.WARNING, this, "Unable to connect to database", e);
-            throw e;
+            throw new javax.enterprise.inject.CreationException("Unable to connect to database", e);
         }
     }
 }

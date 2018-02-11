@@ -6,7 +6,6 @@
         <feature>jaxrs-2.0</feature>
         <feature>cdi-1.2</feature>
         <feature>ssl-1.0</feature>
-        <feature>couchdb-1.0</feature>
         <feature>concurrent-1.0</feature>
     </featureManager>
 
@@ -43,6 +42,11 @@
 
     <jndiEntry jndiName="kafkaUrl" value="${env.KAFKA_SERVICE_URL}"/>
 
+    <!-- CouchDB -->
+    <jndiEntry jndiName="couchdb/username" value="${env.COUCHDB_USER}"/>
+    <jndiEntry jndiName="couchdb/password" value="${env.COUCHDB_PASSWORD}"/>
+    <jndiEntry jndiName="couchdb/url" value="${env.COUCHDB_SERVICE_URL}"/>
+
     <!-- turn off polling -->
     <config updateTrigger="mbean" />
     <applicationMonitor dropinsEnabled="false" updateTrigger="mbean"/>
@@ -54,21 +58,10 @@
     <!-- The JVM can get confused about available CPU in virtualized envs -->
     <executor coreThreads="5"/>
 
-    <couchdb id="couchdb" jndiName="couchdb/connector" libraryRef="couchdb-lib" password="${env.COUCHDB_PASSWORD}" url="${env.COUCHDB_SERVICE_URL}" username="${env.COUCHDB_USER}"/>
-
-    <library id="couchdb-lib">
-        <fileset dir="${server.config.dir}/lib"/>
-    </library>
-
-    <webApplication contextRoot="/map" id="map-app" location="map-app.war">
-      <classloader commonLibraryRef="couchdb-lib"></classloader>
-    </webApplication>
-
+    <webApplication contextRoot="/map" id="map-app" location="map-app.war" />
 
     <jndiEntry jndiName="developmentMode" value="${env.GAMEON_MODE}"/>
     <jndiEntry jndiName="targetPlatform" value="${env.TARGET_PLATFORM}"/>
     <include location="${env.TARGET_PLATFORM}-config.xml" optional="true" />
-    <include location="${env.TARGET_PLATFORM}-apiDiscovery.xml" optional="true" />
-    <include location="${env.TARGET_PLATFORM}-logCollector.xml" optional="true" />
     <include location="${env.TARGET_PLATFORM}-messageHub.xml" optional="true" />
 </server>

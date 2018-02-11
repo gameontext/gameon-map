@@ -10,7 +10,6 @@ repositories {
 }
 
 configurations {
-    couchdb
     jmockit
     testCompile.extendsFrom jmockit
 }
@@ -28,35 +27,28 @@ dependencies {
     providedCompile 'javax.enterprise:cdi-api:1.2'
     providedCompile 'io.swagger:swagger-annotations:1.5.0'
 
-     //httpclient for making the request (temporary)
+    // the entire couch & jackson dependency collection will not
+    // makes a mess with slf4j and jackson..
+
     compile ('org.apache.httpcomponents:httpclient:4.5.2') {
       exclude group: 'com.fasterxml.jackson'
     }
-
-    //the entire couch & jackson dependency collection will not
-    //be packaged in the app, but supplied as a shared library
-    //to liberty. Thus this must be providedCompile.
-
-    // couchdb dependencies
-    couchdb ('org.ektorp:org.ektorp:1.4.2') {
+    compile ('org.ektorp:org.ektorp:1.4.4') {
         exclude group: 'org.slf4j'
     }
-    couchdb ('io.jsonwebtoken:jjwt:0.5.1') {
+    compile ('io.jsonwebtoken:jjwt:0.5.1') {
         exclude group: 'org.slf4j'
     }
-    couchdb ('org.apache.kafka:kafka-clients:0.10.2.0') {
+    compile ('org.apache.kafka:kafka-clients:0.10.2.0') {
       exclude group: 'org.slf4j'
     }
-    couchdb 'com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider:2.2.2'
-    couchdb 'org.slf4j:slf4j-jdk14:1.7.13'
-    couchdb 'org.slf4j:jcl-over-slf4j:1.7.13'
 
-    providedCompile configurations.couchdb
+    compile 'com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider:2.2.2'
+    compile 'org.slf4j:slf4j-jdk14:1.7.13'
+    compile 'org.slf4j:jcl-over-slf4j:1.7.13'
 
-    //anything not depending on jackson or slf4j! is safe to include via compile
-    //dependencies from here..
 
-    // hysterix
+    // hystrix
     compile group:'com.netflix.hystrix', name:'hystrix-core', version:'1.5.8'
 
     jmockit 'org.jmockit:jmockit:1.22'
@@ -81,13 +73,7 @@ task endToEndTest(type: Test) {
   classpath = sourceSets.endToEndTest.runtimeClasspath
 }
 
-task exportLibs(type: Copy) {
-  into "$buildDir/libs/"
-  from configurations.couchdb
-}
-
 check.dependsOn(endToEndTest)
-build.dependsOn(exportLibs)
 
 
 // Keep test and application binaries separate
