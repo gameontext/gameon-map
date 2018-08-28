@@ -99,8 +99,8 @@ public class SiteSwapMockedTest {
         SiteSwap swap = new SiteSwap(sc1, sc2);
 
         new Expectations() {{
-            dbc.get(Site.class, "A"); returns(site1);
-            dbc.get(Site.class, "B"); returns(site2);
+            dbc.get(Site.class, "A"); result = site1;
+            dbc.get(Site.class, "B"); result = site2;
         }};
 
         List<Site> result = repo.swapSites(swapRoomsAccessPolicy, owner, swap);
@@ -156,8 +156,8 @@ public class SiteSwapMockedTest {
         SiteSwap swap = new SiteSwap(sc1, sc2);
 
         new Expectations() {{
-            dbc.get(Site.class, "A"); returns(site1);
-            dbc.get(Site.class, "B"); returns(site2);
+            dbc.get(Site.class, "A"); result = site1;
+            dbc.get(Site.class, "B"); result = site2;
         }};
 
         MapModificationException e = null;

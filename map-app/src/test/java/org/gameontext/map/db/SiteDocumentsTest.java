@@ -67,14 +67,14 @@ public class SiteDocumentsTest {
         final ObjectMapper anyInstance = new ObjectMapper();
 
         new Expectations(ObjectMapper.class) {{
-            anyInstance.treeToValue((TreeNode) any, Site.class); returns(site);
+            anyInstance.treeToValue((TreeNode) any, Site.class); result = site;
         }};
 
         new Expectations() {{
-            dbc.queryView((ViewQuery) any); returns(queryResult);
-            queryResult.getRows(); returns(rows);
-            row.getKeyAsNode(); returns(key);
-            key.get(2); returns(JsonNodeFactory.instance.textNode("n"));
+            dbc.queryView((ViewQuery) any); result = queryResult;
+            queryResult.getRows(); result = rows;
+            row.getKeyAsNode(); result = key;
+            key.get(2); result = JsonNodeFactory.instance.textNode("n");
          }};
 
         Exits e = docs.getExits(new Coordinates(1,2));
@@ -89,14 +89,14 @@ public class SiteDocumentsTest {
         final ObjectMapper anyInstance = new ObjectMapper();
 
         new Expectations(ObjectMapper.class) {{
-            anyInstance.treeToValue((TreeNode) any, Site.class); returns(site);
+            anyInstance.treeToValue((TreeNode) any, Site.class); result = site;
         }};
 
         docs.assignExit(exits, "n", site);
         new Expectations() {{
             dbc.queryView((ViewQuery) any, Site.class); returns(Arrays.asList(site, site), Collections.emptyList());
-            dbc.queryView((ViewQuery) any); returns(queryResult);
-            queryResult.getRows(); returns(Collections.emptyList());
+            dbc.queryView((ViewQuery) any); result = queryResult;
+            queryResult.getRows(); result = Collections.emptyList();
         }};
 
         Coordinates c0 = new Coordinates(5,-5);
@@ -111,8 +111,8 @@ public class SiteDocumentsTest {
         docs.assignExit(exits, "n", site);
         new Expectations() {{
             dbc.queryView((ViewQuery) any, Site.class); returns(Arrays.asList(site, site), Collections.emptyList());
-            queryResult.getRows(); returns(Arrays.asList(row, row));
-            key.get(2); returns(JsonNodeFactory.instance.textNode("n"));
+            queryResult.getRows(); result = Arrays.asList(row, row);
+            key.get(2); result = JsonNodeFactory.instance.textNode("n");
         }};
         Coordinates c2 = docs.findUnusedCoordinate(c1);
         System.out.println(c1 + " --> " + c2);
@@ -124,7 +124,7 @@ public class SiteDocumentsTest {
         docs.assignExit(exits, "s", site);
         new Expectations() {{
             dbc.queryView((ViewQuery) any, Site.class); returns(Arrays.asList(site, site), Collections.emptyList());
-            queryResult.getRows(); returns(Arrays.asList(row, row));
+            queryResult.getRows(); result = Arrays.asList(row, row);
             key.get(2); returns(JsonNodeFactory.instance.textNode("n"), JsonNodeFactory.instance.textNode("s"));
         }};
         Coordinates c3 = docs.findUnusedCoordinate(c2);
@@ -137,7 +137,7 @@ public class SiteDocumentsTest {
         docs.assignExit(exits, "e", site);
         new Expectations() {{
             dbc.queryView((ViewQuery) any, Site.class); returns(Arrays.asList(site, site), Collections.emptyList());
-            queryResult.getRows(); returns(Arrays.asList(row, row, row));
+            queryResult.getRows(); result = Arrays.asList(row, row, row);
             key.get(2); returns(JsonNodeFactory.instance.textNode("n"), JsonNodeFactory.instance.textNode("s"), JsonNodeFactory.instance.textNode("e"));
         }};
         Coordinates c4 = docs.findUnusedCoordinate(c3);
@@ -151,7 +151,7 @@ public class SiteDocumentsTest {
         docs.assignExit(exits, "w", site);
         new Expectations() {{
             dbc.queryView((ViewQuery) any, Site.class); returns(Arrays.asList(site, site), Collections.emptyList());
-            queryResult.getRows(); returns(Arrays.asList(row, row, row, row));
+            queryResult.getRows(); result = Arrays.asList(row, row, row, row);
             key.get(2); returns(JsonNodeFactory.instance.textNode("n"),
                     JsonNodeFactory.instance.textNode("s"),
                     JsonNodeFactory.instance.textNode("e"),

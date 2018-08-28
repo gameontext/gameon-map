@@ -69,7 +69,7 @@ public class SiteCreateMockedTest {
         List<Site> sites = Arrays.asList(site);
 
         new Expectations() {{
-            dbc.queryView((ViewQuery) any, JsonNode.class); returns(sites);
+            dbc.queryView((ViewQuery) any, JsonNode.class); result = sites;
         }};
 
         docs.connectRoom(owner, info);
@@ -81,7 +81,7 @@ public class SiteCreateMockedTest {
         List<Site> sites = Arrays.asList(site);
 
         new Expectations() {{
-            dbc.queryView((ViewQuery) any); returns(sites);
+            dbc.queryView((ViewQuery) any); result = sites;
         }};
 
         docs.connectRoom(owner, info);
@@ -102,7 +102,7 @@ public class SiteCreateMockedTest {
         List<Site> sites = Arrays.asList(site, site);
 
         new Expectations() {{
-            dbc.queryView((ViewQuery) any, Site.class); returns(sites);
+            dbc.queryView((ViewQuery) any, Site.class); result = sites;
             dbc.queryView((ViewQuery) any, JsonNode.class); returns(Collections.emptyList(), sites);
             dbc.update(site); result = new UpdateConflictException(); result = null;
         }};

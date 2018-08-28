@@ -33,25 +33,37 @@ dependencies {
     compile ('org.apache.httpcomponents:httpclient:4.5.2') {
       exclude group: 'com.fasterxml.jackson'
     }
-    compile ('org.ektorp:org.ektorp:1.4.4') {
+
+    compile ('org.ektorp:org.ektorp:1.5.0') {
+        exclude group: 'com.fasterxml.jackson'
         exclude group: 'org.slf4j'
     }
-    compile ('io.jsonwebtoken:jjwt:0.5.1') {
+
+    compile 'io.jsonwebtoken:jjwt-api:0.10.5'
+    runtime ('io.jsonwebtoken:jjwt-impl:0.10.5' ) {
+        exclude group: 'com.fasterxml.jackson'
         exclude group: 'org.slf4j'
     }
+    runtime ('io.jsonwebtoken:jjwt-jackson:0.10.5' ) {
+        exclude group: 'com.fasterxml.jackson'
+        exclude group: 'org.slf4j'
+    }
+
     compile ('org.apache.kafka:kafka-clients:0.10.2.0') {
       exclude group: 'org.slf4j'
     }
 
-    compile 'com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider:2.2.2'
+    compile 'com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider:2.9.6'
+    compile 'com.fasterxml.jackson.core:jackson-core:2.9.6'
+    compile 'com.fasterxml.jackson.core:jackson-databind:2.9.6'
+    compile 'com.fasterxml.jackson.core:jackson-annotations:2.9.6'
     compile 'org.slf4j:slf4j-jdk14:1.7.13'
     compile 'org.slf4j:jcl-over-slf4j:1.7.13'
-
 
     // hystrix
     compile group:'com.netflix.hystrix', name:'hystrix-core', version:'1.5.8'
 
-    jmockit 'org.jmockit:jmockit:1.22'
+    jmockit 'org.jmockit:jmockit:1.41'
     testCompile 'junit:junit:4.12'
     testCompile 'org.glassfish:javax.json:1.0.4'
   	testRuntime 'org.apache.cxf:cxf-rt-rs-client:3.1.1'
@@ -59,7 +71,7 @@ dependencies {
 }
 
 test {
-   jvmArgs "-javaagent:${configurations.jmockit.singleFile.absolutePath}"
+  jvmArgs "-javaagent:${configurations.jmockit.find { it.name.startsWith("jmockit") }.absolutePath}"
 }
 
 sourceSets {
