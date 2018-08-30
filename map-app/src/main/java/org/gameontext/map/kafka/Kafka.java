@@ -62,6 +62,8 @@ public class Kafka {
 
     private volatile boolean keepGoing = true;
 
+    private boolean DISABLE_KAFKA = Boolean.parseBoolean(System.getenv("DISABLE_KAFKA"));
+
     /** CDI injection of Java EE7 Managed thread factory */
     @Resource
     protected ManagedThreadFactory threadFactory;
@@ -73,6 +75,9 @@ public class Kafka {
     }
 
     public boolean isHealthy() {
+        if ( DISABLE_KAFKA ) {
+            return true;            
+        }
         return producer != null && consumer != null;
     }
 
@@ -127,7 +132,6 @@ public class Kafka {
             producerProps.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG,"org.apache.kafka.common.serialization.StringSerializer");
             producerProps.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,"org.apache.kafka.common.serialization.StringSerializer");
 
-            //producer = new KafkaProducer<>(producerProps);
 
             Log.log(Level.INFO, this, "Initializing kafka consumer for url {0}", kafkaUrl);
 
@@ -139,7 +143,10 @@ public class Kafka {
             consumerProps.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringDeserializer");
             consumerProps.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringDeserializer");
 
-            //consumer = new KafkaConsumer<>(consumerProps);
+            if ( !DISABLE_KAFKA ) {
+                producer = new KafkaProducer<>(producerProps);
+                consumer = new KafkaConsumer<>(consumerProps);
+            }
         } catch(KafkaException k) {
             Throwable cause = k.getCause();
             if(cause != null && cause.getMessage().contains("DNS resolution failed for url") && multipleHosts()){
