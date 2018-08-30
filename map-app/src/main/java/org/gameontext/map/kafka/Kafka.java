@@ -127,7 +127,7 @@ public class Kafka {
             producerProps.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG,"org.apache.kafka.common.serialization.StringSerializer");
             producerProps.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,"org.apache.kafka.common.serialization.StringSerializer");
 
-            producer = new KafkaProducer<>(producerProps);
+            //producer = new KafkaProducer<>(producerProps);
 
             Log.log(Level.INFO, this, "Initializing kafka consumer for url {0}", kafkaUrl);
 
@@ -139,7 +139,7 @@ public class Kafka {
             consumerProps.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringDeserializer");
             consumerProps.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringDeserializer");
 
-            consumer = new KafkaConsumer<>(consumerProps);
+            //consumer = new KafkaConsumer<>(consumerProps);
         } catch(KafkaException k) {
             Throwable cause = k.getCause();
             if(cause != null && cause.getMessage().contains("DNS resolution failed for url") && multipleHosts()){
