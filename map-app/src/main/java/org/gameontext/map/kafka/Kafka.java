@@ -84,7 +84,7 @@ public class Kafka {
     }
 
     @PostConstruct
-    public void init(){
+    public void init() {
         try{
             //Kafka client expects this property to be set and pointing at the
             //jaas config file.. except when running in liberty, we don't need
@@ -144,8 +144,8 @@ public class Kafka {
             Throwable cause = k.getCause();
             if(cause != null && cause.getMessage().contains("DNS resolution failed for url") && multipleHosts()){
                 Log.log(Level.SEVERE, this, "Error during Kafka Init. Kafka will be unavailable. You may need to restart all linked containers.", cause);
-            }else{
-                throw k;
+            } else {
+                Log.log(Level.SEVERE, this, "Unknown error during kafka init, please report ", k);
             }
         } catch(Exception e) {
             Log.log(Level.SEVERE, this, "Unknown error during kafka init, please report ", e);

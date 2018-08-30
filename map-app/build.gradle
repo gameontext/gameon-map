@@ -16,7 +16,7 @@ configurations {
 
 
 dependencies {
-    compile 'com.github.gameontext:signed:amalgam8-SNAPSHOT'
+    compile 'com.github.gameontext:signed:v1.0.3'
 
     providedCompile group:'javax.ws.rs', name:'javax.ws.rs-api', version:'2.0'
     providedCompile group:'javax.json', name:'javax.json-api', version:'1.0'
