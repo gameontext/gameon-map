@@ -26,7 +26,7 @@ dependencies {
     providedCompile 'javax.enterprise.concurrent:javax.enterprise.concurrent-api:1.0'
     providedCompile 'javax.enterprise:cdi-api:1.2'
     providedCompile 'io.swagger:swagger-annotations:1.5.0'
-
+    providedCompile 'org.eclipse.microprofile:microprofile:1.3'
     // the entire couch & jackson dependency collection will not
     // makes a mess with slf4j and jackson..
 

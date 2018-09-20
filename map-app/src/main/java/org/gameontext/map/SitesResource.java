@@ -51,6 +51,10 @@ import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 
+import org.eclipse.microprofile.metrics.annotation.Timed;
+import org.eclipse.microprofile.metrics.annotation.Metered;
+import org.eclipse.microprofile.metrics.annotation.Counted;
+
 /**
  * Root of CRUD operations on or with sites
  */
@@ -85,6 +89,16 @@ public class SitesResource {
             @ApiResponse(code = HttpServletResponse.SC_NO_CONTENT, message = Messages.NOT_FOUND)
         })
     @Produces(MediaType.APPLICATION_JSON)
+    @Timed(name = "listAll_timer",
+        reusable = true,
+        tags = "label=listAll")
+    @Counted(name = "listAll_count",
+        monotonic = true,
+        reusable = true,
+        tags = "label=listAll")
+    @Metered(name = "listAll_meter",
+        reusable = true,
+        tags = "label=listAll")
     public Response listAll(
             @ApiParam(value = "filter by owner") @QueryParam("owner") String owner,
             @ApiParam(value = "filter by name") @QueryParam("name") String name) {
@@ -124,6 +138,16 @@ public class SitesResource {
         })
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
+    @Timed(name = "createRoom_timer",
+        reusable = true,
+        tags = "label=createRoom")
+    @Counted(name = "createRoom_count",
+        monotonic = true,
+        reusable = true,
+        tags = "label=createRoom")
+    @Metered(name = "createRoom_meter",
+        reusable = true,
+        tags = "label=createRoom")
     public Response createRoom(
             @ApiParam(value = "New room attributes", required = true) RoomInfo newRoom) {
 
@@ -148,6 +172,16 @@ public class SitesResource {
             @ApiResponse(code = HttpServletResponse.SC_NOT_FOUND, message = Messages.NOT_FOUND, response = ErrorResponse.class)
         })
     @Produces(MediaType.APPLICATION_JSON)
+    @Timed(name = "getRoom_timer",
+        reusable = true,
+        tags = "label=getRoom")
+    @Counted(name = "getRoom_count",
+        monotonic = true,
+        reusable = true,
+        tags = "label=getRoom")
+    @Metered(name = "getRoom_meter",
+        reusable = true,
+        tags = "label=getRoom")
     public Response getRoom(
             @ApiParam(value = "target room id", required = true) @PathParam("id") String roomId) {
         String authenticatedId = getAuthenticatedId(AuthMode.UNAUTHENTICATED_OK);
@@ -177,6 +211,16 @@ public class SitesResource {
         })
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
+    @Timed(name = "updateRoom_timer",
+        reusable = true,
+        tags = "label=updateRoom")
+    @Counted(name = "updateRoom_count",
+        monotonic = true,
+        reusable = true,
+        tags = "label=updateRoom")
+    @Metered(name = "updateRoom_meter",
+        reusable = true,
+        tags = "label=updateRoom")
     public Response updateRoom(
             @ApiParam(value = "target room id", required = true) @PathParam("id") String roomId,
             @ApiParam(value = "Updated room attributes", required = true) RoomInfo roomInfo) {
@@ -202,6 +246,16 @@ public class SitesResource {
         @ApiResponse(code = HttpServletResponse.SC_NOT_FOUND, message = Messages.NOT_FOUND, response = ErrorResponse.class),
         @ApiResponse(code = HttpServletResponse.SC_CONFLICT, message = Messages.CONFLICT, response = ErrorResponse.class)
     })
+    @Timed(name = "deleteRoom_timer",
+        reusable = true,
+        tags = "label=deleteRoom")
+    @Counted(name = "deleteRoom_count",
+        monotonic = true,
+        reusable = true,
+        tags = "label=deleteRoom")
+    @Metered(name = "deleteRoom_meter",
+        reusable = true,
+        tags = "label=deleteRoom")
     public Response deleteRoom(
             @ApiParam(value = "target room id", required = true) @PathParam("id") String roomId) {
 
