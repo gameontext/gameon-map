@@ -149,7 +149,7 @@ public class SitesResource {
         reusable = true,
         tags = "label=createRoom")
     public Response createRoom(
-            @ApiParam(value = "New room attributes", required = true) RoomInfo newRoom) {
+            @ApiParam(value = "New room attributes", required = true) @QueryParam("room") RoomInfo newRoom) {
 
         // NOTE: Thrown exeptions are mapped (see MapModificationException)
         Site mappedRoom = mapRepository.connectRoom(getAuthenticatedId(AuthMode.AUTHENTICATION_REQUIRED), newRoom);
