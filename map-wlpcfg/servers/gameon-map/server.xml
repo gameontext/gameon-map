@@ -11,7 +11,7 @@
         </accessLogging>
     </httpEndpoint>
 
-    <quickStartSecurity userName="admin" userPassword="adminpwd"/>
+    <quickStartSecurity userName="admin" userPassword="${env.ADMIN_PASSWORD}"/>
 
     <keyStore id="defaultKeyStore" location="key.jks"  password="testOnlyKeystore"/>
     <keyStore id="defaultTrustStore" location="truststore.jks" password="truststore"/>
