@@ -44,6 +44,7 @@ import org.eclipse.microprofile.faulttolerance.Timeout;
 import org.eclipse.microprofile.metrics.annotation.Counted;
 import org.eclipse.microprofile.metrics.annotation.Metered;
 import org.eclipse.microprofile.metrics.annotation.Timed;
+import org.eclipse.microprofile.opentracing.Traced;
 import org.gameontext.map.auth.ResourceAccessPolicy;
 import org.gameontext.map.auth.ResourceAccessPolicyFactory;
 import org.gameontext.map.db.MapRepository;
@@ -102,6 +103,7 @@ public class SitesResource {
     @Metered(name = "listAll_meter",
         reusable = true,
         tags = "label=listAll")
+    @Traced(value = true, operationName = "SitesResource.listAll")
     @Fallback(fallbackMethod="listAllFallback")
     @Timeout(value = 2, unit = ChronoUnit.SECONDS)
     @Retry(maxRetries = 2, maxDuration= 10000)
@@ -160,6 +162,7 @@ public class SitesResource {
     @Metered(name = "createRoom_meter",
         reusable = true,
         tags = "label=createRoom")
+    @Traced(value = true, operationName = "SitesResource.createRoom")
     public Response createRoom(
             @ApiParam(value = "New room attributes", required = true) RoomInfo newRoom) {
 
@@ -194,6 +197,7 @@ public class SitesResource {
     @Metered(name = "getRoom_meter",
         reusable = true,
         tags = "label=getRoom")
+    @Traced(value = true, operationName = "SitesResource.getRoom")
     @Timeout(value = 2, unit = ChronoUnit.SECONDS)
     @Retry(maxRetries = 2, maxDuration= 10000)
     public Response getRoom(
@@ -235,6 +239,7 @@ public class SitesResource {
     @Metered(name = "updateRoom_meter",
         reusable = true,
         tags = "label=updateRoom")
+    @Traced(value = true, operationName = "SitesResource.updateRoom")
     public Response updateRoom(
             @ApiParam(value = "target room id", required = true) @PathParam("id") String roomId,
             @ApiParam(value = "Updated room attributes", required = true) RoomInfo roomInfo) {
@@ -270,6 +275,7 @@ public class SitesResource {
     @Metered(name = "deleteRoom_meter",
         reusable = true,
         tags = "label=deleteRoom")
+    @Traced(value = true, operationName = "SitesResource.deleteRoom")
     public Response deleteRoom(
             @ApiParam(value = "target room id", required = true) @PathParam("id") String roomId) {
 

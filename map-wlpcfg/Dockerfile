@@ -4,6 +4,7 @@ ENV SERVERDIRNAME map
 
 COPY ./startup.sh /opt/startup.sh
 ADD ./servers/gameon-map /opt/ol/wlp/usr/servers/defaultServer/
+COPY ./lib/features/ /opt/ol/wlp/usr/
 
 CMD ["/opt/startup.sh"]
 
