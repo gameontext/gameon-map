@@ -47,6 +47,7 @@ import io.swagger.annotations.ApiResponses;
 import org.eclipse.microprofile.metrics.annotation.Timed;
 import org.eclipse.microprofile.metrics.annotation.Metered;
 import org.eclipse.microprofile.metrics.annotation.Counted;
+import org.eclipse.microprofile.opentracing.Traced;
 
 /**
  * Root of CRUD operations on or with sites
@@ -85,6 +86,7 @@ public class SwapSitesResource {
     @Metered(name = "put_swapSites_meter",
         reusable = true,
         tags = "label=swapSites")
+    @Traced(value = true, operationName = "SwapSitesResource.swapSites")
     public Response swapSites(@QueryParam("room1Id") String room1Id,
             @QueryParam("room2Id") String room2Id) {
 
@@ -127,6 +129,7 @@ public class SwapSitesResource {
     @Metered(name = "post_swapSites_meter",
         reusable = true,
         tags = "label=swapSites")
+    @Traced(value = true, operationName = "SwapSitesResource.swapSites")
     public Response swapSites(
             @ApiParam(value = "Sites to swap", required = true) SiteSwap siteSwap) {
 

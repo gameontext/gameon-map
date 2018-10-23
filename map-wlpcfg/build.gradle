@@ -1,9 +1,25 @@
-apply plugin: 'eclipse'
-
 buildscript {
     repositories {
         mavenCentral()
     }
+}
+
+plugins {
+    id "de.undercouch.download" version "3.4.3"
+}
+
+apply plugin: 'eclipse'
+task downloadFile(type: Download) {
+    src 'https://github.com/WASdev/sample.opentracing.zipkintracer/releases/download/1.1/liberty-opentracing-zipkintracer-1.1-sample.zip'
+    dest "lib/features/liberty-opentracing-zipkintracer-1.1-sample.zip"
+}
+
+task unzipFile(type: Copy) {
+    dependsOn 'downloadFile'
+    def zipFile = file("lib/features/liberty-opentracing-zipkintracer-1.1-sample.zip")
+    def outputDir = file("lib/features/")
+    from zipTree(zipFile)
+    into outputDir
 }
 
 task copyApplication(type: Copy) {
@@ -19,7 +35,7 @@ task copyCouchdb(type: Sync) {
     exclude 'map-*'
 }
 
-task build(dependsOn: ['copyApplication', 'copyCouchdb']){
+task build(dependsOn: ['copyApplication', 'copyCouchdb', 'unzipFile']){
 }
 
 task clean {
@@ -28,5 +44,6 @@ task clean {
     delete "servers/gameon-map/logs"
     delete "servers/gameon-map/workarea"
     delete "servers/gameon-map/resources"
+    delete "lib"
 }
 

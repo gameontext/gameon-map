@@ -10,5 +10,6 @@
 /servers/*/configDropins/overrides
 /servers/*/resources
 /build/
+/lib
 /target
 /servers/gameon-map/defaultServer
