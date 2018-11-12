@@ -1,10 +1,5 @@
 #!/bin/bash
 
-# Configure our link to etcd based on shared volume with secret
-if [ ! -z "$ETCD_SECRET" ]; then
-  . /data/primordial/setup.etcd.sh /data/primordial $ETCD_SECRET
-fi
-
 export CONTAINER_NAME=map
 
 SERVER_PATH=/opt/ol/wlp/usr/servers/defaultServer
@@ -16,12 +11,12 @@ if [ "$ETCDCTL_ENDPOINT" != "" ]; then
   RC=$?
 
   while [ $RC -ne 0 ]; do
-      sleep 15
+    sleep 15
 
-      # recheck condition
-      echo "** Re-testing etcd connection"
-      etcdctl --debug ls
-      RC=$?
+    # recheck condition
+    echo "** Re-testing etcd connection"
+    etcdctl --debug ls
+    RC=$?
   done
   echo "etcdctl returned sucessfully, continuing"
 
@@ -77,55 +72,72 @@ if [ -f /etc/cert/cert.pem ]; then
   cd ${SERVER_PATH}
 fi
 
+# Check for couchdb. Retry a few times, fail if it doesn't show up.
+AUTH_URL=${COUCHDB_SERVICE_URL/\/\//\/\/$COUCHDB_USER:$COUCHDB_PASSWORD@}
+
+# RC=7 means the host isn't there yet. Let's do some re-trying until it
+# does start / is ready
+RC=7
+count=0
+while [ $RC -eq 7 ]; do
+  echo "** Testing connection to ${COUCHDB_SERVICE_URL}"
+  curl -s --fail -X GET ${AUTH_URL}
+  RC=$?
+
+  if [ $RC -eq 7 ]; then
+    if [ $count -gt 30 ]; then
+      echo "Unable to connect to ${COUCHDB_SERVICE_URL}"
+      exit 1
+    fi
+    ((count++))
+    sleep 15
+  fi
+done
+
+ensure_exists() {
+  local result=0
+  local uri=$1
+  local url=${AUTH_URL}/$uri
+  shift
+
+  count=0
+  while [ $result -ne 200 ]; do
+    result=$(curl -s -o /dev/null -w "%{http_code}" --fail -X GET $url)
+    echo "**** curl -X GET $uri  ==>  $result"
+
+    case "$result" in
+      200)
+        continue
+      ;;
+      404)
+        echo "-- curl -X PUT $url"
+        curl -s $@ -X PUT $url
+      ;;
+      409)
+        sleep 5
+      ;;
+      *)
+        echo "unknown";
+        exit 1
+      ;;
+    esac
+  done
+}
+
 if [ "$GAMEON_MODE" == "development" ]; then
   # LOCAL DEVELOPMENT!
   # We do not want to ruin the cloudant admin party, but our code is written to expect
   # that creds are required, so we should make sure the required user/password exist
 
-  AUTH_HOST="http://${COUCHDB_USER}:${COUCHDB_PASSWORD}@${COUCHDB_HOST_AND_PORT}"
-
-  echo "** Testing connection to ${COUCHDB_SERVICE_URL}"
-  curl --fail -X GET ${AUTH_HOST}/_config/admins/${COUCHDB_USER}
-  RC=$?
-
-  # RC=7 means the host isn't there yet. Let's do some re-trying until it
-  # does start / is ready
-  while [ $RC -eq 7 ]; do
-      sleep 15
-
-      # recheck condition
-      echo "** Re-testing connection to ${COUCHDB_SERVICE_URL}"
-      curl --fail -X GET ${AUTH_HOST}/_config/admins/${COUCHDB_USER}
-      RC=$?
-  done
-
-  # RC=22 means the user doesn't exist
-  if [ $RC -eq 22 ]; then
-      echo "** Creating ${COUCHDB_USER}"
-      curl -X PUT ${COUCHDB_SERVICE_URL}/_config/admins/${COUCHDB_USER} -d \"${COUCHDB_PASSWORD}\"
-  fi
-
-  echo "** Checking database"
-  curl --fail -X GET ${AUTH_HOST}/map_repository
-  if [ $? -eq 22 ]; then
-      curl -X PUT $AUTH_HOST/map_repository
-  fi
+  echo "** Checking map_repository"
+  ensure_exists map_repository
 
   echo "** Checking design documents"
-  curl -v --fail -X GET ${AUTH_HOST}/map_repository/_design/site
-  if [ $? -eq 22 ]; then
-      curl -v -X PUT -H "Content-Type: application/json" --data @${SERVER_PATH}/site.json ${AUTH_HOST}/map_repository/_design/site
-  fi
+  ensure_exists map_repository/_design/site --data-binary @/opt/site.json
 
   echo "** Checking firstroom"
-  curl --fail -X GET ${AUTH_HOST}/map_repository/firstroom
-  if [ $? -eq 22 ]; then
-      echo "Updating firstroom.json ${SERVER_PATH}/firstRoom.json"
-      sed "s/game-on.org/${SYSTEM_ID}/g" ${SERVER_PATH}/firstRoom.json > ${SERVER_PATH}/firstRoom.withid.json
-      echo "Adding firstroom to db"
-      curl -X POST -H "Content-Type: application/json" --data @${SERVER_PATH}/firstRoom.withid.json ${AUTH_HOST}/map_repository
-  fi
+  sed "s/game-on.org/${SYSTEM_ID}/g" /opt/firstRoom.json > /opt/firstRoom.withid.json
+  ensure_exists map_repository/firstroom --data-binary @/opt/firstRoom.withid.json
 fi
 
-# Start the server in the foreground
 exec /opt/ol/wlp/bin/server run defaultServer
