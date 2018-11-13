@@ -85,6 +85,9 @@ if [ "$GAMEON_MODE" == "development" ]; then
   echo "** Checking firstroom"
   sed "s/game-on.org/${SYSTEM_ID}/g" /opt/firstRoom.json > /opt/firstRoom.withid.json
   ensure_exists map_repository/firstroom --data-binary @/opt/firstRoom.withid.json
+else
+  activeUrl=${AUTH_URL}
+  assert_exists map_repository
 fi
 
 exec /opt/ol/wlp/bin/server run defaultServer
