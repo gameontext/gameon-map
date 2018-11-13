@@ -27,6 +27,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
 import org.gameontext.map.auth.PlayerClient;
+import org.gameontext.map.db.CouchDbHealth;
 import org.gameontext.map.db.MapRepository;
 import org.gameontext.map.kafka.Kafka;
 
@@ -38,7 +39,7 @@ import io.swagger.annotations.ApiOperation;
 public class MapResource {
 
     @Inject
-    protected MapRepository mapRepository;
+    protected CouchDbHealth dbHealth;
 
     @Inject
     Kafka kafka;
@@ -60,16 +61,16 @@ public class MapResource {
     @Produces(MediaType.APPLICATION_JSON)
     @ApiOperation(value="health check", hidden = true)
     public Response healthCheck() {
-        if ( mapRepository != null && mapRepository.connectionReady()
-             && playerClient != null && playerClient.isHealthy()
-             && kafka != null && kafka.isHealthy() ) {
+        if ( dbHealth.isHealthy()
+             && playerClient.isHealthy()
+             && kafka.isHealthy() ) {
             return Response.ok().entity("{\"status\":\"UP\"}").build();
         } else {
             Map<String,String> map = new HashMap<>();
             map.put("status", "DOWN");
-            map.put("mapRepository", mapRepository == null ? "null" : ""+mapRepository.connectionReady());
-            map.put("playerClient", playerClient == null ? "null" : ""+playerClient.isHealthy());
-            map.put("kafka", kafka == null ? "null" : ""+kafka.isHealthy());
+            map.put("mapRepository", dbHealth.isHealthy()+"");
+            map.put("playerClient", playerClient.isHealthy()+"");
+            map.put("kafka", kafka.isHealthy()+"");
 
             return Response.status(Status.SERVICE_UNAVAILABLE).entity(map).build();
         }
