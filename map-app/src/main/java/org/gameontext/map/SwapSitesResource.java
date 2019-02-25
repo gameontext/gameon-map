@@ -44,6 +44,11 @@ import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 
+import org.eclipse.microprofile.metrics.annotation.Timed;
+import org.eclipse.microprofile.metrics.annotation.Metered;
+import org.eclipse.microprofile.metrics.annotation.Counted;
+import org.eclipse.microprofile.opentracing.Traced;
+
 /**
  * Root of CRUD operations on or with sites
  */
@@ -71,6 +76,17 @@ public class SwapSitesResource {
     @SignedRequest
     @ApiOperation(value="deprecated", hidden=true)
     @Produces(MediaType.APPLICATION_JSON)
+    @Timed(name = "put_swapSites_timer",
+        reusable = true,
+        tags = "label=swapSites")
+    @Counted(name = "put_swapSites_count",
+        monotonic = true,
+        reusable = true,
+        tags = "label=swapSites")
+    @Metered(name = "put_swapSites_meter",
+        reusable = true,
+        tags = "label=swapSites")
+    @Traced(value = true, operationName = "SwapSitesResource.swapSites")
     public Response swapSites(@QueryParam("room1Id") String room1Id,
             @QueryParam("room2Id") String room2Id) {
 
@@ -103,6 +119,17 @@ public class SwapSitesResource {
         })
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
+    @Timed(name = "post_swapSites_timer",
+        reusable = true,
+        tags = "label=swapSites")
+    @Counted(name = "post_swapSites_count",
+        monotonic = true,
+        reusable = true,
+        tags = "label=swapSites")
+    @Metered(name = "post_swapSites_meter",
+        reusable = true,
+        tags = "label=swapSites")
+    @Traced(value = true, operationName = "SwapSitesResource.swapSites")
     public Response swapSites(
             @ApiParam(value = "Sites to swap", required = true) SiteSwap siteSwap) {
 

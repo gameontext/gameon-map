@@ -5,15 +5,9 @@ apply plugin: 'jacoco'
 sourceCompatibility = 1.8
 
 repositories {
-	mavenCentral()
+	maven { url = "http://repo.maven.apache.org/maven2" }
 	maven { url "https://jitpack.io" }
 }
-
-configurations {
-    jmockit
-    testCompile.extendsFrom jmockit
-}
-
 
 dependencies {
     compile 'com.github.gameontext:signed:v1.0.3'
@@ -29,7 +23,7 @@ dependencies {
 
     // the entire couch & jackson dependency collection will not
     // makes a mess with slf4j and jackson..
-
+    providedCompile group: 'org.eclipse.microprofile', name: 'microprofile', version: '1.3'
     compile ('org.apache.httpcomponents:httpclient:4.5.2') {
       exclude group: 'com.fasterxml.jackson'
     }
@@ -63,7 +57,9 @@ dependencies {
     // hystrix
     compile group:'com.netflix.hystrix', name:'hystrix-core', version:'1.5.8'
 
-    jmockit 'org.jmockit:jmockit:1.41'
+    // https://mvnrepository.com/artifact/org.jmockit/jmockit
+    testCompile group: 'org.jmockit', name: 'jmockit', version: '1.41'
+
     testCompile 'junit:junit:4.12'
     testCompile 'org.glassfish:javax.json:1.0.4'
   	testRuntime 'org.apache.cxf:cxf-rt-rs-client:3.1.1'
@@ -71,21 +67,22 @@ dependencies {
 }
 
 test {
-  jvmArgs "-javaagent:${configurations.jmockit.find { it.name.startsWith("jmockit") }.absolutePath}"
+  jvmArgs "-javaagent:${classpath.find { it.name.contains("jmockit") }.absolutePath}"
 }
 
 sourceSets {
-  endToEndTest {
+  endToEnd {
     java.srcDir file('/src/endToEnd/java')
+    compileClasspath += sourceSets.main.output + sourceSets.test.output
   }
 }
 
-task endToEndTest(type: Test) {
-  testClassesDir = sourceSets.endToEndTest.output.classesDir
-  classpath = sourceSets.endToEndTest.runtimeClasspath
+task endToEnd(type: Test) {
+  testClassesDir = sourceSets.endToEnd.output.classesDir
+  classpath = sourceSets.endToEnd.compileClasspath
 }
 
-check.dependsOn(endToEndTest)
+check.dependsOn(endToEnd)
 
 
 // Keep test and application binaries separate

@@ -16,6 +16,7 @@
 package org.gameontext.map;
 
 import java.net.URI;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 import javax.inject.Inject;
@@ -34,6 +35,16 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+
+import org.eclipse.microprofile.faulttolerance.Fallback;
+import org.eclipse.microprofile.faulttolerance.Retry;
+import org.eclipse.microprofile.faulttolerance.Timeout;
+import org.eclipse.microprofile.metrics.annotation.Counted;
+import org.eclipse.microprofile.metrics.annotation.Metered;
+import org.eclipse.microprofile.metrics.annotation.Timed;
+import org.eclipse.microprofile.opentracing.Traced;
 import org.gameontext.map.auth.ResourceAccessPolicy;
 import org.gameontext.map.auth.ResourceAccessPolicyFactory;
 import org.gameontext.map.db.MapRepository;
@@ -41,9 +52,6 @@ import org.gameontext.map.model.ErrorResponse;
 import org.gameontext.map.model.RoomInfo;
 import org.gameontext.map.model.Site;
 import org.gameontext.signed.SignedRequest;
-
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -85,6 +93,20 @@ public class SitesResource {
             @ApiResponse(code = HttpServletResponse.SC_NO_CONTENT, message = Messages.NOT_FOUND)
         })
     @Produces(MediaType.APPLICATION_JSON)
+    @Timed(name = "listAll_timer",
+        reusable = true,
+        tags = "label=listAll")
+    @Counted(name = "listAll_count",
+        monotonic = true,
+        reusable = true,
+        tags = "label=listAll")
+    @Metered(name = "listAll_meter",
+        reusable = true,
+        tags = "label=listAll")
+    @Traced(value = true, operationName = "SitesResource.listAll")
+    @Fallback(fallbackMethod="listAllFallback")
+    @Timeout(value = 2, unit = ChronoUnit.SECONDS)
+    @Retry(maxRetries = 2, maxDuration= 10000)
     public Response listAll(
             @ApiParam(value = "filter by owner") @QueryParam("owner") String owner,
             @ApiParam(value = "filter by name") @QueryParam("name") String name) {
@@ -101,6 +123,12 @@ public class SitesResource {
             // TODO -- this should be done better. Stream, something.
             return Response.ok().entity(sites.toString()).build();
         }
+    }
+
+    public Response listAllFallback(
+            @ApiParam(value = "filter by owner") @QueryParam("owner") String owner,
+            @ApiParam(value = "filter by name") @QueryParam("name") String name) {
+        return Response.noContent().build();
     }
 
 	/**
@@ -124,6 +152,17 @@ public class SitesResource {
         })
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
+    @Timed(name = "createRoom_timer",
+        reusable = true,
+        tags = "label=createRoom")
+    @Counted(name = "createRoom_count",
+        monotonic = true,
+        reusable = true,
+        tags = "label=createRoom")
+    @Metered(name = "createRoom_meter",
+        reusable = true,
+        tags = "label=createRoom")
+    @Traced(value = true, operationName = "SitesResource.createRoom")
     public Response createRoom(
             @ApiParam(value = "New room attributes", required = true) RoomInfo newRoom) {
 
@@ -148,6 +187,19 @@ public class SitesResource {
             @ApiResponse(code = HttpServletResponse.SC_NOT_FOUND, message = Messages.NOT_FOUND, response = ErrorResponse.class)
         })
     @Produces(MediaType.APPLICATION_JSON)
+    @Timed(name = "getRoom_timer",
+        reusable = true,
+        tags = "label=getRoom")
+    @Counted(name = "getRoom_count",
+        monotonic = true,
+        reusable = true,
+        tags = "label=getRoom")
+    @Metered(name = "getRoom_meter",
+        reusable = true,
+        tags = "label=getRoom")
+    @Traced(value = true, operationName = "SitesResource.getRoom")
+    @Timeout(value = 2, unit = ChronoUnit.SECONDS)
+    @Retry(maxRetries = 2, maxDuration= 10000)
     public Response getRoom(
             @ApiParam(value = "target room id", required = true) @PathParam("id") String roomId) {
         String authenticatedId = getAuthenticatedId(AuthMode.UNAUTHENTICATED_OK);
@@ -177,6 +229,17 @@ public class SitesResource {
         })
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
+    @Timed(name = "updateRoom_timer",
+        reusable = true,
+        tags = "label=updateRoom")
+    @Counted(name = "updateRoom_count",
+        monotonic = true,
+        reusable = true,
+        tags = "label=updateRoom")
+    @Metered(name = "updateRoom_meter",
+        reusable = true,
+        tags = "label=updateRoom")
+    @Traced(value = true, operationName = "SitesResource.updateRoom")
     public Response updateRoom(
             @ApiParam(value = "target room id", required = true) @PathParam("id") String roomId,
             @ApiParam(value = "Updated room attributes", required = true) RoomInfo roomInfo) {
@@ -202,6 +265,17 @@ public class SitesResource {
         @ApiResponse(code = HttpServletResponse.SC_NOT_FOUND, message = Messages.NOT_FOUND, response = ErrorResponse.class),
         @ApiResponse(code = HttpServletResponse.SC_CONFLICT, message = Messages.CONFLICT, response = ErrorResponse.class)
     })
+    @Timed(name = "deleteRoom_timer",
+        reusable = true,
+        tags = "label=deleteRoom")
+    @Counted(name = "deleteRoom_count",
+        monotonic = true,
+        reusable = true,
+        tags = "label=deleteRoom")
+    @Metered(name = "deleteRoom_meter",
+        reusable = true,
+        tags = "label=deleteRoom")
+    @Traced(value = true, operationName = "SitesResource.deleteRoom")
     public Response deleteRoom(
             @ApiParam(value = "target room id", required = true) @PathParam("id") String roomId) {
 
@@ -219,7 +293,7 @@ public class SitesResource {
                     //else we don't allow unauthenticated, so if auth id is absent
                     //throw exception to prevent handling the request.
                     throw new MapModificationException(Response.Status.BAD_REQUEST,
-                             "Unauthenticated client", "Room owner could not be determined.");
+                        "Unauthenticated client", "Room owner could not be determined.");
                 }
                 break;
             }

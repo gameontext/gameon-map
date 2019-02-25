@@ -7,7 +7,13 @@
         <feature>cdi-1.2</feature>
         <feature>ssl-1.0</feature>
         <feature>concurrent-1.0</feature>
+        <feature>mpMetrics-1.1</feature>
+        <feature>mpHealth-1.0</feature>
+        <feature>mpFaultTolerance-1.0</feature>
+        <feature>mpOpenAPI-1.0</feature>
     </featureManager>
+
+    <mpMetrics authentication="false"/>
 
     <httpEndpoint host="*" httpPort="9080" httpsPort="9443" id="defaultHttpEndpoint">
         <accessLogging filepath="${server.output.dir}/logs/http_defaultEndpoint_access.log" logFormat="%h %u %t &quot;%r&quot; %s %b %D %{User-agent}i">
@@ -19,6 +25,8 @@
 
     <sslDefault sslRef="DefaultSSLSettings"/>
     <ssl id="DefaultSSLSettings" keyStoreRef="defaultKeyStore" trustStoreRef="defaultTrustStore"/>
+
+    <opentracingZipkin host="zipkin" port="9411"/>
 
     <!-- Signed JWT keystore info -->
     <jndiEntry jndiName="jwtKeyStore" value="${server.config.dir}/resources/security/key.jks"/>
@@ -51,14 +59,16 @@
     <config updateTrigger="mbean" />
     <applicationMonitor dropinsEnabled="false" updateTrigger="mbean"/>
 
-    <logging traceSpecification="*=info:org.gameontext.*=all:org.gameontext.signed.*=warning"/>
+    <logging traceSpecification="*=info:org.gameontext.*=all"/>
 
     <!-- This is required to prevent the web apps from being lazily loaded -->
     <webContainer deferServletLoad="false"/>
     <!-- The JVM can get confused about available CPU in virtualized envs -->
     <executor coreThreads="5"/>
 
-    <webApplication contextRoot="/map" id="map-app" location="map-app.war" />
+    <webApplication contextRoot="/map" id="map-app" location="map-app.war">
+        <classloader apiTypeVisibility="api,ibm-api,spec,stable,third-party"/>
+    </webApplication>
 
     <jndiEntry jndiName="developmentMode" value="${env.GAMEON_MODE}"/>
     <jndiEntry jndiName="targetPlatform" value="${env.TARGET_PLATFORM}"/>
