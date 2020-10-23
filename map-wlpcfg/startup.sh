@@ -41,19 +41,23 @@ if [ "$ETCDCTL_ENDPOINT" != "" ]; then
 
   export KAFKA_SERVICE_URL=$(etcdctl get /kafka/url)
 fi
+if [ -f /etc/cert/cert.pem ]; then
+  cp /etc/cert/cert.pem ${ssl_path}/cert.pem
+fi
 
-if [ -f ${ssl_path}/cert.pem ] && ! [ -f ${ssl_path}/key.jks ] ; then
+if [ -f ${ssl_path}/cert.pem ] ; then
   echo "Building keystore/truststore from cert.pem"
   echo "-creating dir"
   echo "-cd dir"
   cd ${ssl_path}
   ls -al
   echo "-converting pem to pkcs12"
-  openssl pkcs12 -passin pass:keystore -passout pass:keystore -export -out cert.pkcs12 -in /cert.pem
+  openssl pkcs12 -passin pass:keystore -passout pass:keystore -export -out cert.pkcs12 -in cert.pem
   echo "-importing pem to truststore.jks"
   keytool -import -v -trustcacerts -alias default -file cert.pem -storepass truststore -keypass keystore -noprompt -keystore truststore.jks
   echo "-creating dummy key.jks"
-  keytool -genkey -storepass testOnlyKeystore -keypass wefwef -keyalg RSA -alias endeca -keystore key.jks -dname CN=rsssl,OU=unknown,O=unknown,L=unknown,ST=unknown,C=CA
+  keytool -genkey -storepass testOnlyKeystore -keypass wefwef -keyalg RSA -alias endeca \
+          -keystore key.jks -dname CN=rsssl,OU=unknown,O=unknown,L=unknown,ST=unknown,C=CA
   echo "-emptying key.jks"
   keytool -delete -storepass testOnlyKeystore -alias endeca -keystore key.jks
   echo "-importing pkcs12 to key.jks"
