@@ -76,7 +76,7 @@ public class Kafka {
 
     public boolean isHealthy() {
         if ( DISABLE_KAFKA ) {
-            return true;            
+            return true;
         }
         return producer != null && consumer != null;
     }
@@ -101,22 +101,6 @@ public class Kafka {
 
             Properties producerProps = new Properties();
             Properties consumerProps = new Properties();
-
-            //this is a cheat, we need to enable ssl when talking to message hub, and not to kafka locally
-            //the easiest way to know which we are running on, is to check how many hosts are in kafkaUrl
-            //locally for kafka there'll only ever be one, and messagehub gives us a whole bunch..
-            boolean multipleHosts = multipleHosts();
-            if(multipleHosts){
-                Log.log(Level.INFO, this, "Initializing SSL Config for MessageHub");
-                producerProps.put("security.protocol","SASL_SSL");
-                producerProps.put("ssl.protocol","TLSv1.2");
-                producerProps.put("ssl.enabled.protocols","TLSv1.2");
-                Path p = Paths.get(System.getProperty("java.home"), "lib", "security", "cacerts");
-                producerProps.put("ssl.truststore.location", p.toString());
-                producerProps.put("ssl.truststore.password","changeit");
-                producerProps.put("ssl.truststore.type","JKS");
-                producerProps.put("ssl.endpoint.identification.algorithm","HTTPS");
-            }
 
             // duplicate common properties right now.
             consumerProps.putAll(producerProps);
