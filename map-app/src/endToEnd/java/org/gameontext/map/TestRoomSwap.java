@@ -77,7 +77,7 @@ public class TestRoomSwap {
     public void removeSitesCreatedForTest() {
         for (String siteToDelete : sitesToDelete) {
             Invocation.Builder invoBuild = createGameOnInvoBuilder("sites/" + siteToDelete);
-            //TODO: This doesn't work because game-on.org cannot delete rooms.
+            //TODO: This doesn't work because gameontext.org cannot delete rooms.
             // Need to create a mechanism for a user to register and get their API Key
             Response response = invoBuild.accept(MediaType.APPLICATION_JSON_TYPE).delete();
             System.out.println("Request to delete site with id " + siteToDelete + " returned with status " + response.getStatus());
@@ -206,7 +206,7 @@ public class TestRoomSwap {
     }
 
     private Invocation.Builder createGameOnInvoBuilder(String endpoint) {
-        return createInvoBuilder(endpoint, "game-on.org", "fish");
+        return createInvoBuilder(endpoint, "gameontext.org", "fish");
     }
 
     private Invocation.Builder createInvoBuilder(String endpoint, String user, String password) {
