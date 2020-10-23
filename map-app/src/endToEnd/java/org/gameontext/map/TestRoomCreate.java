@@ -100,7 +100,7 @@ public class TestRoomCreate {
         System.out.println("Creating invocation for url " + url);
 
         Client client = ClientBuilder.newClient().register(JacksonJsonProvider.class);
-        SignedClientRequestFilter filter = new SignedClientRequestFilter("game-on.org", "fish");
+        SignedClientRequestFilter filter = new SignedClientRequestFilter("gameontext.org", "fish");
         client.register(filter);
 
         WebTarget target = client.target(url);
