@@ -49,7 +49,6 @@ if [ -f ${ssl_path}/cert.pem ] ; then
   echo "-creating dir"
   echo "-cd dir"
   cd ${ssl_path}
-  ls -al
   echo "-converting pem to pkcs12"
   openssl pkcs12 -passin pass:keystore -passout pass:keystore -export -out cert.pkcs12 -in cert.pem
   echo "-importing pem to truststore.jks"
