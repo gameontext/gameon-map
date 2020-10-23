@@ -2,9 +2,8 @@
 export CONTAINER_NAME=map
 
 SERVER_PATH=/opt/ol/wlp/usr/servers/defaultServer
-
 ssl_path=${SERVER_PATH}/resources/security
-mkdir -p ${ssl_path}
+
 
 if [ "$ETCDCTL_ENDPOINT" != "" ]; then
   echo Setting up etcd...

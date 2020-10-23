@@ -8,9 +8,9 @@ RUN chmod g+rwx /opt/init_couchdb.sh
 USER 1001
 COPY ./startup.sh /opt/startup.sh
 COPY ./servers/gameon-map /opt/ol/wlp/usr/servers/defaultServer/
-
 COPY ./site.json /opt/site.json
 COPY ./firstRoom.json /opt/firstRoom.json
+RUN mkdir -p /opt/ol/wlp/usr/servers/defaultServer/resources/security
 
 CMD ["/opt/startup.sh"]
 
