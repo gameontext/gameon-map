@@ -1,9 +1,13 @@
 #!/bin/bash
 export CONTAINER_NAME=map
 
+src_path=/opt/ol/wlp/usr/servers/defaultServer
 SERVER_PATH=/opt/ol/wlp/usr/servers/defaultServer
 ssl_path=${SERVER_PATH}/resources/security
 
+if [ -f /etc/cert/cert.pem ]; then
+  cp /etc/cert/cert.pem ${src_path}/cert.pem
+fi
 
 if [ "$ETCDCTL_ENDPOINT" != "" ]; then
   echo Setting up etcd...
@@ -21,7 +25,7 @@ if [ "$ETCDCTL_ENDPOINT" != "" ]; then
   done
   echo "etcdctl returned sucessfully, continuing"
 
-  etcdctl get /proxy/third-party-ssl-cert > ${ssl_path}/cert.pem
+  etcdctl get /proxy/third-party-ssl-cert > ${src_path}/cert.pem
 
   export MAP_KEY=$(etcdctl get /passwords/map-key)
   export PLAYER_SERVICE_URL=$(etcdctl get /player/url)
@@ -40,12 +44,9 @@ if [ "$ETCDCTL_ENDPOINT" != "" ]; then
 
   export KAFKA_SERVICE_URL=$(etcdctl get /kafka/url)
 fi
-if [ -f /etc/cert/cert.pem ]; then
-  cp /etc/cert/cert.pem ${ssl_path}/cert.pem
-fi
 
 # Make sure keystores are present or are generated
-/opt/gen-keystore.sh ${ssl_path} ${ssl_path}
+/opt/gen-keystore.sh ${src_path} ${ssl_path}
 
 # Make sure couchdb / cloudant is around
 . /opt/init_couchdb.sh 30
